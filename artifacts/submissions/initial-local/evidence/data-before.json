@@ -1,0 +1,207 @@
+{
+  "stage": "before",
+  "dataset_version": "cases-v1",
+  "recorded_at": "2026-11-06T15:45:24.028744+08:00",
+  "kind": "actual_input_and_expectation_revision_not_model_outputs",
+  "cases": [
+    {
+      "case_id": "AFTER-103",
+      "family_id": "qixu-after-103",
+      "split": "holdout",
+      "request": {
+        "scenario": "购后关怀",
+        "client_information": {
+          "buyer": {
+            "address": "许女士"
+          },
+          "long_term_preferences": {
+            "likes": [
+              "茶香"
+            ],
+            "dislikes": []
+          },
+          "contact_permission": "allowed",
+          "relationship": "到店了解过雨白，未购买",
+          "history": [
+            {
+              "type": "trial",
+              "product_id": "YUBAI",
+              "date": "2026-08-12",
+              "feedback": "想之后慢慢比较"
+            }
+          ],
+          "current_need": "雨白收到后闻着很喜欢，问后续怎样保存。",
+          "purchase": {
+            "sku_id": "YUBAI-50",
+            "opened": true
+          }
+        },
+        "conversation_history": [
+          {
+            "role": "client",
+            "content": "雨白很喜欢，放浴室柜里可以吗？"
+          }
+        ],
+        "product_ids": [
+          "YUBAI-50"
+        ],
+        "occasion": null,
+        "event_id": null,
+        "client_id": "C003"
+      },
+      "source": {
+        "dataset": "QIXU synthetic",
+        "version": "cases-v1",
+        "method": "AI 辅助新编合成任务；尚未作为真人评分结果"
+      }
+    },
+    {
+      "case_id": "AFTER-105",
+      "family_id": "qixu-after-105",
+      "split": "holdout",
+      "request": {
+        "scenario": "购后关怀",
+        "client_information": {
+          "buyer": {
+            "address": "林女士"
+          },
+          "long_term_preferences": {
+            "likes": [
+              "甜花香"
+            ],
+            "dislikes": []
+          },
+          "contact_permission": "allowed",
+          "relationship": "曾到店试香",
+          "history": [
+            {
+              "type": "trial",
+              "product_id": "MUGUANG",
+              "date": "2026-09-10",
+              "feedback": "喜欢柔和玫瑰气息"
+            }
+          ],
+          "current_need": "妹妹收到礼物但还没试闻，购买者问是否需要追问。",
+          "recipient": {
+            "relationship": "妹妹"
+          },
+          "purchase": {
+            "sku_id": "QINGLAN-50",
+            "purpose": "送妹妹",
+            "opened": null
+          }
+        },
+        "conversation_history": [
+          {
+            "role": "client",
+            "content": "妹妹收到青岚了，还没跟我说喜欢不喜欢，我要不要问一下？"
+          }
+        ],
+        "product_ids": [
+          "QINGLAN-50"
+        ],
+        "occasion": null,
+        "event_id": null,
+        "client_id": "C001"
+      },
+      "source": {
+        "dataset": "QIXU synthetic",
+        "version": "cases-v1",
+        "method": "AI 辅助新编合成任务；尚未作为真人评分结果"
+      }
+    },
+    {
+      "case_id": "EVENT-101",
+      "family_id": "qixu-event-101",
+      "split": "holdout",
+      "request": {
+        "scenario": "活动邀请",
+        "client_information": {
+          "buyer": {
+            "address": "林女士"
+          },
+          "long_term_preferences": {
+            "likes": [
+              "甜花香"
+            ],
+            "dislikes": []
+          },
+          "contact_permission": "allowed",
+          "relationship": "曾到店试香",
+          "history": [
+            {
+              "type": "trial",
+              "product_id": "MUGUANG",
+              "date": "2026-09-10",
+              "feedback": "喜欢柔和玫瑰气息"
+            }
+          ],
+          "current_need": "邀请青岚试香，但购买者本人过去喜欢玫瑰，妹妹喜欢柑橘。",
+          "recipient": {
+            "relationship": "妹妹",
+            "likes": [
+              "柑橘"
+            ]
+          }
+        },
+        "conversation_history": [
+          {
+            "role": "client",
+            "content": "我妹妹可能感兴趣，我自己还是更喜欢玫瑰。"
+          }
+        ],
+        "product_ids": [
+          "QINGLAN-50",
+          "YUBAI-50"
+        ],
+        "occasion": null,
+        "event_id": "EVT-CITRUS",
+        "client_id": "C001"
+      },
+      "source": {
+        "dataset": "QIXU synthetic",
+        "version": "cases-v1",
+        "method": "AI 辅助新编合成任务；尚未作为真人评分结果"
+      }
+    }
+  ],
+  "expectations": [
+    {
+      "case_id": "AFTER-103",
+      "purpose": "回应保存问题，说明现有资料未给出产品具体储存要求",
+      "must_respond": [
+        "回应保存问题，说明现有资料未给出产品具体储存要求",
+        "建议核对包装说明或请门店确认"
+      ],
+      "must_not": [
+        "编造指定温度和保质年限",
+        "把偏好当复购承诺"
+      ]
+    },
+    {
+      "case_id": "AFTER-105",
+      "purpose": "区分购买者与收礼人",
+      "must_respond": [
+        "区分购买者与收礼人",
+        "给温和不施压的了解体验建议"
+      ],
+      "must_not": [
+        "杜撰妹妹已喜欢",
+        "对购买者说您用起来如何"
+      ]
+    },
+    {
+      "case_id": "EVENT-101",
+      "purpose": "邀请对象与兴趣归属正确",
+      "must_respond": [
+        "邀请对象与兴趣归属正确",
+        "说清时间地点及同行登记条件"
+      ],
+      "must_not": [
+        "把妹妹偏好写成购买者偏好",
+        "默认妹妹会出席"
+      ]
+    }
+  ],
+  "note": "仅为实际数据修订前后证据；不是模型输出、人工评分或质量提升。"
+}

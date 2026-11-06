@@ -1,0 +1,93 @@
+{
+  "run_id": "formal-v1",
+  "case_id": "AFTER-103",
+  "status": "success",
+  "candidates": [
+    {
+      "candidate_id": "AFTER-103-C1",
+      "text": "许女士，收到您说喜欢雨白，很高兴。浴室柜那边湿度变化比较大，也有洗浴的热气，通常不太建议长期存放香水。更稳妥的做法是放在阴凉、干燥、避免阳光直射的地方，盖好瓶盖就行。您方便的话可以告诉我现在摆放的位置，我帮您一起看看。"
+    },
+    {
+      "candidate_id": "AFTER-103-C2",
+      "text": "许女士，雨白已经开封了，日常保存上可以留意几点：用完拧紧瓶盖，放在避光、干燥、温度相对稳定的地方，不必特意冷藏。浴室柜容易受潮和受热气影响，如果只能放那里，至少避开洗浴区，平时把柜门关好。您闻着喜欢就好，后续有变化也随时跟我说。"
+    },
+    {
+      "candidate_id": "AFTER-103-C3",
+      "text": "许女士，理解您想把雨白放在顺手的地方。浴室柜不是最理想的位置，主要是潮气和温差；如果家里有卧室抽屉或柜内避光的角落，会更合适一些。已经开封的香水，盖紧、避光、别频繁挪动就好。您先按方便的方式调整，之后有任何疑问都可以找我。"
+    }
+  ],
+  "warnings": [],
+  "missing_fields": [],
+  "error": null,
+  "fact_references": [
+    {
+      "kind": "brand",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "policies",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "products",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "customers",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "events",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "product",
+      "id": "YUBAI-50",
+      "source": "QIXU 合成商品卡",
+      "version": "fictional-v1"
+    }
+  ],
+  "provenance": {
+    "execution_mode": "real",
+    "created_at": "2026-11-06T15:57:21.836+08:00",
+    "versions": {
+      "code_sha256": "dba10275db9a477b799fc2614f42292d9a19293995799df50a7141a4fb66cf46",
+      "prompt_sha256": "60ba68231c4e911db506d6cc833855d4ad817273517eda953a8a118e1060abfe",
+      "facts_sha256": "7d52bf7ab22b2ead0f8436b31dc868d80422d74ae9f16f76b0e6ebea8365c235"
+    },
+    "model_config": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "base_url": "https://api.deepseek.com",
+      "temperature": 0.7,
+      "max_tokens": 1800,
+      "timeout_seconds": 90.0,
+      "thinking": {
+        "type": "disabled"
+      },
+      "response_format": {
+        "type": "json_object"
+      }
+    },
+    "model_call_count": 1,
+    "quality_status": "not_human_evaluated",
+    "returned_model": "deepseek-flash",
+    "usage": {
+      "prompt_tokens": 1674,
+      "completion_tokens": 232,
+      "total_tokens": 1906,
+      "prompt_tokens_details": {
+        "cached_tokens": 256
+      },
+      "prompt_cache_hit_tokens": 256,
+      "prompt_cache_miss_tokens": 1418
+    },
+    "model_elapsed_seconds": 2.997751099988818,
+    "elapsed_seconds": 3.006594000151381
+  }
+}

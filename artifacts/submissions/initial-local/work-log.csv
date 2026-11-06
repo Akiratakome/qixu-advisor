@@ -1,0 +1,19 @@
+﻿Step,What you did,Input,Output,Tool or agent used,Screenshots
+00,本轮之前已有两份设计报告；原始历史未补造,既有产品设计、技术报告,沿用已授权方案；历史对话截图待补,历史工具／完整步骤未核实,待补：历史真实AI对话截图
+01,读取项目约束、两报告、岗位要求及两页题目,用户授权；AGENTS；两报告；本地附件,核对六场景、A–E、严格表头和交付边界,Codex主session；PowerShell；pypdf,待补：本步真实AI对话截图
+02,分配核心、数据、界面与评价任务；建立工作日志,已有工程方案,3个子agent明确职责与数据合同,Codex主session与core/dataset/ui_eval,待补：分工对话截图
+03,安装锁定依赖并修复Windows启动器,uv；Python3.12；pyproject,标准venv启动器可运行；uv.lock,PowerShell；uv；Python标准venv,待补：本步AI对话截图；命令验证见evidence/offline-verification.json
+04,核验实际API并实现共享生成与记录,官方DeepSeek/Streamlit文档；既定模块合同,输入、原始返回、机器稿、反馈分存；不自动重试,Codex主session与core；官方文档,待补：实现对话截图
+05,实际执行一次DeepSeek生成,本地凭据；SMOKE-001虚构推荐任务,HTTP402失败，0候选；用户随后选择本轮离线交付,DeepSeek API；共享generate,待补：本步AI对话截图；原始记录见evidence/runs/smoke-20261106
+06,制作事实和50例，实际定向核验四个ABCD源例,合成业务设定；固定版本ABCD,20dev/30holdout、4boundary、预期与rubric，来源及MIT声明,dataset子agent；Python；官方GitHub数据,待补：数据制作对话截图
+07,完成表单、编辑、批量、冻结、八列导出和真人评价入口,核心函数合同；PDF表头,本地Streamlit与CLI共用生成函数,ui_eval子agent；Streamlit/Pydantic,screenshots/application/desktop-input.png（应用截图；AI对话仍待补）
+08,运行离线检查与真实浏览器路径,临时目录中的显式替身；真实本地应用,测试记录与缺资料状态；未调用模型／填写人评,pytest；Streamlit AppTest；Edge/Playwright,screenshots/application/missing-input-after.png（应用截图；AI对话仍待补）
+09,按de-slop截图清理表单与移动端布局,桌面／手机实际截图,顶部工作区；按场景显示字段；保留前后截图,Codex主session；de-slop；ui_eval,screenshots/application/mobile-input.png；screenshots/application/mobile-input-after.png；AI对话待补
+10,独立代码复核并修复版本漂移和旧候选残留,隔离替身复现；旧数据改场景后汇总错误,运行时完整评价快照；失败清理旧结果；回归检查,core与ui_eval子agent；pytest,待补：复核AI对话截图；evidence/tests-final.txt为命令输出非截图
+11,复核故事家族与购后状态并修订数据,三个案例与对应评分要点,cases-v1.1；保留真实修改前后片段,dataset子agent；主session审阅,待补：数据复核AI对话截图；evidence/data-before.json及data-after.json
+12,最终离线验证、整理A–E及版本记录，初版Git提交,当前代码／数据／真实失败／截图,离线交付包；C真实输出与D真人评分明确待补,Codex主session；pytest；Git,待补：本步AI对话截图；待评界面见screenshots/evaluation/awaiting-evaluation.png
+13,用户提供新凭据后重启真实验证,新本地配置；原smoke相同输入,smoke-recheck成功三候选，关联原HTTP402失败,DeepSeek API；Codex主session,待补：本步真实AI对话截图；原始结果见evidence/runs/smoke-recheck-20261106
+14,六开发诊断，仅强化JSON格式做一次对照,diagnostic-v1；同模型参数、事实、六输入,v1结构5/6；v2结构6/6；保留原非法JSON，无人工质量评分,DeepSeek API；core辅助审阅,待补：对照AI聊天截图；evidence/ai-diagnostic-review.md
+15,冻结后首次正式五十例真实运行,formal-v1冻结清单；cases-v1.1；rubric-v1,outputs.csv包含150条真实候选；失败与缺失见status,共享批量生成；DeepSeek API,待补：本步AI对话截图；原始记录见evidence/runs/formal-v1
+16,实际浏览器生成、选稿与编辑验证；整理最终包,新本地界面及真实候选,机器稿与编辑稿分存；未填写真人评价,ui_eval；Edge/Playwright；Git,screenshots/application/real-three-candidates.png；real-saved-result-review-after-edit.png为既有结果复核，非新生成；AI对话待补
+17,仅重试首轮JSON结构失败例并补全最终交付表,AFTER-105相同输入和冻结配置,一次关联重试成功；首轮147条表保留，最终150条逐行标来源,DeepSeek API；主session；打包校验,待补：本步AI对话截图；outputs-first-attempt.csv与row-provenance.json

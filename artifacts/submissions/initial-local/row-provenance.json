@@ -1,0 +1,402 @@
+[
+  {
+    "case_id": "BD-001",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "94d8aa4a4fe57a8374fe9ac144c9ff8bf03b492c957392b8e8b58cf913f267ca"
+  },
+  {
+    "case_id": "BD-002",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "9fe2517dd1b48381bfa7c96e59705005e1318fd520b75d342e23b9acc6698b6e"
+  },
+  {
+    "case_id": "BD-003",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "68018a69f811d8db7e6e3bcdf3df453ed46e6d4c918d06e1a3ace5215d955044"
+  },
+  {
+    "case_id": "REC-001",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "91f280a52ff572947b3abc6dc8467e2af8c38191b40b9775a17d4bb3be30d06c"
+  },
+  {
+    "case_id": "REC-002",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "5791a935c9d5ffc7ba448b7e956a06a0845b6d6a2a00618aee8e3f7f727fd722"
+  },
+  {
+    "case_id": "REC-003",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "c3ed7895a648083b2801ecb053c32cdd1c8990e01c3681b743d63ea1db2b7da0"
+  },
+  {
+    "case_id": "REC-004",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "04690ac32c88a858b86795843927712a0560d04b4415baeadd97daba01b49e69"
+  },
+  {
+    "case_id": "AFTER-001",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "5c311e607811f9aa48ee2f24436c3f25d4b06f6ad080a841d2ac60848a90fea3"
+  },
+  {
+    "case_id": "AFTER-002",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "e21e96e4dd0e20f0b10f7ee0e66f2e8ea3218b470f9709b22c94773462b12538"
+  },
+  {
+    "case_id": "AFTER-003",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "e91020e86a70506728e8b1a5a3457277aa8488d19ce6c37a2c3d99674a8c8ced"
+  },
+  {
+    "case_id": "WAKE-001",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "29bee4286481b66b16b863d7a6ff172fce18d724a43dbb68fbdce97e30be165a"
+  },
+  {
+    "case_id": "WAKE-002",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "cc934350e5dd9a1b250031a087f755e5679b1e06d812ccc4cc23c58031823980"
+  },
+  {
+    "case_id": "WAKE-003",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "a8ae47dc72ba274abbfe81acbd184c0b2ef4eab8e2b54fb085c85366408c31dc"
+  },
+  {
+    "case_id": "EVENT-001",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "ca85d44cf11960a2ac99f564439ee72d2d466d739d20b0732eb3e10fc061eefe"
+  },
+  {
+    "case_id": "EVENT-002",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "2016cceb2b4963b110eee99cefb1c00b08eb1df13516dc6790d82410843f8395"
+  },
+  {
+    "case_id": "EVENT-003",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "2c26ac65b7fd110b6ee6be22e0f7d981e148c35d7b18bd329405dc772485e36d"
+  },
+  {
+    "case_id": "PRICE-001",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "582b91547cc73be4ce80c9d3a670885cf80a101f026e9fff69b40400f11cfd26"
+  },
+  {
+    "case_id": "PRICE-002",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "81f3535bb3ac960cf1754cf19c8d266ec6ffe740b226fbee8905d5e971589460"
+  },
+  {
+    "case_id": "PRICE-003",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "42e941d2b01db07c793c683990389962b43ba2a70de0eba06ba4a1db5f24b49a"
+  },
+  {
+    "case_id": "PRICE-004",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "ce5eed95a2fb03c7929fab560a1066e0afec85b42952b17353ce42ca911b589c"
+  },
+  {
+    "case_id": "BD-101",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "d361dd7096b9074fe177e49c9efe3122ca9375f02b6393326c1296ae17ae036a"
+  },
+  {
+    "case_id": "BD-102",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "ec4772665a034e9b8eb4e9833b62f7c961ea0c4c0cb5e630634d9bb4fa8ed282"
+  },
+  {
+    "case_id": "BD-103",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "7bf94f3cea3f44ce35909f92d962431da24b223c4bd1581981320841b1b76dbd"
+  },
+  {
+    "case_id": "BD-104",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "a71034715a94460bbeb7f03c6283b36d46008381f3b30b4ee4dd2aa937182065"
+  },
+  {
+    "case_id": "BD-105",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "2dd8a0735661b74fc3e354d3b1ea843352f9f40299f793e3068fc962cf885ef9"
+  },
+  {
+    "case_id": "REC-101",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "ec78a63dbbc0b57cc875337a78b8074d7e631d17a985308415d4c9657dbf6ba8"
+  },
+  {
+    "case_id": "REC-102",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "501373dc739a88c83e05099f31c00b03f14bd834f7aae1fa74d44a65750ba076"
+  },
+  {
+    "case_id": "REC-103",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "83f71b996a3d72e601eebfe83ffdabf4fb7f4d3a1bc169bebd98dcc768544e95"
+  },
+  {
+    "case_id": "REC-104",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "0e3a3fada6456e10d7802a4f89520e8db27582215e7d5cf3cb155438de87107a"
+  },
+  {
+    "case_id": "REC-105",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "5f07b8ad76809e4f9f039f768d78a1e31984776fca93a3a75b212633e0033524"
+  },
+  {
+    "case_id": "REC-106",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "9cd083381358c18cc373f1129771721e4c146d38d862e1ff04d167b70d61e0b9"
+  },
+  {
+    "case_id": "AFTER-101",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "07d1d9f8e930b23a78f4e6557ffe05893769d3917611e6d495cbb5b1086032db"
+  },
+  {
+    "case_id": "AFTER-102",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "d923fc1567d25c0b8e4fd6abe7f9f8f8d1bac3ed33f58699183fe1be6c847516"
+  },
+  {
+    "case_id": "AFTER-103",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "19bde3bc49fe081ebb2693c61e3ac3fe2c4f8349534773f31040da7bf244b4f4"
+  },
+  {
+    "case_id": "AFTER-104",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "a5f50ee72bc3a8d4b597b2a91cfa6bfa16039b4fa015e55b47e46e58e69c15d8"
+  },
+  {
+    "case_id": "AFTER-105",
+    "run_id": "formal-v1-technical-retry",
+    "first_run_id": "formal-v1",
+    "first_status": "technical_failure",
+    "selection_reason": "首轮JSON格式失败后一次同配置技术重试；首轮统计不变",
+    "result_sha256": "6394efafecf32e11cf239f83a0717fad835bc77709265254e6937dfd9060003e"
+  },
+  {
+    "case_id": "WAKE-101",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "0e1458abe3be905ba430d8f36513aeade9cab064f0719827962ec2d489ee9dbd"
+  },
+  {
+    "case_id": "WAKE-102",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "e12f935916b18ac15aa193ef823135bc3e3977ec36e2b6c1ad2958e90c612b0c"
+  },
+  {
+    "case_id": "WAKE-103",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "391e46f4314bcadb0a9d2e451e77b6ee58f31f7244f163ce2233d21f914829cc"
+  },
+  {
+    "case_id": "WAKE-104",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "49db91b9b1c43c1979703127b3f005891e1d3efcd07b29750a2cafa7b58dedea"
+  },
+  {
+    "case_id": "WAKE-105",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "c4b9de8021c8c31095b5ffc65337bd9a929c3e6fc051e2b68e529adea27e592d"
+  },
+  {
+    "case_id": "EVENT-101",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "5beb41a87484c1b8f1f2b7f286b874010e91e4720e0ebe6899548660fe667a4b"
+  },
+  {
+    "case_id": "EVENT-102",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "b31559afee4059174b20cb3aa5b152251cf9c140fa42ce987cf86b8e416ef2c3"
+  },
+  {
+    "case_id": "EVENT-103",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "a4f799f53dec2d0c80561a3855f7fb203f8f823e4e85ad8a08414560586cf1ee"
+  },
+  {
+    "case_id": "PRICE-101",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "5f17e8c6226a3d956f892ba4d31d2a5faa5f442328fdc9ed643ba8c05be8bf6e"
+  },
+  {
+    "case_id": "PRICE-102",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "bac5ef209c9176d1d3f938e2809da939f21d8bd827f2b2ae1609d4b46ba3e2de"
+  },
+  {
+    "case_id": "PRICE-103",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "2ff2dc9a68bbe203c2fbeea611cebfcfc103fb25c51d675786552174ef8a398e"
+  },
+  {
+    "case_id": "PRICE-104",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "52d5269d4164c33aa6baf1ba69162070cff73895e7b5ede2ef6e37afdb16f478"
+  },
+  {
+    "case_id": "PRICE-105",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "5cec6a32a8037eb98c9b90fdeea43c1d60b7a54b967149eb992a13b0c5989c34"
+  },
+  {
+    "case_id": "PRICE-106",
+    "run_id": "formal-v1",
+    "first_run_id": "formal-v1",
+    "first_status": "success",
+    "selection_reason": "首次固定配置输出",
+    "result_sha256": "489f77b2c3c5fe8a32151122e8076a550ff76a592f0b719125ef8e2c83de3aaf"
+  }
+]

@@ -1,0 +1,117 @@
+{
+  "run_id": "diagnostic-v2",
+  "case_id": "REC-001",
+  "status": "success",
+  "candidates": [
+    {
+      "candidate_id": "REC-001-C1",
+      "text": "林女士您好，这次是给妹妹选香，我先按她的偏好来。您提到她喜欢柑橘、不喜欢甜香，预算一千元以内。青岚50ml是柑橘与雪松气息，甜度低，标价980元，比较贴近这两点；砚泊30ml是干燥木质与焚香气息，甜度也低，标价780元，但柑橘感不是它的主要描述。两款都可在店里试闻，妹妹的喜好还需要她本人确认，不能保证她会喜欢。"
+    },
+    {
+      "candidate_id": "REC-001-C2",
+      "text": "林女士您好，妹妹喜欢柑橘、排斥甜香，预算一千元以内。按商品卡看，青岚50ml是柑橘与雪松气息、甜度低，标价980元，和柑橘偏好最接近；暮光50ml偏玫瑰与柔和木质、甜度中等，标价1080元，既超出预算，也未必符合她不喜欢甜香的倾向，所以这次我不先把它作为首选。若想多一个方向，砚泊30ml是低甜度的干燥木质与焚香，标价780元，但并非以柑橘为主。可以请妹妹到店试闻青岚，闻过再判断更稳妥。"
+    },
+    {
+      "candidate_id": "REC-001-C3",
+      "text": "林女士您好，给妹妹选的话，我会先把范围收在青岚50ml：商品卡写的是柑橘与雪松气息、甜度低，标价980元，在您说的一千元以内。雨白50ml是茶叶与鸢尾气息，标价1180元，超出预算，而且甜度未标注，我无法替您判断是否合她口味。妹妹喜欢柑橘、不喜欢甜香是这次的需求，和您自己偏好的甜花香不同，我没有把两者混在一起。若妹妹方便，可到店闻一下青岚；试闻只作线索，不能保证她一定喜欢。"
+    }
+  ],
+  "warnings": [],
+  "missing_fields": [],
+  "error": null,
+  "fact_references": [
+    {
+      "kind": "brand",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "policies",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "products",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "customers",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "events",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "product",
+      "id": "QINGLAN-50",
+      "source": "QIXU 合成商品卡",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "product",
+      "id": "MUGUANG-50",
+      "source": "QIXU 合成商品卡",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "product",
+      "id": "YUBAI-50",
+      "source": "QIXU 合成商品卡",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "product",
+      "id": "YANBO-30",
+      "source": "QIXU 合成商品卡",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "customer",
+      "id": "C001",
+      "source": "QIXU 合成客户档案",
+      "version": "fictional-v1"
+    }
+  ],
+  "provenance": {
+    "execution_mode": "real",
+    "created_at": "2026-11-06T15:53:59.480+08:00",
+    "versions": {
+      "code_sha256": "dba10275db9a477b799fc2614f42292d9a19293995799df50a7141a4fb66cf46",
+      "prompt_sha256": "60ba68231c4e911db506d6cc833855d4ad817273517eda953a8a118e1060abfe",
+      "facts_sha256": "7d52bf7ab22b2ead0f8436b31dc868d80422d74ae9f16f76b0e6ebea8365c235"
+    },
+    "model_config": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "base_url": "https://api.deepseek.com",
+      "temperature": 0.7,
+      "max_tokens": 1800,
+      "timeout_seconds": 90.0,
+      "thinking": {
+        "type": "disabled"
+      },
+      "response_format": {
+        "type": "json_object"
+      }
+    },
+    "model_call_count": 1,
+    "quality_status": "not_human_evaluated",
+    "returned_model": "deepseek-flash",
+    "usage": {
+      "prompt_tokens": 2257,
+      "completion_tokens": 391,
+      "total_tokens": 2648,
+      "prompt_tokens_details": {
+        "cached_tokens": 256
+      },
+      "prompt_cache_hit_tokens": 256,
+      "prompt_cache_miss_tokens": 2001
+    },
+    "model_elapsed_seconds": 3.311381099978462,
+    "elapsed_seconds": 3.321271700086072
+  }
+}

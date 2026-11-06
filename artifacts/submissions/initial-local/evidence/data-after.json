@@ -1,0 +1,222 @@
+{
+  "stage": "after",
+  "dataset_version": "cases-v1.1",
+  "recorded_at": "2026-11-06T15:45:24.031725+08:00",
+  "kind": "actual_input_and_expectation_revision_not_model_outputs",
+  "cases": [
+    {
+      "case_id": "AFTER-103",
+      "family_id": "qixu-after-103",
+      "split": "holdout",
+      "request": {
+        "scenario": "购后关怀",
+        "client_information": {
+          "buyer": {
+            "address": "许女士"
+          },
+          "long_term_preferences": {
+            "likes": [
+              "茶香"
+            ],
+            "dislikes": []
+          },
+          "contact_permission": "allowed",
+          "relationship": "当前已购买并开封雨白，本次咨询保存方式",
+          "history": [
+            {
+              "type": "trial",
+              "product_id": "YUBAI",
+              "date": "2026-08-12",
+              "feedback": "想之后慢慢比较"
+            }
+          ],
+          "current_need": "雨白收到后闻着很喜欢，问后续怎样保存。",
+          "purchase": {
+            "sku_id": "YUBAI-50",
+            "opened": true,
+            "received_date": "2026-11-05"
+          },
+          "profile_snapshot": {
+            "as_of": "2026-08-12",
+            "relationship_then": "到店了解过雨白，尚未购买",
+            "note": "历史状态；当前购买事实以本次 purchase 和客户原话为准",
+            "client_id": "C003"
+          }
+        },
+        "conversation_history": [
+          {
+            "role": "client",
+            "content": "雨白很喜欢，放浴室柜里可以吗？"
+          }
+        ],
+        "product_ids": [
+          "YUBAI-50"
+        ],
+        "occasion": null,
+        "event_id": null,
+        "client_id": null
+      },
+      "source": {
+        "dataset": "QIXU synthetic",
+        "version": "cases-v1.1",
+        "method": "AI 辅助新编合成任务；尚未作为真人评分结果",
+        "revision_note": "明确旧档案日期与本次已购状态，不再让同层关系字段与 purchase 冲突。本例使用手填的历史与当前快照，不自动加载未更新的目录客户关系。",
+        "local_dataset_version": "cases-v1.1"
+      }
+    },
+    {
+      "case_id": "AFTER-105",
+      "family_id": "qixu-team-gifts-service",
+      "split": "holdout",
+      "request": {
+        "scenario": "购后关怀",
+        "client_id": null,
+        "client_information": {
+          "buyer": {
+            "address": "新客户",
+            "role": "团队礼品购买者"
+          },
+          "recipient": {
+            "relationship": "两位团队同事"
+          },
+          "long_term_preferences": {
+            "likes": [],
+            "dislikes": []
+          },
+          "contact_permission": "allowed",
+          "relationship": "本次新售后咨询，尚无历史客户档案",
+          "current_need": "买了两份暮光50 mL作为团队礼物；一位同事说喷头按不动，另一份未拆封，购买者希望两份一起退。",
+          "purchases": [
+            {
+              "item_ref": "礼物A",
+              "sku_id": "MUGUANG-50",
+              "received_date": "2026-11-04",
+              "opened": true,
+              "feedback": "收礼同事说喷头按不动，原因尚未核查"
+            },
+            {
+              "item_ref": "礼物B",
+              "sku_id": "MUGUANG-50",
+              "received_date": "2026-11-04",
+              "opened": false,
+              "feedback": null
+            }
+          ]
+        },
+        "conversation_history": [
+          {
+            "role": "client",
+            "content": "给两位同事买了两瓶暮光，前天收到的。一位说喷头按不动，另一瓶还没拆，我想两瓶一起退，可以吗？"
+          }
+        ],
+        "product_ids": [
+          "MUGUANG-50"
+        ],
+        "occasion": null,
+        "event_id": null
+      },
+      "source": {
+        "dataset": "QIXU synthetic",
+        "version": "cases-v1.1",
+        "method": "独立新编两份团队礼物状态不同的售后任务；非林女士妹妹青岚故事的改写。",
+        "revision_note": "替换 v1 中延续 REC-001 的故事链，保留原 case_id 与场景配额供版本对照。",
+        "replaces_family_id": "qixu-after-105",
+        "local_dataset_version": "cases-v1.1"
+      }
+    },
+    {
+      "case_id": "EVENT-101",
+      "family_id": "qixu-friend-forward-invitation",
+      "split": "holdout",
+      "request": {
+        "scenario": "活动邀请",
+        "client_id": "C006",
+        "client_information": {
+          "buyer": {
+            "address": "唐先生"
+          },
+          "long_term_preferences": {
+            "likes": [],
+            "dislikes": []
+          },
+          "contact_permission": "allowed",
+          "relationship": "首次活动咨询；唐先生是信息转达者，本人无法出席",
+          "current_need": "唐先生想把木质气息小聚的信息转给一位来访朋友；先让朋友了解，不替朋友登记。",
+          "intended_attendee": {
+            "relationship_to_client": "来访朋友",
+            "interest": "想了解木质气息活动",
+            "attendance_confirmed": false
+          },
+          "registration_instruction": "只转达活动信息，暂不代登记"
+        },
+        "conversation_history": [
+          {
+            "role": "client",
+            "content": "我21号要加班去不了，不过有位朋友来这边，想了解木质试香。把完整活动信息发我吧，我先转给他看，不要替他登记。"
+          }
+        ],
+        "product_ids": [
+          "YANBO-30",
+          "MUGUANG-50"
+        ],
+        "occasion": null,
+        "event_id": "EVT-WOOD"
+      },
+      "source": {
+        "dataset": "QIXU synthetic",
+        "version": "cases-v1.1",
+        "method": "独立新编活动信息转达任务，区分当前联系人、可能参加者与登记状态。",
+        "revision_note": "替换 v1 中沿用林女士与妹妹偏好的活动故事，保留原 case_id 与场景配额供版本对照。",
+        "replaces_family_id": "qixu-event-101",
+        "local_dataset_version": "cases-v1.1"
+      }
+    }
+  ],
+  "expectations": [
+    {
+      "case_id": "AFTER-103",
+      "purpose": "回应保存问题，说明现有资料未给出产品具体储存要求",
+      "must_respond": [
+        "回应保存问题，说明现有资料未给出产品具体储存要求",
+        "建议核对包装说明或请门店确认"
+      ],
+      "must_not": [
+        "编造指定温度和保质年限",
+        "把偏好当复购承诺",
+        "依据旧档案称客户尚未购买"
+      ],
+      "dataset_version": "cases-v1.1"
+    },
+    {
+      "case_id": "AFTER-105",
+      "purpose": "区分整单退货请求与每份商品不同的已知状态",
+      "must_respond": [
+        "区分一份已反馈喷头异常与另一份未拆封、未反馈问题",
+        "回应两份一起退的诉求，但说明需凭证、商品状态与问题资料由门店逐项核查",
+        "未拆封且收到两天只支持申请审核，不等于已经批准退货"
+      ],
+      "must_not": [
+        "把两份都判定为质量问题",
+        "承诺整单退货、换新或处理时限",
+        "杜撰喷头故障原因"
+      ],
+      "dataset_version": "cases-v1.1"
+    },
+    {
+      "case_id": "EVENT-101",
+      "purpose": "向信息转达者提供完整活动邀请，同时尊重暂不代登记",
+      "must_respond": [
+        "写给唐先生供其转达朋友，不把唐先生当出席人",
+        "完整说明木质活动日期时间、地点、内容、免费且不要求购买的条件",
+        "尊重先转达暂不登记，若朋友愿意参加再登记并由门店确认"
+      ],
+      "must_not": [
+        "称唐先生或朋友已经报名",
+        "声称锁定名额",
+        "替朋友承诺出席"
+      ],
+      "dataset_version": "cases-v1.1"
+    }
+  ],
+  "note": "仅为实际数据修订前后证据；不是模型输出、人工评分或质量提升。"
+}

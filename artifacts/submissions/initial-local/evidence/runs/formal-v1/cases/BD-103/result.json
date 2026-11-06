@@ -1,0 +1,93 @@
+{
+  "run_id": "formal-v1",
+  "case_id": "BD-103",
+  "status": "success",
+  "candidates": [
+    {
+      "candidate_id": "BD-103-C1",
+      "text": "沈女士，您好。听说今天是您的生日，祝您生日快乐。安静地过一天也很好，不打扰您太久，只想把这份祝福送到。之前您试过的青榄，喜欢的话随时可以再来闻闻，不着急。"
+    },
+    {
+      "candidate_id": "BD-103-C2",
+      "text": "沈女士，生日快乐。今年您想安静度过，就不多说什么了，愿这一天按您喜欢的节奏来。往后若有具体的木质香试香信息，我再低频和您说一声。"
+    },
+    {
+      "candidate_id": "BD-103-C3",
+      "text": "沈女士，祝您生日快乐。知道您今年不安排聚会，就不多打扰了。您之前提到喜欢木质香，之后有合适的试香机会，我会简单告诉您，您按自己的节奏来就好。"
+    }
+  ],
+  "warnings": [],
+  "missing_fields": [],
+  "error": null,
+  "fact_references": [
+    {
+      "kind": "brand",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "policies",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "products",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "customers",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "events",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "customer",
+      "id": "C008",
+      "source": "QIXU 合成客户档案",
+      "version": "fictional-v1"
+    }
+  ],
+  "provenance": {
+    "execution_mode": "real",
+    "created_at": "2026-11-06T15:56:50.921+08:00",
+    "versions": {
+      "code_sha256": "dba10275db9a477b799fc2614f42292d9a19293995799df50a7141a4fb66cf46",
+      "prompt_sha256": "60ba68231c4e911db506d6cc833855d4ad817273517eda953a8a118e1060abfe",
+      "facts_sha256": "7d52bf7ab22b2ead0f8436b31dc868d80422d74ae9f16f76b0e6ebea8365c235"
+    },
+    "model_config": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "base_url": "https://api.deepseek.com",
+      "temperature": 0.7,
+      "max_tokens": 1800,
+      "timeout_seconds": 90.0,
+      "thinking": {
+        "type": "disabled"
+      },
+      "response_format": {
+        "type": "json_object"
+      }
+    },
+    "model_call_count": 1,
+    "quality_status": "not_human_evaluated",
+    "returned_model": "deepseek-flash",
+    "usage": {
+      "prompt_tokens": 1590,
+      "completion_tokens": 149,
+      "total_tokens": 1739,
+      "prompt_tokens_details": {
+        "cached_tokens": 256
+      },
+      "prompt_cache_hit_tokens": 256,
+      "prompt_cache_miss_tokens": 1334
+    },
+    "model_elapsed_seconds": 1.9746725999284536,
+    "elapsed_seconds": 1.9838433000259101
+  }
+}

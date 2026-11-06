@@ -51,6 +51,17 @@ Python + Streamlit 本地应用，覆盖生日节庆、产品推荐、购后关�
 
 汇总固定区分开发／保留与六场景，未评和缺失保留在分母；没有人评时不判内容通过。评价修订追加保存，汇总读取同一评价者最新修订，原评分保留。CLI `rate` 支持导入真实评价者按 `HumanCaseRating` 格式填写的一例 JSON。
 
+本轮正式首轮为 `formal-v1`（49/50 成功、147 条候选），唯一格式失败例 AFTER-105 的一次技术重试在 `formal-v1-technical-retry`。人评分别选择这两个运行、使用各自评价编号；首轮失败和补充重试成绩分开报告。最终交付表以 `row-provenance.json` 关联每条原稿，不能用重试成绩改写首轮成绩。
+
+需要重新整理本轮材料时：
+
+```powershell
+./.venv/Scripts/python.exe scripts/prepare_submission.py --run-id formal-v1 --freeze-id formal-v1 --retry-run-id formal-v1-technical-retry
+./.venv/Scripts/python.exe scripts/check_submission.py
+```
+
+更改源码后请重启 Streamlit，使已导入模块更新。`scripts/capture_*.py` 和 `review_saved_run.py` 是本轮验证辅助脚本；后者明确加载已有真实结果，只测试编辑保存，不是正式入口或新模型生成。
+
 ## 文件与边界
 
 - `src/qixu_advisor/generation.py` 是界面和批量共用入口；`data.py` 读取事实，`model.py` 仅封装一家 API，`records.py` 保存不可覆盖的机器记录与追加反馈。

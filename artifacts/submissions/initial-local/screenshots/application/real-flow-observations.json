@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-11-06T08:00:41.269322+00:00",
+  "purpose": "真实浏览器选稿和编辑验证；Codex 操作，不是真人评价",
+  "generation_button_clicks": 1,
+  "human_ratings_written": 0,
+  "source_preset": "REC-001",
+  "screenshots": [
+    "real-before-generation.png",
+    "real-three-candidates.png",
+    "real-after-edit.png",
+    "real-flow-error.png"
+  ],
+  "input_changes_created_runs": 0,
+  "input_changes_created_attempts": 0,
+  "run_id": "run-20261106T080044-fcfb87ee",
+  "case_id": "UI-001",
+  "status": "success",
+  "candidate_count": 3,
+  "attempt_count": 1,
+  "original_result_sha256": "859b7d88f4e1301415d02f018023d8e85630d4effff1c271149fb96b60cf0ab5",
+  "automation_error": "AssertionError: "
+}

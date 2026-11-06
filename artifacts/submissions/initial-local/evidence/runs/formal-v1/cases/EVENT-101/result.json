@@ -1,0 +1,111 @@
+{
+  "run_id": "formal-v1",
+  "case_id": "EVENT-101",
+  "status": "success",
+  "candidates": [
+    {
+      "candidate_id": "EVENT-101-C1",
+      "text": "唐先生您好，21号的活动信息整理如下，方便您转给朋友看：\n\n木质气息小聚\n时间：2026年11月21日（周六）16:00–17:00（北京时间）\n地点：栖序体验店·青禾路18号\n内容：试闻「砚泊」（干燥木质与焚香气息，30ml／780元）和「暮光」（玫瑰与柔和木质气息，50ml／1080元），交流个人的木质气息感受。\n参加条件：免费，不要求购买；需由本人登记意向，再由门店确认。\n\n目前我们这边没有替您朋友登记，也没有锁定名额。他看完如果想去，可以自己联系我们登记，最终以门店确认为准。"
+    },
+    {
+      "candidate_id": "EVENT-101-C2",
+      "text": "唐先生，按您说的，我只把活动信息发给您，不替朋友登记。\n\n木质气息小聚在2026年11月21日16:00–17:00，地点是栖序体验店·青禾路18号。现场会试闻「砚泊」和「暮光」，前者偏干燥木质与焚香，后者是玫瑰与柔和木质，主要是一起聊聊各自对木质气息的感受。活动免费，不要求购买，但参加需要本人登记意向、由门店确认。\n\n您朋友如果感兴趣，可以直接找我们登记；现在还没有为他预留或确认任何名额。"
+    },
+    {
+      "candidate_id": "EVENT-101-C3",
+      "text": "唐先生您好，知道您21号要加班，这场活动您可以转给来访的朋友参考：\n\n「木质气息小聚」\n2026年11月21日16:00–17:00，栖序体验店·青禾路18号。\n现场试闻「砚泊」与「暮光」，交流个人的木质气息感受。活动免费，不要求购买；需登记意向并由门店确认后才能参加。\n\n您朋友如果平时对木质气息有兴趣，可以先了解这两款的方向：砚泊是干燥木质与焚香气息，暮光是玫瑰与柔和木质气息。是否参加由他决定，我们暂未替他登记，也没有确认名额。"
+    }
+  ],
+  "warnings": [],
+  "missing_fields": [],
+  "error": null,
+  "fact_references": [
+    {
+      "kind": "brand",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "policies",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "products",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "customers",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "events",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "product",
+      "id": "YANBO-30",
+      "source": "QIXU 合成商品卡",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "product",
+      "id": "MUGUANG-50",
+      "source": "QIXU 合成商品卡",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "customer",
+      "id": "C006",
+      "source": "QIXU 合成客户档案",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "event",
+      "id": "EVT-WOOD",
+      "source": "QIXU 合成活动卡",
+      "version": "fictional-v1"
+    }
+  ],
+  "provenance": {
+    "execution_mode": "real",
+    "created_at": "2026-11-06T15:57:43.835+08:00",
+    "versions": {
+      "code_sha256": "dba10275db9a477b799fc2614f42292d9a19293995799df50a7141a4fb66cf46",
+      "prompt_sha256": "60ba68231c4e911db506d6cc833855d4ad817273517eda953a8a118e1060abfe",
+      "facts_sha256": "7d52bf7ab22b2ead0f8436b31dc868d80422d74ae9f16f76b0e6ebea8365c235"
+    },
+    "model_config": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "base_url": "https://api.deepseek.com",
+      "temperature": 0.7,
+      "max_tokens": 1800,
+      "timeout_seconds": 90.0,
+      "thinking": {
+        "type": "disabled"
+      },
+      "response_format": {
+        "type": "json_object"
+      }
+    },
+    "model_call_count": 1,
+    "quality_status": "not_human_evaluated",
+    "returned_model": "deepseek-flash",
+    "usage": {
+      "prompt_tokens": 2119,
+      "completion_tokens": 455,
+      "total_tokens": 2574,
+      "prompt_tokens_details": {
+        "cached_tokens": 256
+      },
+      "prompt_cache_hit_tokens": 256,
+      "prompt_cache_miss_tokens": 1863
+    },
+    "model_elapsed_seconds": 3.7060122000984848,
+    "elapsed_seconds": 3.7143374998122454
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "run_id": "run-20261106T080044-fcfb87ee",
+  "case_id": "UI-001",
+  "replayed_existing_result": true,
+  "new_model_calls": 0,
+  "human_ratings_written": 0,
+  "feedback_records_before": 1,
+  "feedback_records_after": 2,
+  "candidate_id": "UI-001-C2",
+  "feedback_action": "edit",
+  "feedback_operator": "Codex界面验证（非真人评价）",
+  "sent": false,
+  "edited_text_differs_from_machine": true,
+  "machine_result_unchanged": true,
+  "original_result_sha256": "859b7d88f4e1301415d02f018023d8e85630d4effff1c271149fb96b60cf0ab5",
+  "purpose": "使用临时验证页面复用advisor_page；加载先前已保存真实结果，验证编辑追加保存"
+}

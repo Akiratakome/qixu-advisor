@@ -1,0 +1,12 @@
+{
+  "started_at": "2026-11-06T07:57:14.826871+00:00",
+  "purpose": "真实浏览器选稿和编辑验证；Codex 操作，不是真人评价",
+  "generation_button_clicks": 0,
+  "human_ratings_written": 0,
+  "source_preset": "REC-001",
+  "screenshots": [
+    "real-startup-error.png"
+  ],
+  "automation_error": "TimeoutError: Locator.wait_for: Timeout 60000ms exceeded.\nCall log:\n  - waiting for get_by_role(\"button\", name=\"生成三条候选\", exact=True) to be visible\n",
+  "screenshot_note": "?????????????????????????????"
+}

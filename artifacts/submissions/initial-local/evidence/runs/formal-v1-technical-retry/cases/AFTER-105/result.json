@@ -1,0 +1,93 @@
+{
+  "run_id": "formal-v1-technical-retry",
+  "case_id": "AFTER-105",
+  "status": "success",
+  "candidates": [
+    {
+      "candidate_id": "AFTER-105-C1",
+      "text": "您好，我是栖序的顾问。两瓶暮光50 mL前天收到，其中一瓶同事反馈喷头按不动，另一瓶还没拆，您希望两瓶一起退，这个情况我记下了。喷头按不动需要门店核查，麻烦您先提供购买日期和订单凭证，并确认一下另一瓶的包装状态；已拆封那瓶可以拍喷头处的照片或短视频。我会把信息转给门店审核，具体能否一起处理、怎么处理，要以门店核查结果为准，我这边不先替您下结论。"
+    },
+    {
+      "candidate_id": "AFTER-105-C2",
+      "text": "您好，收到您的消息了。同事说喷头按不动，这个实际体验我们不会忽略，也不需要您先判断原因。方便的话，请把订单凭证、购买日期，以及未拆封那瓶的当前状态发我；已拆封那瓶麻烦拍下喷头和瓶口位置。未拆封且收到商品七天内可申请售后审核，您前天刚收到，时间上还在范围内；两瓶是否能一起退，需要门店根据商品状态核查后确认。我会按您希望两瓶一起退的诉求转达，结果出来前不向您保证处理方式或时间。"
+    },
+    {
+      "candidate_id": "AFTER-105-C3",
+      "text": "您好，我是栖序顾问。您买的两份暮光50 mL是团队礼物，喷头问题出在收礼同事那边，先不用让同事反复试按，避免进一步损坏。请提供购买日期、订单凭证，以及两瓶目前的拆封和包装状态；已拆封那瓶拍一下喷头，未拆封那瓶拍外包装即可。门店会核查喷头情况和售后条件，包括您提出两瓶一起退的意愿；是否符合条件、能否合并处理，需要核查后回复，我不能先承诺退换结果。资料齐了我尽快帮您转交。"
+    }
+  ],
+  "warnings": [],
+  "missing_fields": [],
+  "error": null,
+  "fact_references": [
+    {
+      "kind": "brand",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "policies",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "products",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "customers",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "events",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "product",
+      "id": "MUGUANG-50",
+      "source": "QIXU 合成商品卡",
+      "version": "fictional-v1"
+    }
+  ],
+  "provenance": {
+    "execution_mode": "real",
+    "created_at": "2026-11-06T15:59:51.234+08:00",
+    "versions": {
+      "code_sha256": "dba10275db9a477b799fc2614f42292d9a19293995799df50a7141a4fb66cf46",
+      "prompt_sha256": "60ba68231c4e911db506d6cc833855d4ad817273517eda953a8a118e1060abfe",
+      "facts_sha256": "7d52bf7ab22b2ead0f8436b31dc868d80422d74ae9f16f76b0e6ebea8365c235"
+    },
+    "model_config": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "base_url": "https://api.deepseek.com",
+      "temperature": 0.7,
+      "max_tokens": 1800,
+      "timeout_seconds": 90.0,
+      "thinking": {
+        "type": "disabled"
+      },
+      "response_format": {
+        "type": "json_object"
+      }
+    },
+    "model_call_count": 1,
+    "quality_status": "not_human_evaluated",
+    "returned_model": "deepseek-flash",
+    "usage": {
+      "prompt_tokens": 1703,
+      "completion_tokens": 384,
+      "total_tokens": 2087,
+      "prompt_tokens_details": {
+        "cached_tokens": 1536
+      },
+      "prompt_cache_hit_tokens": 1536,
+      "prompt_cache_miss_tokens": 167
+    },
+    "model_elapsed_seconds": 3.597598999971524,
+    "elapsed_seconds": 3.607924799900502
+  }
+}

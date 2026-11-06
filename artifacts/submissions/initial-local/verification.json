@@ -1,0 +1,44 @@
+{
+  "checked_at": "2026-11-06T16:07:12.787+08:00",
+  "package_integrity_checks_passed": true,
+  "output_rows": 50,
+  "output_columns": [
+    "Case ID",
+    "Scenario",
+    "Client information",
+    "Conversation history",
+    "Product information",
+    "Output 1",
+    "Output 2",
+    "Output 3"
+  ],
+  "real_candidates": 150,
+  "human_ratings": 0,
+  "images_opened": [
+    "screenshots/application/desktop-input-after.png",
+    "screenshots/application/desktop-input.png",
+    "screenshots/application/evaluation-awaiting-output-after.png",
+    "screenshots/application/evaluation-awaiting-output.png",
+    "screenshots/application/missing-input-after.png",
+    "screenshots/application/missing-input.png",
+    "screenshots/application/mobile-input-after.png",
+    "screenshots/application/mobile-input.png",
+    "screenshots/application/real-after-edit.png",
+    "screenshots/application/real-before-generation.png",
+    "screenshots/application/real-flow-error.png",
+    "screenshots/application/real-saved-result-review-after-edit.png",
+    "screenshots/application/real-saved-result-review-before-edit.png",
+    "screenshots/application/real-startup-error.png",
+    "screenshots/application/real-three-candidates.png",
+    "screenshots/evaluation/awaiting-evaluation.png",
+    "screenshots/evaluation/formal-awaiting-human.png"
+  ],
+  "missing_links": [],
+  "real_secret_detected_paths": [],
+  "errors": [],
+  "full_assignment_complete": false,
+  "remaining": [
+    "A历史及本轮真实AI对话截图",
+    "D的逐条真人评分及真实评价截图"
+  ]
+}

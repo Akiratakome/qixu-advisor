@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0",
+  "run_id": "smoke-20261106",
+  "created_at": "2026-11-06T15:36:20.978+08:00",
+  "execution_mode": "real",
+  "parent_run_id": null,
+  "case_ids": [
+    "SMOKE-001"
+  ],
+  "model_config": {
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "base_url": "https://api.deepseek.com",
+    "temperature": 0.7,
+    "max_tokens": 1800,
+    "timeout_seconds": 90.0,
+    "thinking": {
+      "type": "disabled"
+    },
+    "response_format": {
+      "type": "json_object"
+    }
+  },
+  "versions": {
+    "code_sha256": "c8b48bb6d59b102973e5a4958bf0ee3d837b7391b17d2c2b497f02a4787d1ffb",
+    "prompt_sha256": "3dafd16b0a9ee380adde4eb5eee659270e083697c76016a8f72e960b37ddd345",
+    "facts_sha256": "7d52bf7ab22b2ead0f8436b31dc868d80422d74ae9f16f76b0e6ebea8365c235"
+  },
+  "first_attempt_policy": "每个案例只调用一次；再次尝试须创建关联的新运行",
+  "quality_status": "not_human_evaluated"
+}

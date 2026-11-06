@@ -1,0 +1,93 @@
+{
+  "run_id": "smoke-recheck-20261106",
+  "case_id": "SMOKE-001",
+  "status": "success",
+  "candidates": [
+    {
+      "candidate_id": "SMOKE-001-C1",
+      "text": "林女士，按您说的妹妹喜欢柑橘、不喜欢甜，青岚可以先看看：50ml，980元，在您一千以内的预算里，商品卡上写的是柑橘与雪松气息，甜度标注为低。不过香调描述只能作参考，不能保证她一定喜欢。青岚支持到店试闻，若方便，可以让她先闻一下再决定。"
+    },
+    {
+      "candidate_id": "SMOKE-001-C2",
+      "text": "林女士，给妹妹选的话，青岚50ml是980元，符合一千以内的预算，描述为柑橘与雪松气息、甜度低，和您提到的柑橘偏好、排斥甜味方向比较接近。您自己喜欢甜花香，这次是送妹妹，所以我没有按您的偏好来推。是否需要我把到店试闻的信息发您，让她亲自闻过再定？"
+    },
+    {
+      "candidate_id": "SMOKE-001-C3",
+      "text": "林女士，预算一千以内、妹妹喜欢柑橘又不喜欢甜，目前资料里能对应上的是青岚50ml，980元，柑橘与雪松气息、甜度低。只是她具体喜欢哪类柑橘、是否接受雪松，我这边还不知道，所以不替您判断她一定会喜欢。青岚可到店试闻，您若愿意，可以先安排她试闻，再决定是否购买。"
+    }
+  ],
+  "warnings": [],
+  "missing_fields": [],
+  "error": null,
+  "fact_references": [
+    {
+      "kind": "brand",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "policies",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "products",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "customers",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "events",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "product",
+      "id": "QINGLAN-50",
+      "source": "QIXU 合成商品卡",
+      "version": "fictional-v1"
+    }
+  ],
+  "provenance": {
+    "execution_mode": "real",
+    "created_at": "2026-11-06T15:51:08.058+08:00",
+    "versions": {
+      "code_sha256": "dba10275db9a477b799fc2614f42292d9a19293995799df50a7141a4fb66cf46",
+      "prompt_sha256": "3dafd16b0a9ee380adde4eb5eee659270e083697c76016a8f72e960b37ddd345",
+      "facts_sha256": "7d52bf7ab22b2ead0f8436b31dc868d80422d74ae9f16f76b0e6ebea8365c235"
+    },
+    "model_config": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "base_url": "https://api.deepseek.com",
+      "temperature": 0.7,
+      "max_tokens": 1800,
+      "timeout_seconds": 90.0,
+      "thinking": {
+        "type": "disabled"
+      },
+      "response_format": {
+        "type": "json_object"
+      }
+    },
+    "model_call_count": 1,
+    "quality_status": "not_human_evaluated",
+    "returned_model": "deepseek-flash",
+    "usage": {
+      "prompt_tokens": 1491,
+      "completion_tokens": 266,
+      "total_tokens": 1757,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "prompt_cache_hit_tokens": 0,
+      "prompt_cache_miss_tokens": 1491
+    },
+    "model_elapsed_seconds": 3.075725599890575,
+    "elapsed_seconds": 3.0844914000481367
+  }
+}

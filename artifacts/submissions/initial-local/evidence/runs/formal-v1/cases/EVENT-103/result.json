@@ -1,0 +1,111 @@
+{
+  "run_id": "formal-v1",
+  "case_id": "EVENT-103",
+  "status": "success",
+  "candidates": [
+    {
+      "candidate_id": "EVENT-103-C1",
+      "text": "唐先生您好，我是栖序的顾问。您问的试香：11月14日周六下午14:00到15:00，在栖序体验店（青禾路18号），时长一小时，免费。内容是青岚与雨白的品牌气味描述介绍和现场试闻。参加需先登记意向，再由门店确认；目前还未预约，您方便的话我可以帮您登记意向。"
+    },
+    {
+      "candidate_id": "EVENT-103-C2",
+      "text": "唐先生您好，感谢您问起试香。这次「青岚午后试香」安排在11月14日14:00至15:00，地点是栖序体验店·青禾路18号，收费方面是免费的，整场约一小时。现场会对照青岚（柑橘与雪松气息）和雨白（茶叶与鸢尾气息）两支香，做气味描述介绍并试闻。需要登记意向后由门店确认，同行朋友也需登记。您若想参加，告诉我即可，我帮您登记，不当作已预约。"
+    },
+    {
+      "candidate_id": "EVENT-103-C3",
+      "text": "唐先生您好，关于时长和费用：活动是11月14日14:00—15:00，共一小时，免费参加。地点在栖序体验店·青禾路18号，内容是青岚与雨白的品牌气味描述比较和现场试闻。参加要先登记意向、由门店确认，同行朋友同样需要登记；现在还没有为您预约。您有兴趣的话，我可以先帮您登记意向，确认结果由门店回复。"
+    }
+  ],
+  "warnings": [],
+  "missing_fields": [],
+  "error": null,
+  "fact_references": [
+    {
+      "kind": "brand",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "policies",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "products",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "customers",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "events",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "product",
+      "id": "QINGLAN-50",
+      "source": "QIXU 合成商品卡",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "product",
+      "id": "YUBAI-50",
+      "source": "QIXU 合成商品卡",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "customer",
+      "id": "C006",
+      "source": "QIXU 合成客户档案",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "event",
+      "id": "EVT-CITRUS",
+      "source": "QIXU 合成活动卡",
+      "version": "fictional-v1"
+    }
+  ],
+  "provenance": {
+    "execution_mode": "real",
+    "created_at": "2026-11-06T15:57:50.652+08:00",
+    "versions": {
+      "code_sha256": "dba10275db9a477b799fc2614f42292d9a19293995799df50a7141a4fb66cf46",
+      "prompt_sha256": "60ba68231c4e911db506d6cc833855d4ad817273517eda953a8a118e1060abfe",
+      "facts_sha256": "7d52bf7ab22b2ead0f8436b31dc868d80422d74ae9f16f76b0e6ebea8365c235"
+    },
+    "model_config": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "base_url": "https://api.deepseek.com",
+      "temperature": 0.7,
+      "max_tokens": 1800,
+      "timeout_seconds": 90.0,
+      "thinking": {
+        "type": "disabled"
+      },
+      "response_format": {
+        "type": "json_object"
+      }
+    },
+    "model_call_count": 1,
+    "quality_status": "not_human_evaluated",
+    "returned_model": "deepseek-flash",
+    "usage": {
+      "prompt_tokens": 2023,
+      "completion_tokens": 314,
+      "total_tokens": 2337,
+      "prompt_tokens_details": {
+        "cached_tokens": 384
+      },
+      "prompt_cache_hit_tokens": 384,
+      "prompt_cache_miss_tokens": 1639
+    },
+    "model_elapsed_seconds": 3.2139127000700682,
+    "elapsed_seconds": 3.2237394000403583
+  }
+}

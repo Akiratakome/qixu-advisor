@@ -1,0 +1,105 @@
+{
+  "run_id": "diagnostic-v1",
+  "case_id": "PRICE-002",
+  "status": "success",
+  "candidates": [
+    {
+      "candidate_id": "PRICE-002-C1",
+      "text": "周先生，您说的这个情况我看到了。截图里容量看不清，确实不好直接比：青岚50ml是980元，100ml是1580元，两个规格价格不同。麻烦您再确认一下截图里是哪个容量；其他渠道的商品和价格情况我们这边不了解，也没法直接按那个价来。目前品牌这边没有可执行的折扣或价格匹配政策，这点我先跟您说明，免得让您误会。您方便的话把截图里容量那部分拍清楚发我，我帮您核对是不是同一个规格。"
+    },
+    {
+      "candidate_id": "PRICE-002-C2",
+      "text": "周先生，价格这块我如实说：青岚50ml标价980元，100ml标价1580元，都是人民币。您截图里容量没看清，同名不同容量不能直接比价，所以想先跟您核对清楚规格。另外，其他渠道的商品和价格有效期我们无法确认，目前也没有可以引用的优惠或价格匹配政策，我不能随口答应您一个价。您之前买过青岚50ml，如果只是想再确认下当时的价格和规格，我这边可以帮您核对。"
+    },
+    {
+      "candidate_id": "PRICE-002-C3",
+      "text": "周先生，理解您会比较价格。先帮您把信息对齐：青岚50ml是980元，100ml是1580元，按人民币标价。截图容量看不清的话，建议先确认是不是同款同规格，再谈价格差异会更准确。其他渠道的售价和商品情况我们不了解，也不便评价；目前品牌没有可用的折扣或价格匹配政策，这点我没办法替您申请或承诺。如果您愿意，可以把截图里容量信息补清楚，我帮您对照一下规格，避免拿不同容量做比较。"
+    }
+  ],
+  "warnings": [],
+  "missing_fields": [],
+  "error": null,
+  "fact_references": [
+    {
+      "kind": "brand",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "policies",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "products",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "customers",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "events",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "product",
+      "id": "QINGLAN-50",
+      "source": "QIXU 合成商品卡",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "product",
+      "id": "QINGLAN-100",
+      "source": "QIXU 合成商品卡",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "customer",
+      "id": "C002",
+      "source": "QIXU 合成客户档案",
+      "version": "fictional-v1"
+    }
+  ],
+  "provenance": {
+    "execution_mode": "real",
+    "created_at": "2026-11-06T15:51:54.021+08:00",
+    "versions": {
+      "code_sha256": "dba10275db9a477b799fc2614f42292d9a19293995799df50a7141a4fb66cf46",
+      "prompt_sha256": "3dafd16b0a9ee380adde4eb5eee659270e083697c76016a8f72e960b37ddd345",
+      "facts_sha256": "7d52bf7ab22b2ead0f8436b31dc868d80422d74ae9f16f76b0e6ebea8365c235"
+    },
+    "model_config": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "base_url": "https://api.deepseek.com",
+      "temperature": 0.7,
+      "max_tokens": 1800,
+      "timeout_seconds": 90.0,
+      "thinking": {
+        "type": "disabled"
+      },
+      "response_format": {
+        "type": "json_object"
+      }
+    },
+    "model_call_count": 1,
+    "quality_status": "not_human_evaluated",
+    "returned_model": "deepseek-flash",
+    "usage": {
+      "prompt_tokens": 1858,
+      "completion_tokens": 353,
+      "total_tokens": 2211,
+      "prompt_tokens_details": {
+        "cached_tokens": 128
+      },
+      "prompt_cache_hit_tokens": 128,
+      "prompt_cache_miss_tokens": 1730
+    },
+    "model_elapsed_seconds": 3.390511800069362,
+    "elapsed_seconds": 3.39757309993729
+  }
+}

@@ -1,0 +1,99 @@
+{
+  "run_id": "diagnostic-v1",
+  "case_id": "WAKE-001",
+  "status": "success",
+  "candidates": [
+    {
+      "candidate_id": "WAKE-001-C1",
+      "text": "沈女士您好，我是栖序 QIXU 的顾问。之前您到店试过青岚，说喜欢，只是不急着买，我记着。今天不催您决定，只是按您说的低频方式，发一条具体试香信息：青岚 50ml 为 980 元，柑橘与雪松气息，偏木质方向。若哪天想再闻一次，到店试闻即可，随时告诉我。"
+    },
+    {
+      "candidate_id": "WAKE-001-C2",
+      "text": "沈女士您好，隔了一段时间来问候一下。您之前试青岚时提到喜欢木质气息，这款的香调描述是柑橘与雪松，我仅作试香线索，不代表配方或留香表现。您目前没有购买计划，这完全没问题。之后有具体的到店试闻安排，我再简短告诉您，不打扰日常。"
+    },
+    {
+      "candidate_id": "WAKE-001-C3",
+      "text": "沈女士您好，我是栖序 QIXU 顾问。想起您七月来试过青岚，反馈是喜欢、暂不购买，所以这次只做一次轻问候。青岚 50ml 目前标价 980 元，可到店试闻；库存与个人留香表现我这边没有可确认的信息，不便多说。若您想再闻或了解其他木质方向，回我一句就好，不急。"
+    }
+  ],
+  "warnings": [],
+  "missing_fields": [],
+  "error": null,
+  "fact_references": [
+    {
+      "kind": "brand",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "policies",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "products",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "customers",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "events",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "product",
+      "id": "QINGLAN-50",
+      "source": "QIXU 合成商品卡",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "customer",
+      "id": "C008",
+      "source": "QIXU 合成客户档案",
+      "version": "fictional-v1"
+    }
+  ],
+  "provenance": {
+    "execution_mode": "real",
+    "created_at": "2026-11-06T15:51:48.293+08:00",
+    "versions": {
+      "code_sha256": "dba10275db9a477b799fc2614f42292d9a19293995799df50a7141a4fb66cf46",
+      "prompt_sha256": "3dafd16b0a9ee380adde4eb5eee659270e083697c76016a8f72e960b37ddd345",
+      "facts_sha256": "7d52bf7ab22b2ead0f8436b31dc868d80422d74ae9f16f76b0e6ebea8365c235"
+    },
+    "model_config": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "base_url": "https://api.deepseek.com",
+      "temperature": 0.7,
+      "max_tokens": 1800,
+      "timeout_seconds": 90.0,
+      "thinking": {
+        "type": "disabled"
+      },
+      "response_format": {
+        "type": "json_object"
+      }
+    },
+    "model_call_count": 1,
+    "quality_status": "not_human_evaluated",
+    "returned_model": "deepseek-flash",
+    "usage": {
+      "prompt_tokens": 1697,
+      "completion_tokens": 274,
+      "total_tokens": 1971,
+      "prompt_tokens_details": {
+        "cached_tokens": 128
+      },
+      "prompt_cache_hit_tokens": 128,
+      "prompt_cache_miss_tokens": 1569
+    },
+    "model_elapsed_seconds": 2.8037890000268817,
+    "elapsed_seconds": 2.812448399839923
+  }
+}

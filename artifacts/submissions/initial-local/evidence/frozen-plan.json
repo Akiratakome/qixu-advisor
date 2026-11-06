@@ -1,0 +1,46 @@
+{
+  "freeze_id": "formal-v1",
+  "created_at": "2026-11-06T07:55:47.496517+00:00",
+  "files": {
+    "data/cases/boundary.jsonl": "64f6a65871cb0904a7d01c67f8e004529ccbe6dfb4b23b71809c3e7fd206c7d9",
+    "data/cases/dev.jsonl": "7d9538f7c04b46ef675e01d2ab03d02cc867a8994972ae932a6a9a8e98c96f36",
+    "data/cases/expectations.jsonl": "441b6e29a573710cc2425611217d773592e96c1dabd2878900742a0a82e2a43d",
+    "data/cases/holdout.jsonl": "c3ef058764723bbc943db4d8918842d8df9d72b5eea2c862d44b96f34c927795",
+    "data/cases/manifest.json": "6f5624bd85cf59848bf86ffd8a7eb187192c4fce7ebcd98be2e99a1dbe711809",
+    "data/cases/rubric.json": "43e280c1503fceb606bb81ed09f7db992b6ceb6528622ece252319b7190aae67",
+    "data/fictional/brand.json": "88317ca6c03f5cc68ba59bfb776ba2377022e58089e92be7f2433bca0524124c",
+    "data/fictional/customers.json": "0008684f136e54de422aa99e3c4aa1d0f54fd050cd37c8f34a8e8a18e979cbe1",
+    "data/fictional/events.json": "5f1db5cdb7deccb321d350a22dd5acae30c8b0f5a83fc52bf8586a99955ac216",
+    "data/fictional/policies.json": "dfe5ce514b0ba102e7c2a2793e0b9d5af0e1d561ed2f10df88f1fb3eef74e4d7",
+    "data/fictional/products.json": "cb45e376c3a0fe3b85d2f7af37135215d74b611e097762f6e15e3665440311d1",
+    "data/references/ABCD-LICENSE.txt": "9d9f627ff66a341881df853824f56abdd9dae947de929cd6ce6d520a058d3b67",
+    "data/references/selected.jsonl": "e0b86c5f41f16e070a46a8d1aa436710068826cca4f0e3ff37470846b25f19ce",
+    "data/references/sources.jsonl": "6550720a41b3451741097a5b146cbd889fa542b1aeba32ea163c6ac611b66a3a",
+    "data/style_examples/approved.jsonl": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+    "src/qixu_advisor/__init__.py": "5977afd9dcfc65272ec30699377f517f094453b9e17ad33dbfa5205a1c21a204",
+    "src/qixu_advisor/app.py": "906a09616fb608069df5aa639157de0201963fc9e26c33a239a215ff1178522c",
+    "src/qixu_advisor/cli.py": "5eb910f735834b0664c0c8aea9863b393f040528bfdf0e50953d7253a911f2eb",
+    "src/qixu_advisor/data.py": "baca28bc937d15dbd24e73aaa7b1c0733d1298aa5502b8aa36fcbd76174e01b6",
+    "src/qixu_advisor/evaluation.py": "a086dc497c98bcf9f19e77ee57a1670c4ea2ea79e6e4727cd3d68af6de6c6595",
+    "src/qixu_advisor/generation.py": "c15048173e8564ced43fa0044ccb9e4b49ea1650ce5a210b4b8821c34870fe06",
+    "src/qixu_advisor/model.py": "c6caeee0c8440c114780ee1f602eb191e2f043a19330f6735486d7f01faa55da",
+    "src/qixu_advisor/models.py": "5f60a81d21f71e5100fdcdaa3fdc4cd7f145c89aef63ca0b6691f970088e54c7",
+    "src/qixu_advisor/prompts/scenarios.json": "688c087fa565a37c5a632fcb4271664fcd7d0e078837b5e93025f47baeb27ea8",
+    "src/qixu_advisor/prompts/system.txt": "13920f9979ec7de2dedd95f66e03c54c317c1a6fe2769367643703f311d39cb0",
+    "src/qixu_advisor/records.py": "1b63539f79ac1df20a3b7015fcac85117b38fa1bb50c9b57f397906469b3d097"
+  },
+  "model": {
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "base_url": "https://api.deepseek.com",
+    "temperature": 0.7,
+    "max_tokens": 1800,
+    "timeout_seconds": 90.0,
+    "thinking": {
+      "type": "disabled"
+    },
+    "response_format": {
+      "type": "json_object"
+    }
+  }
+}

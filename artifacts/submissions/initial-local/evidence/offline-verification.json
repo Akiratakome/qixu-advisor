@@ -1,0 +1,57 @@
+{
+  "checked_at": "2026-11-06T15:55:20.325+08:00",
+  "kind": "offline_software_verification",
+  "pytest_command": "python -m pytest -q",
+  "pytest_exit_code": 0,
+  "pytest_stdout": ".......................                                                  [100%]\n23 passed in 1.34s\n",
+  "dataset": {
+    "valid": true,
+    "cases": 50,
+    "counts": {
+      "dev": {
+        "生日与节庆": 3,
+        "产品推荐": 4,
+        "购后关怀": 3,
+        "沉睡唤醒": 3,
+        "活动邀请": 3,
+        "价格异议": 4
+      },
+      "holdout": {
+        "生日与节庆": 5,
+        "产品推荐": 6,
+        "购后关怀": 5,
+        "沉睡唤醒": 5,
+        "活动邀请": 3,
+        "价格异议": 6
+      }
+    },
+    "diagnostic_case_ids": [
+      "BD-001",
+      "REC-001",
+      "AFTER-002",
+      "WAKE-001",
+      "EVENT-001",
+      "PRICE-002"
+    ],
+    "human_ratings": "未由数据校验推断"
+  },
+  "versions": {
+    "code_sha256": "dba10275db9a477b799fc2614f42292d9a19293995799df50a7141a4fb66cf46",
+    "prompt_sha256": "60ba68231c4e911db506d6cc833855d4ad817273517eda953a8a118e1060abfe",
+    "facts_sha256": "7d52bf7ab22b2ead0f8436b31dc868d80422d74ae9f16f76b0e6ebea8365c235"
+  },
+  "lock_sha256": "93092f3013ed7ecd2ff4bb0d64a5fb73d3f2ddfca871e29e5e9329a78e1909ca",
+  "python": "3.12.15 (main, Oct 21 2026, 17:48:33) [MSC v.1944 64 bit (AMD64)]",
+  "packages": {
+    "streamlit": "1.67.0",
+    "pydantic": "2.14.3",
+    "httpx": "0.28.1",
+    "python-dotenv": "1.2.4",
+    "pytest": "9.2.0",
+    "playwright": "1.64.1"
+  },
+  "limitations": [
+    "测试替身及测试评分仅在临时目录，不是模型实测或人工评价",
+    "本脚本无模型网络调用，未生成正式候选"
+  ]
+}

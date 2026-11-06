@@ -1,0 +1,99 @@
+{
+  "run_id": "formal-v1",
+  "case_id": "WAKE-104",
+  "status": "success",
+  "candidates": [
+    {
+      "candidate_id": "WAKE-104-C1",
+      "text": "许女士您好，上次您在店里了解过雨白，说想自己慢慢比较，所以这段时间我没有再打扰。今天只是简单问候一声：之后如果您想再闻一次，或想聊聊茶香类的其他选择，随时跟我说就好，不着急。"
+    },
+    {
+      "candidate_id": "WAKE-104-C2",
+      "text": "许女士您好，想起您八月来店里试过雨白，当时提到想慢慢比较。我这边不催您做决定，只是留个口子——如果之后想确认雨白50ml的信息，或想约到店再闻一闻，您方便时告诉我就行。"
+    },
+    {
+      "candidate_id": "WAKE-104-C3",
+      "text": "许女士您好，好久没联系了。上次您试过雨白，说想先自己想想，我记着这句话，所以没有主动来问结果。今天只打个招呼：茶香这条线您如果还想再看看，或对雨白有想确认的地方，随时来问，我在。"
+    }
+  ],
+  "warnings": [],
+  "missing_fields": [],
+  "error": null,
+  "fact_references": [
+    {
+      "kind": "brand",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "policies",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "products",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "customers",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "events",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "product",
+      "id": "YUBAI-50",
+      "source": "QIXU 合成商品卡",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "customer",
+      "id": "C003",
+      "source": "QIXU 合成客户档案",
+      "version": "fictional-v1"
+    }
+  ],
+  "provenance": {
+    "execution_mode": "real",
+    "created_at": "2026-11-06T15:57:39.460+08:00",
+    "versions": {
+      "code_sha256": "dba10275db9a477b799fc2614f42292d9a19293995799df50a7141a4fb66cf46",
+      "prompt_sha256": "60ba68231c4e911db506d6cc833855d4ad817273517eda953a8a118e1060abfe",
+      "facts_sha256": "7d52bf7ab22b2ead0f8436b31dc868d80422d74ae9f16f76b0e6ebea8365c235"
+    },
+    "model_config": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "base_url": "https://api.deepseek.com",
+      "temperature": 0.7,
+      "max_tokens": 1800,
+      "timeout_seconds": 90.0,
+      "thinking": {
+        "type": "disabled"
+      },
+      "response_format": {
+        "type": "json_object"
+      }
+    },
+    "model_call_count": 1,
+    "quality_status": "not_human_evaluated",
+    "returned_model": "deepseek-flash",
+    "usage": {
+      "prompt_tokens": 1761,
+      "completion_tokens": 192,
+      "total_tokens": 1953,
+      "prompt_tokens_details": {
+        "cached_tokens": 384
+      },
+      "prompt_cache_hit_tokens": 384,
+      "prompt_cache_miss_tokens": 1377
+    },
+    "model_elapsed_seconds": 2.2921247999183834,
+    "elapsed_seconds": 2.3000714001245797
+  }
+}

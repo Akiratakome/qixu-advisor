@@ -1,0 +1,99 @@
+{
+  "run_id": "formal-v1",
+  "case_id": "PRICE-001",
+  "status": "success",
+  "candidates": [
+    {
+      "candidate_id": "PRICE-001-C1",
+      "text": "许女士您好，理解您对价格的顾虑。雨白50 mL目前标价是1180元人民币，这是商品卡上的价格。您8月12日到店试闻过，当时说想慢慢比较，这很正常——香水是需要时间判断的。目前我们这边没有可引用的折扣或优惠信息，所以不想给您不准确的承诺。如果您想再闻一次确认感受，四款香水可以到店试闻，您方便时告诉我即可。"
+    },
+    {
+      "candidate_id": "PRICE-001-C2",
+      "text": "许女士您好，谢谢您直接说出顾虑。雨白50 mL的标价是1180元人民币，我核对的是这个容量和规格。如果您在其他渠道看到不同的价格，那边的商品、真伪和服务情况我们这边无法确认，也不便替您比较；同款同规格以我们商品卡的人民币标价为准。目前没有可用的折扣或价格匹配政策，这点我如实说明。您可以先不急着决定，想再试闻或继续比较都可以。"
+    },
+    {
+      "candidate_id": "PRICE-001-C3",
+      "text": "许女士您好，1180元是雨白50 mL的标价，您觉得贵是实在的感受，我不会绕开这一点。目前品牌没有可引用的优惠、赠品或价格匹配政策，所以我不能给您打折的承诺。您之前试闻后说想慢慢比较，如果还想再感受一次，四款香水都可以到店试闻；如果您更想先放一放，也完全没问题，等您想聊时再联系我就好。"
+    }
+  ],
+  "warnings": [],
+  "missing_fields": [],
+  "error": null,
+  "fact_references": [
+    {
+      "kind": "brand",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "policies",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "products",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "customers",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "events",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "product",
+      "id": "YUBAI-50",
+      "source": "QIXU 合成商品卡",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "customer",
+      "id": "C003",
+      "source": "QIXU 合成客户档案",
+      "version": "fictional-v1"
+    }
+  ],
+  "provenance": {
+    "execution_mode": "real",
+    "created_at": "2026-11-06T15:56:33.694+08:00",
+    "versions": {
+      "code_sha256": "dba10275db9a477b799fc2614f42292d9a19293995799df50a7141a4fb66cf46",
+      "prompt_sha256": "60ba68231c4e911db506d6cc833855d4ad817273517eda953a8a118e1060abfe",
+      "facts_sha256": "7d52bf7ab22b2ead0f8436b31dc868d80422d74ae9f16f76b0e6ebea8365c235"
+    },
+    "model_config": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "base_url": "https://api.deepseek.com",
+      "temperature": 0.7,
+      "max_tokens": 1800,
+      "timeout_seconds": 90.0,
+      "thinking": {
+        "type": "disabled"
+      },
+      "response_format": {
+        "type": "json_object"
+      }
+    },
+    "model_call_count": 1,
+    "quality_status": "not_human_evaluated",
+    "returned_model": "deepseek-flash",
+    "usage": {
+      "prompt_tokens": 1767,
+      "completion_tokens": 309,
+      "total_tokens": 2076,
+      "prompt_tokens_details": {
+        "cached_tokens": 384
+      },
+      "prompt_cache_hit_tokens": 384,
+      "prompt_cache_miss_tokens": 1383
+    },
+    "model_elapsed_seconds": 3.199064699932933,
+    "elapsed_seconds": 3.20645790011622
+  }
+}

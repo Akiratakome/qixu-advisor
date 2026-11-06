@@ -1,0 +1,271 @@
+{
+  "run_id": "formal-v1",
+  "rater": "尚无真人评价",
+  "rating_source": "human",
+  "rubric_version": "rubric-v1",
+  "rating_records": 0,
+  "reviewed_cases": 0,
+  "reviewed_candidates": 0,
+  "snapshot_status": "运行时固定50例快照",
+  "standalone_reviewed_cases": 0,
+  "rater_role": [],
+  "splits": {
+    "dev": {
+      "全部": {
+        "denominator": 20,
+        "generated_cases": 20,
+        "reviewed_cases": 0,
+        "unreviewed_cases": 20,
+        "usable_cases": 0,
+        "diverse_cases": 0,
+        "serious_error_candidates": 0,
+        "reviewed_candidates": 0,
+        "decisions": {
+          "直接用": 0,
+          "小改可用": 0,
+          "实质改写": 0,
+          "弃用": 0
+        },
+        "failures": {}
+      },
+      "生日与节庆": {
+        "denominator": 3,
+        "generated_cases": 3,
+        "reviewed_cases": 0,
+        "unreviewed_cases": 3,
+        "usable_cases": 0,
+        "diverse_cases": 0,
+        "serious_error_candidates": 0,
+        "reviewed_candidates": 0,
+        "decisions": {
+          "直接用": 0,
+          "小改可用": 0,
+          "实质改写": 0,
+          "弃用": 0
+        },
+        "failures": {}
+      },
+      "产品推荐": {
+        "denominator": 4,
+        "generated_cases": 4,
+        "reviewed_cases": 0,
+        "unreviewed_cases": 4,
+        "usable_cases": 0,
+        "diverse_cases": 0,
+        "serious_error_candidates": 0,
+        "reviewed_candidates": 0,
+        "decisions": {
+          "直接用": 0,
+          "小改可用": 0,
+          "实质改写": 0,
+          "弃用": 0
+        },
+        "failures": {}
+      },
+      "购后关怀": {
+        "denominator": 3,
+        "generated_cases": 3,
+        "reviewed_cases": 0,
+        "unreviewed_cases": 3,
+        "usable_cases": 0,
+        "diverse_cases": 0,
+        "serious_error_candidates": 0,
+        "reviewed_candidates": 0,
+        "decisions": {
+          "直接用": 0,
+          "小改可用": 0,
+          "实质改写": 0,
+          "弃用": 0
+        },
+        "failures": {}
+      },
+      "沉睡唤醒": {
+        "denominator": 3,
+        "generated_cases": 3,
+        "reviewed_cases": 0,
+        "unreviewed_cases": 3,
+        "usable_cases": 0,
+        "diverse_cases": 0,
+        "serious_error_candidates": 0,
+        "reviewed_candidates": 0,
+        "decisions": {
+          "直接用": 0,
+          "小改可用": 0,
+          "实质改写": 0,
+          "弃用": 0
+        },
+        "failures": {}
+      },
+      "活动邀请": {
+        "denominator": 3,
+        "generated_cases": 3,
+        "reviewed_cases": 0,
+        "unreviewed_cases": 3,
+        "usable_cases": 0,
+        "diverse_cases": 0,
+        "serious_error_candidates": 0,
+        "reviewed_candidates": 0,
+        "decisions": {
+          "直接用": 0,
+          "小改可用": 0,
+          "实质改写": 0,
+          "弃用": 0
+        },
+        "failures": {}
+      },
+      "价格异议": {
+        "denominator": 4,
+        "generated_cases": 4,
+        "reviewed_cases": 0,
+        "unreviewed_cases": 4,
+        "usable_cases": 0,
+        "diverse_cases": 0,
+        "serious_error_candidates": 0,
+        "reviewed_candidates": 0,
+        "decisions": {
+          "直接用": 0,
+          "小改可用": 0,
+          "实质改写": 0,
+          "弃用": 0
+        },
+        "failures": {}
+      }
+    },
+    "holdout": {
+      "全部": {
+        "denominator": 30,
+        "generated_cases": 29,
+        "reviewed_cases": 0,
+        "unreviewed_cases": 30,
+        "usable_cases": 0,
+        "diverse_cases": 0,
+        "serious_error_candidates": 0,
+        "reviewed_candidates": 0,
+        "decisions": {
+          "直接用": 0,
+          "小改可用": 0,
+          "实质改写": 0,
+          "弃用": 0
+        },
+        "failures": {
+          "technical_failure": 1
+        }
+      },
+      "生日与节庆": {
+        "denominator": 5,
+        "generated_cases": 5,
+        "reviewed_cases": 0,
+        "unreviewed_cases": 5,
+        "usable_cases": 0,
+        "diverse_cases": 0,
+        "serious_error_candidates": 0,
+        "reviewed_candidates": 0,
+        "decisions": {
+          "直接用": 0,
+          "小改可用": 0,
+          "实质改写": 0,
+          "弃用": 0
+        },
+        "failures": {}
+      },
+      "产品推荐": {
+        "denominator": 6,
+        "generated_cases": 6,
+        "reviewed_cases": 0,
+        "unreviewed_cases": 6,
+        "usable_cases": 0,
+        "diverse_cases": 0,
+        "serious_error_candidates": 0,
+        "reviewed_candidates": 0,
+        "decisions": {
+          "直接用": 0,
+          "小改可用": 0,
+          "实质改写": 0,
+          "弃用": 0
+        },
+        "failures": {}
+      },
+      "购后关怀": {
+        "denominator": 5,
+        "generated_cases": 4,
+        "reviewed_cases": 0,
+        "unreviewed_cases": 5,
+        "usable_cases": 0,
+        "diverse_cases": 0,
+        "serious_error_candidates": 0,
+        "reviewed_candidates": 0,
+        "decisions": {
+          "直接用": 0,
+          "小改可用": 0,
+          "实质改写": 0,
+          "弃用": 0
+        },
+        "failures": {
+          "technical_failure": 1
+        }
+      },
+      "沉睡唤醒": {
+        "denominator": 5,
+        "generated_cases": 5,
+        "reviewed_cases": 0,
+        "unreviewed_cases": 5,
+        "usable_cases": 0,
+        "diverse_cases": 0,
+        "serious_error_candidates": 0,
+        "reviewed_candidates": 0,
+        "decisions": {
+          "直接用": 0,
+          "小改可用": 0,
+          "实质改写": 0,
+          "弃用": 0
+        },
+        "failures": {}
+      },
+      "活动邀请": {
+        "denominator": 3,
+        "generated_cases": 3,
+        "reviewed_cases": 0,
+        "unreviewed_cases": 3,
+        "usable_cases": 0,
+        "diverse_cases": 0,
+        "serious_error_candidates": 0,
+        "reviewed_candidates": 0,
+        "decisions": {
+          "直接用": 0,
+          "小改可用": 0,
+          "实质改写": 0,
+          "弃用": 0
+        },
+        "failures": {}
+      },
+      "价格异议": {
+        "denominator": 6,
+        "generated_cases": 6,
+        "reviewed_cases": 0,
+        "unreviewed_cases": 6,
+        "usable_cases": 0,
+        "diverse_cases": 0,
+        "serious_error_candidates": 0,
+        "reviewed_candidates": 0,
+        "decisions": {
+          "直接用": 0,
+          "小改可用": 0,
+          "实质改写": 0,
+          "弃用": 0
+        },
+        "failures": {}
+      }
+    }
+  },
+  "acceptance": {
+    "complete": false,
+    "content_passed": false,
+    "independent_review": "需另核对预先抽取的 12 例第二位真人评分与分歧；本汇总不自动认定独立验证"
+  },
+  "limitations": [
+    "未评或缺失案例保留在固定分母中",
+    "严重错误分母为实际审阅候选，缺失不算零错误",
+    "本摘要使用该评价者最新修订；原评分仍保留",
+    "合成案例结果不能推断真实客户转化或系统零风险"
+  ]
+}

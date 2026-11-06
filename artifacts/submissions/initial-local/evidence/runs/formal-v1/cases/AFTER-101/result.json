@@ -1,0 +1,99 @@
+{
+  "run_id": "formal-v1",
+  "case_id": "AFTER-101",
+  "status": "success",
+  "candidates": [
+    {
+      "candidate_id": "AFTER-101-C1",
+      "text": "叶女士，抱歉让您收到时外盒是压凹的状态，送礼确实会不方便。您方便拍一下外盒凹损的位置和整体包装吗？连同订单凭证一起，我帮您转给门店核查。瓶身目前未见问题、也还没拆封的话，是否符合具体处理条件需要门店确认，我不先替您下结论。"
+    },
+    {
+      "candidate_id": "AFTER-101-C2",
+      "text": "叶女士，看到您说外盒压凹、里面暂时没事。为了不耽误您送礼，建议先把外盒和瓶身的照片留好，并保留订单凭证。您这单是10月31日购买、11月6日收到，未拆封且收到商品七天内可以申请售后审核；能否处理、怎么处理要由门店根据照片和商品状态核查，我这边不能保证结果或时间。"
+    },
+    {
+      "candidate_id": "AFTER-101-C3",
+      "text": "叶女士，理解您在意送礼时的外观。外盒压凹属于包装破损类情况，可以请您提供购买日期、订单凭证，以及外盒凹损和瓶身状态的清晰照片，由门店核查。您提到瓶身暂未见问题，这一点也请一并拍进去。是否在售后审核范围内、后续如何处理，需要门店确认，我不便先作承诺。"
+    }
+  ],
+  "warnings": [],
+  "missing_fields": [],
+  "error": null,
+  "fact_references": [
+    {
+      "kind": "brand",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "policies",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "products",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "customers",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "events",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "product",
+      "id": "MUGUANG-50",
+      "source": "QIXU 合成商品卡",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "customer",
+      "id": "C005",
+      "source": "QIXU 合成客户档案",
+      "version": "fictional-v1"
+    }
+  ],
+  "provenance": {
+    "execution_mode": "real",
+    "created_at": "2026-11-06T15:57:15.790+08:00",
+    "versions": {
+      "code_sha256": "dba10275db9a477b799fc2614f42292d9a19293995799df50a7141a4fb66cf46",
+      "prompt_sha256": "60ba68231c4e911db506d6cc833855d4ad817273517eda953a8a118e1060abfe",
+      "facts_sha256": "7d52bf7ab22b2ead0f8436b31dc868d80422d74ae9f16f76b0e6ebea8365c235"
+    },
+    "model_config": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "base_url": "https://api.deepseek.com",
+      "temperature": 0.7,
+      "max_tokens": 1800,
+      "timeout_seconds": 90.0,
+      "thinking": {
+        "type": "disabled"
+      },
+      "response_format": {
+        "type": "json_object"
+      }
+    },
+    "model_call_count": 1,
+    "quality_status": "not_human_evaluated",
+    "returned_model": "deepseek-flash",
+    "usage": {
+      "prompt_tokens": 1771,
+      "completion_tokens": 257,
+      "total_tokens": 2028,
+      "prompt_tokens_details": {
+        "cached_tokens": 256
+      },
+      "prompt_cache_hit_tokens": 256,
+      "prompt_cache_miss_tokens": 1515
+    },
+    "model_elapsed_seconds": 3.0062907999381423,
+    "elapsed_seconds": 3.0146769999992102
+  }
+}

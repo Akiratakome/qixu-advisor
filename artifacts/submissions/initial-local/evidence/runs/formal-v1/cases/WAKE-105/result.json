@@ -1,0 +1,99 @@
+{
+  "run_id": "formal-v1",
+  "case_id": "WAKE-105",
+  "status": "success",
+  "candidates": [
+    {
+      "candidate_id": "WAKE-105-C1",
+      "text": "陈先生您好，看到您点赞了试香介绍，谢谢。之前您试过砚泊，30ml 是干燥木质与焚香气息、甜度低的那款。如果还想再闻，到店试闻可以随时安排；不方便也不用回复。"
+    },
+    {
+      "candidate_id": "WAKE-105-C2",
+      "text": "陈先生好，隔了一阵来问一句。砚泊 30ml 的香调还是干燥木质和焚香，甜度低，符合您之前偏好的方向。想再试闻的话告诉我，我帮您留个到店试闻的时间；暂时不用也完全没关系。"
+    },
+    {
+      "candidate_id": "WAKE-105-C3",
+      "text": "陈先生您好，留意到您对试香介绍点了赞。砚泊 30ml 目前标价 780 元，香调描述是干燥木质与焚香、甜度低。是否想再到店闻一次，您方便时回一句就好。"
+    }
+  ],
+  "warnings": [],
+  "missing_fields": [],
+  "error": null,
+  "fact_references": [
+    {
+      "kind": "brand",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "policies",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "products",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "customers",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "events",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "product",
+      "id": "YANBO-30",
+      "source": "QIXU 合成商品卡",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "customer",
+      "id": "C004",
+      "source": "QIXU 合成客户档案",
+      "version": "fictional-v1"
+    }
+  ],
+  "provenance": {
+    "execution_mode": "real",
+    "created_at": "2026-11-06T15:57:41.762+08:00",
+    "versions": {
+      "code_sha256": "dba10275db9a477b799fc2614f42292d9a19293995799df50a7141a4fb66cf46",
+      "prompt_sha256": "60ba68231c4e911db506d6cc833855d4ad817273517eda953a8a118e1060abfe",
+      "facts_sha256": "7d52bf7ab22b2ead0f8436b31dc868d80422d74ae9f16f76b0e6ebea8365c235"
+    },
+    "model_config": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "base_url": "https://api.deepseek.com",
+      "temperature": 0.7,
+      "max_tokens": 1800,
+      "timeout_seconds": 90.0,
+      "thinking": {
+        "type": "disabled"
+      },
+      "response_format": {
+        "type": "json_object"
+      }
+    },
+    "model_call_count": 1,
+    "quality_status": "not_human_evaluated",
+    "returned_model": "deepseek-flash",
+    "usage": {
+      "prompt_tokens": 1765,
+      "completion_tokens": 187,
+      "total_tokens": 1952,
+      "prompt_tokens_details": {
+        "cached_tokens": 384
+      },
+      "prompt_cache_hit_tokens": 384,
+      "prompt_cache_miss_tokens": 1381
+    },
+    "model_elapsed_seconds": 2.0668124000076205,
+    "elapsed_seconds": 2.07660000002943
+  }
+}

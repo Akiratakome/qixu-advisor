@@ -1,0 +1,15 @@
+{
+  "run_id": "formal-v1",
+  "ratings_submitted": 0,
+  "rating_control_values": [
+    "未评",
+    "未评",
+    "未评",
+    "未评",
+    "未评",
+    "未评",
+    "未评"
+  ],
+  "rater_field": "",
+  "purpose": "真实机器输出的人评待办界面；不是已完成人评的证据"
+}

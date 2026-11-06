@@ -1,0 +1,209 @@
+{
+  "version": "fictional-v1",
+  "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+  "as_of": "2026-11-06",
+  "fictional": true,
+  "records": [
+    {
+      "client_id": "C001",
+      "display_name": "林女士",
+      "buyer": {
+        "address": "林女士"
+      },
+      "long_term_preferences": {
+        "likes": [
+          "甜花香"
+        ],
+        "dislikes": []
+      },
+      "contact_permission": "allowed",
+      "relationship": "曾到店试香",
+      "history": [
+        {
+          "type": "trial",
+          "product_id": "MUGUANG",
+          "date": "2026-09-10",
+          "feedback": "喜欢柔和玫瑰气息"
+        }
+      ],
+      "version": "fictional-v1",
+      "source": "QIXU 合成客户档案",
+      "fictional": true
+    },
+    {
+      "client_id": "C002",
+      "display_name": "周先生",
+      "buyer": {
+        "address": "周先生"
+      },
+      "long_term_preferences": {
+        "likes": [
+          "柑橘",
+          "清爽木质"
+        ],
+        "dislikes": [
+          "浓郁花香"
+        ]
+      },
+      "contact_permission": "allowed",
+      "relationship": "购过青岚",
+      "history": [
+        {
+          "type": "purchase",
+          "sku_id": "QINGLAN-50",
+          "date": "2026-10-30"
+        }
+      ],
+      "version": "fictional-v1",
+      "source": "QIXU 合成客户档案",
+      "fictional": true
+    },
+    {
+      "client_id": "C003",
+      "display_name": "许女士",
+      "buyer": {
+        "address": "许女士"
+      },
+      "long_term_preferences": {
+        "likes": [
+          "茶香"
+        ],
+        "dislikes": []
+      },
+      "contact_permission": "allowed",
+      "relationship": "到店了解过雨白，未购买",
+      "history": [
+        {
+          "type": "trial",
+          "product_id": "YUBAI",
+          "date": "2026-08-12",
+          "feedback": "想之后慢慢比较"
+        }
+      ],
+      "version": "fictional-v1",
+      "source": "QIXU 合成客户档案",
+      "fictional": true
+    },
+    {
+      "client_id": "C004",
+      "display_name": "陈先生",
+      "buyer": {
+        "address": "陈先生"
+      },
+      "long_term_preferences": {
+        "likes": [
+          "干燥木质"
+        ],
+        "dislikes": [
+          "甜香"
+        ]
+      },
+      "contact_permission": "allowed",
+      "relationship": "熟悉品牌但偏好简短沟通",
+      "history": [
+        {
+          "type": "trial",
+          "product_id": "YANBO",
+          "date": "2026-09-01",
+          "feedback": "愿意收到试香信息"
+        }
+      ],
+      "version": "fictional-v1",
+      "source": "QIXU 合成客户档案",
+      "fictional": true
+    },
+    {
+      "client_id": "C005",
+      "display_name": "叶女士",
+      "buyer": {
+        "address": "叶女士"
+      },
+      "long_term_preferences": {
+        "likes": [
+          "玫瑰"
+        ],
+        "dislikes": []
+      },
+      "contact_permission": "allowed",
+      "relationship": "购过暮光",
+      "history": [
+        {
+          "type": "purchase",
+          "sku_id": "MUGUANG-50",
+          "date": "2026-10-31"
+        }
+      ],
+      "version": "fictional-v1",
+      "source": "QIXU 合成客户档案",
+      "fictional": true
+    },
+    {
+      "client_id": "C006",
+      "display_name": "唐先生",
+      "buyer": {
+        "address": "唐先生"
+      },
+      "long_term_preferences": {
+        "likes": [],
+        "dislikes": []
+      },
+      "contact_permission": "allowed",
+      "relationship": "首次联系，偏好尚未知",
+      "history": [],
+      "version": "fictional-v1",
+      "source": "QIXU 合成客户档案",
+      "fictional": true
+    },
+    {
+      "client_id": "C007",
+      "display_name": "顾女士",
+      "buyer": {
+        "address": "顾女士"
+      },
+      "long_term_preferences": {
+        "likes": [
+          "柑橘"
+        ],
+        "dislikes": []
+      },
+      "contact_permission": "denied",
+      "relationship": "明确拒绝后续主动联系",
+      "history": [
+        {
+          "type": "contact_preference",
+          "date": "2026-10-20",
+          "feedback": "请不要再主动发消息"
+        }
+      ],
+      "version": "fictional-v1",
+      "source": "QIXU 合成客户档案",
+      "fictional": true
+    },
+    {
+      "client_id": "C008",
+      "display_name": "沈女士",
+      "buyer": {
+        "address": "沈女士"
+      },
+      "long_term_preferences": {
+        "likes": [
+          "木质"
+        ],
+        "dislikes": []
+      },
+      "contact_permission": "allowed",
+      "relationship": "只愿低频接收具体试香信息",
+      "history": [
+        {
+          "type": "trial",
+          "product_id": "QINGLAN",
+          "date": "2026-07-18",
+          "feedback": "喜欢但目前不急着买"
+        }
+      ],
+      "version": "fictional-v1",
+      "source": "QIXU 合成客户档案",
+      "fictional": true
+    }
+  ]
+}

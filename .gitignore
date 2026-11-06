@@ -11,6 +11,7 @@ private/
 .streamlit/secrets.toml
 artifacts/runs/
 artifacts/evaluations/
+artifacts/submissions/*.zip
 artifacts/submissions/**/screenshots/process/*
 !artifacts/submissions/**/screenshots/process/.gitkeep
 *.pdf

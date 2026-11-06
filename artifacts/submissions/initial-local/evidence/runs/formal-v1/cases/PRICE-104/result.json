@@ -1,0 +1,99 @@
+{
+  "run_id": "formal-v1",
+  "case_id": "PRICE-104",
+  "status": "success",
+  "candidates": [
+    {
+      "candidate_id": "PRICE-104-C1",
+      "text": "唐先生，理解您会想很久。青岚50ml是980元，这个价格确实值得先确认自己会不会常用。我们目前没有可引用的折扣或赠品政策，所以我不想给您一个含糊的优惠预期。比较实际的一步是：青岚支持到店试闻，您可以先来闻一次，看它是否适合日常使用，再决定要不要买。需要的话我可以把试闻的相关信息发给您。"
+    },
+    {
+      "candidate_id": "PRICE-104-C2",
+      "text": "唐先生，您担心买了闲置，这个顾虑很实在。青岚50ml标价980元，价格以商品卡和人民币为准；目前没有可用的折扣、优惠码或价格匹配政策。如果您也在看其他渠道，建议核对是否同款同规格，因为其他渠道的商品、服务和价格有效期我们无法确认。就我们这边而言，可以先到店试闻青岚，觉得合适再考虑购买，这样更稳妥。"
+    },
+    {
+      "candidate_id": "PRICE-104-C3",
+      "text": "唐先生，价格上我不回避：青岚50ml目前是980元，暂时没有折扣或赠品可以给您。您提到怕放着不用，我建议先把“要不要买”放一放，先确认“会不会用”。青岚可以到店试闻，您来闻过之后，如果觉得不适合日常，不买也完全没问题。如果您愿意，我可以帮您了解试闻怎么安排。"
+    }
+  ],
+  "warnings": [],
+  "missing_fields": [],
+  "error": null,
+  "fact_references": [
+    {
+      "kind": "brand",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "policies",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "products",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "customers",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "events",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "product",
+      "id": "QINGLAN-50",
+      "source": "QIXU 合成商品卡",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "customer",
+      "id": "C006",
+      "source": "QIXU 合成客户档案",
+      "version": "fictional-v1"
+    }
+  ],
+  "provenance": {
+    "execution_mode": "real",
+    "created_at": "2026-11-06T15:58:03.528+08:00",
+    "versions": {
+      "code_sha256": "dba10275db9a477b799fc2614f42292d9a19293995799df50a7141a4fb66cf46",
+      "prompt_sha256": "60ba68231c4e911db506d6cc833855d4ad817273517eda953a8a118e1060abfe",
+      "facts_sha256": "7d52bf7ab22b2ead0f8436b31dc868d80422d74ae9f16f76b0e6ebea8365c235"
+    },
+    "model_config": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "base_url": "https://api.deepseek.com",
+      "temperature": 0.7,
+      "max_tokens": 1800,
+      "timeout_seconds": 90.0,
+      "thinking": {
+        "type": "disabled"
+      },
+      "response_format": {
+        "type": "json_object"
+      }
+    },
+    "model_call_count": 1,
+    "quality_status": "not_human_evaluated",
+    "returned_model": "deepseek-flash",
+    "usage": {
+      "prompt_tokens": 1673,
+      "completion_tokens": 284,
+      "total_tokens": 1957,
+      "prompt_tokens_details": {
+        "cached_tokens": 384
+      },
+      "prompt_cache_hit_tokens": 384,
+      "prompt_cache_miss_tokens": 1289
+    },
+    "model_elapsed_seconds": 3.6415868001058698,
+    "elapsed_seconds": 3.649843899998814
+  }
+}

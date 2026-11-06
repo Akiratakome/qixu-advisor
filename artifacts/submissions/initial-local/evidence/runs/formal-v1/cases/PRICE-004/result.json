@@ -1,0 +1,99 @@
+{
+  "run_id": "formal-v1",
+  "case_id": "PRICE-004",
+  "status": "success",
+  "candidates": [
+    {
+      "candidate_id": "PRICE-004-C1",
+      "text": "林女士您好，看到您问之前存的优惠图。那张图上的活动确实已经结束了，我这边目前没有可以继续使用的折扣或优惠码，所以不能直接按图上的内容帮您兑现，这点先跟您说明。您看的暮光50ml，当前商品卡标价是1080元人民币。如果您还留着那张图，可以发我看一下具体写的是什么，我帮您核对是不是同一规格、同一活动，再告诉您有没有可处理的方式。"
+    },
+    {
+      "candidate_id": "PRICE-004-C2",
+      "text": "林女士您好，谢谢您还记着之前的优惠图。需要如实跟您说：那张图对应的活动已经过期，目前品牌这边没有可引用的折扣、优惠码或价格匹配政策，我无法直接延续。暮光50ml现在的标价是1080元。您上次到店试过暮光，说喜欢它柔和的玫瑰气息，如果想再确认一下再决定也可以。另外，如果您是在别的渠道看到更低的价格，可以把渠道和同规格信息发我，我帮您核对是不是同一容量；其他渠道的商品和价格有效期我这边无法确认。"
+    },
+    {
+      "candidate_id": "PRICE-004-C3",
+      "text": "林女士您好，关于那张优惠图，我核实到的信息是：活动已在上周结束，当前没有可继续使用的优惠，我也不能自行给您补一个折扣，抱歉让您有这个疑问。暮光50ml按商品卡是1080元人民币。您之前来店试香时提到喜欢柔和的玫瑰气息，这点我记着；如果价格是您现在的主要顾虑，可以先不急着定，您把那张图发我，我帮您确认它写的是哪个规格和活动，再给您一个明确的下一步。"
+    }
+  ],
+  "warnings": [],
+  "missing_fields": [],
+  "error": null,
+  "fact_references": [
+    {
+      "kind": "brand",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "policies",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "products",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "customers",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "events",
+      "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "product",
+      "id": "MUGUANG-50",
+      "source": "QIXU 合成商品卡",
+      "version": "fictional-v1"
+    },
+    {
+      "kind": "customer",
+      "id": "C001",
+      "source": "QIXU 合成客户档案",
+      "version": "fictional-v1"
+    }
+  ],
+  "provenance": {
+    "execution_mode": "real",
+    "created_at": "2026-11-06T15:56:43.226+08:00",
+    "versions": {
+      "code_sha256": "dba10275db9a477b799fc2614f42292d9a19293995799df50a7141a4fb66cf46",
+      "prompt_sha256": "60ba68231c4e911db506d6cc833855d4ad817273517eda953a8a118e1060abfe",
+      "facts_sha256": "7d52bf7ab22b2ead0f8436b31dc868d80422d74ae9f16f76b0e6ebea8365c235"
+    },
+    "model_config": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "base_url": "https://api.deepseek.com",
+      "temperature": 0.7,
+      "max_tokens": 1800,
+      "timeout_seconds": 90.0,
+      "thinking": {
+        "type": "disabled"
+      },
+      "response_format": {
+        "type": "json_object"
+      }
+    },
+    "model_call_count": 1,
+    "quality_status": "not_human_evaluated",
+    "returned_model": "deepseek-flash",
+    "usage": {
+      "prompt_tokens": 1766,
+      "completion_tokens": 348,
+      "total_tokens": 2114,
+      "prompt_tokens_details": {
+        "cached_tokens": 384
+      },
+      "prompt_cache_hit_tokens": 384,
+      "prompt_cache_miss_tokens": 1382
+    },
+    "model_elapsed_seconds": 3.6402942000422627,
+    "elapsed_seconds": 3.6480023998301476
+  }
+}
