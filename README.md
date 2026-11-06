@@ -2,6 +2,18 @@
 
 Python + Streamlit 本地应用，覆盖生日节庆、产品推荐、购后关怀、沉睡唤醒、活动邀请、价格异议。每次显式提交生成三条独立完整的中文微信候选，顾问选稿、编辑、复制或弃用。品牌与业务资料全部虚构。
 
+**当前正在完成下一版方案，尚未进入 Web／数据库／多语言工程。** 本页只提供阅读入口和现有 v1 的实际命令。
+
+| 要了解什么 | 唯一阅读位置 |
+| --- | --- |
+| 做什么、界面与写作行为、什么算可用 | [产品设计](docs/product-design.md) |
+| 调研选型、架构、目录、接口、开发顺序、验收与 PDF A–E | [技术与工程计划](docs/technical-selection-report.md) |
+| Agent 的当前阶段和工作约束 | [AGENTS.md](AGENTS.md) |
+| 实际过程、检查及缺件 | [WORK_LOG.md](WORK_LOG.md)；初版材料见[交付清单](artifacts/submissions/initial-local/submission-checklist.md) |
+| 已替代的自查、迭代方案与调研原稿 | [集中归档包](artifacts/archives/planning-before-consolidation-20261106.zip)，内含原路径和 SHA 清单 |
+
+后续结论直接归入两份主报告，过程追加同一日志，不再新增平行的设计／自查／迭代报告。归档可供追溯，日常阅读无需展开。
+
 ## 在 Windows 启动
 
 在项目目录打开 PowerShell：
@@ -43,7 +55,7 @@ Python + Streamlit 本地应用，覆盖生日节庆、产品推荐、购后关�
 
 不要重复使用运行编号。确需技术重跑时用新的 `--run-id` 并指定 `--parent-run-id`；不能把多轮中最好的候选拼成首轮成绩。看过保留集结果后再调整方案，后续该集合只能称回归验证。冻结后修改代码、资料或参数需要重新冻结。
 
-人工评价页由真实评价者逐条填写，默认全部“未评”。主评审阅全部 150 条；第二位真人复核预先抽取的 12 例。不用 AI 意见替代人工评分。
+人工评价页由真实评价者逐条填写，默认全部“未评”。本项目选择主评审阅 150 条、第二位真人复核预抽 12 例；这是项目方法，并非 PDF 指定的人数要求。没有第二位时如实标单人评价，不用 AI 意见替代人工评分。
 
 ```powershell
 ./.venv/Scripts/python.exe -m qixu_advisor.cli summarize --evaluation-id eval-formal-v1 --run-id formal-v1 --rater 你的评价者标识
@@ -53,23 +65,14 @@ Python + Streamlit 本地应用，覆盖生日节庆、产品推荐、购后关�
 
 本轮正式首轮为 `formal-v1`（49/50 成功、147 条候选），唯一格式失败例 AFTER-105 的一次技术重试在 `formal-v1-technical-retry`。人评分别选择这两个运行、使用各自评价编号；首轮失败和补充重试成绩分开报告。最终交付表以 `row-provenance.json` 关联每条原稿，不能用重试成绩改写首轮成绩。
 
-需要重新整理本轮材料时：
-
-```powershell
-./.venv/Scripts/python.exe scripts/prepare_submission.py --run-id formal-v1 --freeze-id formal-v1 --retry-run-id formal-v1-technical-retry
-./.venv/Scripts/python.exe scripts/check_submission.py
-```
+`scripts/prepare_submission.py` 和 `scripts/check_submission.py` 是初版历史辅助脚本，均硬编码 `initial-local/`；后者也会重写 verification.json，并非只读。它们只能在恢复副本中复现，不能对当前冻结包重跑。新版工程须先支持新 submission_id，并让只读检查与报告写入分开，再生成新材料；本轮不改脚本。
 
 更改源码后请重启 Streamlit，使已导入模块更新。`scripts/capture_*.py` 和 `review_saved_run.py` 是本轮验证辅助脚本；后者明确加载已有真实结果，只测试编辑保存，不是正式入口或新模型生成。
 
-## 文件与边界
+## 保存与恢复
 
-- `src/qixu_advisor/generation.py` 是界面和批量共用入口；`data.py` 读取事实，`model.py` 仅封装一家 API，`records.py` 保存不可覆盖的机器记录与追加反馈。
-- `data/fictional/` 是 4 款香水、6 SKU、8 客户、2 活动和政策；`data/cases/` 是 20 开发、30 保留及 4 边界例。预期与量表只用于评价。少量 ABCD 改写仅在开发集，来源与许可证在 `data/references/`。
-- `artifacts/runs/<run_id>/cases/<case_id>/` 保存 `input.json`、`attempts.jsonl`、`result.json`；有顾问处理时另存 `feedback.jsonl`。manifest 保存配置和源码／提示／事实摘要。
-- `artifacts/evaluations/` 保存冻结版本、量表快照、真人评分与汇总；`artifacts/submissions/initial-local/` 是本轮交付索引与证据；`WORK_LOG.md` 记录真实开发过程。
-- 数据库、微信发送和调度尚未实现；后续从独立资料读取、生成与记录模块接入，不把业务 ID 当微信账号。
+目录及数据职责统一见[技术报告](docs/technical-selection-report.md#data-paths)。原始运行、人评和 `initial-local` 提交证据不作为缓存清理；本轮文档整理没有改变它们。新版本完成后另建提交目录。
 
-规则检查仅能发现部分明确规格／价格矛盾，不能证明人物理解、推荐合理性、语气和组内差异合格。自然语言中的联系意愿仍需顾问核对并设置联系意愿字段。
+初版恢复标签为 `qixu-v1-review-baseline-20261106`（77b5789），本地完整备份在 `artifacts/backups/20261106-pre-iteration/`，见[恢复说明](artifacts/backups/20261106-pre-iteration/RESTORE.md)。当前文档归档基线为 7523aee。先在新目录检视旧版，避免覆盖后来修改；密钥不在备份中。
 
-当前真实运行、离线验证与 A–E 各自完成情况，以 [交付清单](artifacts/submissions/initial-local/submission-checklist.md) 为准。
+规则检查不能证明文案可用。既有 50 例已被审阅，后续只作回归；真人评分和历史 AI 步骤截图仍待补。最新方案与当前材料状态统一见[技术报告 A–E](docs/technical-selection-report.md#submission-package)。

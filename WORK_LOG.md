@@ -83,3 +83,16 @@
 - 独立复核确认方案未把待做功能、拟写样例或旧输出记为新结果；补入 PDF 的提交链接免账号查看要求，未来与受控业务工作台分开。附件中的投递地址不构成本轮发送授权，本轮没有发送或发布。
 - 备份摘要、580 文件 ZIP、方案本地链接与 docs 仅两份报告检查通过；git diff 核对 src、data、docs、tests、原提交材料和依赖文件与基线一致。结果保存为本轮 verification.json。本轮仅改方案记录，未重复跑程序测试；既有 23 项通过只作为历史记录。
 - A 历史 AI 步骤截图、D 真人评价仍待补；C 保留首次 49/50 与关联重试形成的最终 150 条。方案中的新功能和自然度改善尚未实施，E 不据此宣称修复成功。旧 initial-local 包保持冻结。
+
+## 2026-11-06 17:19 · 先方案后工程、技术选型与文档收敛
+
+- 用户要求先调研选型、规划架构／路径／接口，再自查汇报，集中核心文档。本轮仅处理方案与文件整理，没有修改应用、依赖、合成数据、旧运行或提交证据，没有部署、发信或模型调用。
+- 继续使用 research 技能，子 agent 核验 React／TypeScript／Vite、FastAPI 同步入口、sqlite3、uv／npm、浏览器复制、单实例持久部署的一手文档；主 session 核验 DeepSeek 当前接口，另一 agent 重读 Challenge_Brief.pdf 与 requirement.txt。临时调研放 .cache/planning-consolidation/，有效结论直接并入技术报告，不新增正式研究文档。
+- 明确下一版方案：React／TypeScript／Vite + FastAPI／Uvicorn + 既有 Python／Pydantic／DeepSeek 核心 + sqlite3。保留单供应商、单实例与文件证据，不预建 ORM、向量库、流程平台。源码／事实根与可写运行根分离；接口含会话版本、幂等键、业务状态、草稿修订与实际复制正文。
+- 在改写前，将基线 7523aee 的 12 份上下文、两份报告、DESIGN 和审阅资料保存为 artifacts/archives/planning-before-consolidation-20261106.zip，内部清单逐文件 SHA 核对通过，压缩包 SHA-256 为 f74d53dec261c26e2cf0ca4c33f11f9774fc1de0f98c82a70e848ab569cffafb。有效内容归入两份主报告后，再核对 7 个待移除文件与归档逐字节一致，只删除这些散件及空 reviews 目录。原初版完整备份仍保留。
+- 产品报告集中场景、工作台行为、语言语气、人物／临时与长期资料、偏好和可用定义；技术报告集中选型来源、架构图、模块路径、HTTP／内部合同、S0–S5 路线、实验、验收及 A–E。AGENTS 明确当前仅方案阶段、不得按旧 prompt 自动开工，后续结论归两份报告；README 成为唯一阅读／操作入口，WORK_LOG 仍是唯一日志。旧 DESIGN 偏好已合并产品报告。
+- 文档首次经 PowerShell 管道写 Python 时中文被替换为问号；发现后停止该写法，用显式 UTF-8 原文重写并读回检查，最终规范为 UTF-8/LF。归档在这次写入之前完成，原稿未受影响；运行时文件未改。
+- 两位独立 agent 完成需求／PDF 与技术交接复核。修正了旧文档将“未见严重错误”读成成绩的表述、旧保留集状态、模块设计顺序；保持原验收门槛用于回归，新组另冻结；补回现场新输入要求。全数人评、24/30 和 12 例复核明确为项目方法，不冒称 PDF 规定。
+- 自查发现 prepare_submission.py 会覆盖初版包，继续读代码发现 check_submission.py 也会写 verification.json；README 将两者标为仅供恢复副本复现，S4 先改为新 submission_id 并分离只读检查。此轮没有运行这两份脚本、修改它们或改写初版材料。
+- 技术复核补齐 product_ids／event_id／occasion 等输入归属、幂等旧键优先与原子占位、数据库为新版草稿动作真值、反馈导出及 copied_text 留证。两位复核 agent 确认修订后无影响当前方案交接的实质遗漏；不把方案通过当工程或内容质量通过。
+- 已检查核心文档本地链接／锚点与中文编码，docs 仍两份，归档 CRC／12 文件摘要一致；git diff 确认 src、data、scripts、tests、依赖、旧 submissions 与基线未变。本轮不重复程序测试，既有 23 项仅作历史结果。A 的真实 AI 步骤截图与项目约定真人评价仍待补，C 的首轮／重试来源不变；没有新效果或新评分。
