@@ -12,6 +12,7 @@ private/
 artifacts/runs/
 artifacts/evaluations/
 artifacts/submissions/*.zip
+artifacts/backups/
 artifacts/submissions/**/screenshots/process/*
 !artifacts/submissions/**/screenshots/process/.gitkeep
 *.pdf
