@@ -83,6 +83,14 @@ else:
     freeze_plan(freeze_id, root=ROOT)
 shutil.copy2(freeze, EVIDENCE / "frozen-plan.json")
 shutil.copytree(ROOT / "data", EVIDENCE / "dataset", dirs_exist_ok=True)
+implementation = EVIDENCE / "implementation"
+shutil.copytree(ROOT / "src", implementation / "src", dirs_exist_ok=True,
+                ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+shutil.copytree(ROOT / "data/fictional", implementation / "data/fictional", dirs_exist_ok=True)
+for filename in ("pyproject.toml", "uv.lock", ".python-version"):
+    shutil.copy2(ROOT / filename, implementation / filename)
+if source_versions(implementation) != source_versions(ROOT):
+    raise ValueError("交付中的实现快照与运行源码／提示／事实字节不一致")
 real_runs = []
 for directory in sorted((ROOT / "artifacts/runs").iterdir()):
     manifest_file = directory / "manifest.json"
@@ -110,6 +118,7 @@ version_info = {
     "scope": "本地应用与真实运行；人工评价和AI对话截图仍待补" if args.run_id else "离线准备；真实输出与人工评价待补",
     "implementation_commit": commit.stdout.strip() if commit.returncode == 0 else None,
     "implementation_versions": source_versions(ROOT),
+    "exact_implementation_snapshot": "evidence/implementation/（保存运行时原始字节，避免Git换行转换影响摘要；案例资料另见evidence/dataset）",
     "dependency_lock_sha256": hashlib.sha256((ROOT / "uv.lock").read_bytes()).hexdigest(),
     "cases_version": json.loads((ROOT / "data/cases/manifest.json").read_text(encoding="utf-8"))["version"],
     "rubric_version": json.loads((ROOT / "data/cases/rubric.json").read_text(encoding="utf-8"))["version"],

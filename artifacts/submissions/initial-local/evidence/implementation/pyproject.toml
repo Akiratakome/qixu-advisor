@@ -1,0 +1,28 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "qixu-advisor"
+version = "0.1.0"
+description = "栖序 QIXU 六场景香水顾问写作助手"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "streamlit>=1.50,<2",
+  "pydantic>=2.12,<3",
+  "httpx>=0.28,<0.29",
+  "python-dotenv>=1.1,<2",
+]
+
+[project.scripts]
+qixu = "qixu_advisor.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8,<10", "pypdf>=6,<7", "playwright>=1.55,<2"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/qixu_advisor"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

@@ -1,13 +1,14 @@
 {
-  "prepared_at": "2026-11-06T16:06:47.089+08:00",
+  "prepared_at": "2026-11-06T16:09:28.529+08:00",
   "submission_id": "initial-local",
   "scope": "本地应用与真实运行；人工评价和AI对话截图仍待补",
-  "implementation_commit": "adb79b2fd37758626839b7c4b97a58eba2330f46",
+  "implementation_commit": "bb82463a448204c81e12dbeb5bb7de3d1dbc5fbe",
   "implementation_versions": {
     "code_sha256": "dba10275db9a477b799fc2614f42292d9a19293995799df50a7141a4fb66cf46",
     "prompt_sha256": "60ba68231c4e911db506d6cc833855d4ad817273517eda953a8a118e1060abfe",
     "facts_sha256": "7d52bf7ab22b2ead0f8436b31dc868d80422d74ae9f16f76b0e6ebea8365c235"
   },
+  "exact_implementation_snapshot": "evidence/implementation/（保存运行时原始字节，避免Git换行转换影响摘要；案例资料另见evidence/dataset）",
   "dependency_lock_sha256": "93092f3013ed7ecd2ff4bb0d64a5fb73d3f2ddfca871e29e5e9329a78e1909ca",
   "cases_version": "cases-v1.1",
   "rubric_version": "rubric-v1",

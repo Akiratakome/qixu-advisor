@@ -2,3 +2,5 @@
 *.png binary
 *.jpg binary
 *.pdf binary
+# 证据快照保持运行时原始字节；避免换行转换改变已记录的SHA-256。
+artifacts/submissions/** -text whitespace=cr-at-eol

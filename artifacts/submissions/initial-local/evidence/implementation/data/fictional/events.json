@@ -1,0 +1,38 @@
+{
+  "version": "fictional-v1",
+  "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
+  "as_of": "2026-11-06",
+  "fictional": true,
+  "records": [
+    {
+      "event_id": "EVT-CITRUS",
+      "name": "青岚午后试香",
+      "start_at": "2026-11-14T14:00:00+08:00",
+      "end_at": "2026-11-14T15:00:00+08:00",
+      "timezone": "Asia/Shanghai",
+      "location": "栖序虚构体验店·青禾路18号",
+      "content": "比较青岚与雨白的品牌气味描述并现场试闻",
+      "conditions": "免费；需登记意向并由门店确认；同行朋友也需登记",
+      "capacity": null,
+      "available_slots": null,
+      "booking_status": "未预约",
+      "version": "fictional-v1",
+      "source": "QIXU 合成活动卡"
+    },
+    {
+      "event_id": "EVT-WOOD",
+      "name": "木质气息小聚",
+      "start_at": "2026-11-21T16:00:00+08:00",
+      "end_at": "2026-11-21T17:00:00+08:00",
+      "timezone": "Asia/Shanghai",
+      "location": "栖序虚构体验店·青禾路18号",
+      "content": "试闻砚泊与暮光，交流个人的木质气息感受",
+      "conditions": "免费；需登记意向并由门店确认；不要求购买",
+      "capacity": null,
+      "available_slots": null,
+      "booking_status": "未预约",
+      "version": "fictional-v1",
+      "source": "QIXU 合成活动卡"
+    }
+  ]
+}
