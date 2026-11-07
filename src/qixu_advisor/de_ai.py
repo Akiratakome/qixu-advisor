@@ -33,7 +33,7 @@ _CLAUSE_SPLIT_RE = re.compile(r"[，,。！？!?；;]+")
 _CJK_RUN_RE = re.compile(r"[\u4e00-\u9fff]{10,}")
 _CLIENT_ROLES = {"client", "customer", "user"}
 _NORMALIZE_RE = re.compile(r"[\s，,。！？!?；;：:、·…—–\-～~“”‘’「」『』（）()《》<>【】\[\]…]")
-_BIRTHDAY_PROMO_RE = re.compile(r"青岚|暮光|雨白|砚泊|试闻|到店|购买|上新|优惠|活动")
+_BIRTHDAY_PROMO_RE = re.compile(r"试闻|到店|购买|上新|优惠|活动|折扣|推荐|比较|登记|留个位置|名额")
 
 # 清洗规则：仅这三类高置信清理；短语后须跟句读或文本结尾，避免切断仍在继续的句子。
 _CLOSE_CLEAN_RE = re.compile(r"[，,；;]?(?:" + _CLOSING_PHRASES + r")(?=[，,；;。！？!?]|$)[，,；;。！？!?]?")
@@ -100,12 +100,12 @@ def _context_duplication_hits(text: str, conversation_history: list[dict]) -> li
 
 
 def _scenario_hits(text: str, scenario: str | None) -> list[tuple[int, dict]]:
-    """生日与节庆场景：候选中出现商品名或推销词时仅报告，不修改文本。"""
+    """生日与节庆场景：候选中出现推销词时仅报告（基于事实的商品名个性化提及不算），不修改文本。"""
     if scenario != "生日与节庆":
         return []
     hits: list[tuple[int, dict]] = []
     for match in _BIRTHDAY_PROMO_RE.finditer(text):
-        hits.append((match.start(), {"category": "场景不适配", "match": match.group(), "message": "生日祝福不应包含商品或推销内容，请删除或改写。"}))
+        hits.append((match.start(), {"category": "场景不适配", "match": match.group(), "message": "生日祝福不应包含推销内容，请删除或改写。"}))
     return hits
 
 

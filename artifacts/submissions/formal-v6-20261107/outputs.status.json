@@ -1,0 +1,18 @@
+{
+  "run_id": "formal-v6",
+  "technical_retry": "formal-v6-technical-retry",
+  "rows": 50,
+  "successful_cases": 48,
+  "first_attempt_success": 48,
+  "source": "首轮 formal-v6 与关联技术重试 formal-v6-technical-retry；逐行来源见 row-provenance.json",
+  "columns": [
+    "Case ID",
+    "Scenario",
+    "Client information",
+    "Conversation history",
+    "Product information",
+    "Output 1",
+    "Output 2",
+    "Output 3"
+  ]
+}

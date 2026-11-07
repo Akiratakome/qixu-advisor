@@ -215,16 +215,27 @@ def test_lint_context_duplication_no_history_no_hit():
 
 # ---------- 场景适配检测 ----------
 
-def test_lint_birthday_scenario_product_name_hit():
-    hits = lint_text("祝您生日快乐，青岚新款很适合您。", scenario="生日与节庆")
-    assert "场景不适配" in categories(hits)
-    assert any(hit["match"] == "青岚" for hit in hits if hit["category"] == "场景不适配")
+def test_lint_birthday_scenario_product_name_alone_no_hit():
+    # 新规则允许基于事实的个性化提及（如「您上次选了青岚」），裸商品名不再命中。
+    assert "场景不适配" not in categories(lint_text("祝您生日快乐，您上次选了青岚。", scenario="生日与节庆"))
 
 
 def test_lint_birthday_scenario_promo_words_hit():
     hits = lint_text("祝您生日快乐，本周有优惠活动，欢迎到店。", scenario="生日与节庆")
     promo = {hit["match"] for hit in hits if hit["category"] == "场景不适配"}
     assert promo >= {"优惠", "活动", "到店"}
+
+
+def test_lint_birthday_scenario_trial_visit_hit():
+    hits = lint_text("祝您生日快乐，欢迎到店试闻新款。", scenario="生日与节庆")
+    promo = {hit["match"] for hit in hits if hit["category"] == "场景不适配"}
+    assert promo >= {"到店", "试闻"}
+
+
+def test_lint_birthday_scenario_new_promo_words_hit():
+    hits = lint_text("祝您生日快乐，全场有折扣，推荐您比较一下，可以登记意向。", scenario="生日与节庆")
+    promo = {hit["match"] for hit in hits if hit["category"] == "场景不适配"}
+    assert promo >= {"折扣", "推荐", "比较", "登记"}
 
 
 def test_lint_other_scenario_no_birthday_hit():
