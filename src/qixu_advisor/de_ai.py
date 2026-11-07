@@ -26,6 +26,7 @@ AI_PATTERNS: tuple[tuple[str, re.Pattern[str], str], ...] = (
     ("AI词表", re.compile(r"打造|赋能|抓手|闭环|沉淀|匠心|极致|沉浸式|触达|生态|维度|颗粒度|落地|彰显|承载|诠释|高级感|氛围感|治愈|邂逅|仪式感|格调|旅程|绽放|点亮|开启.{0,8}?之旅"), "AI 高频词，建议替换为具体表达。"),
     ("祝福叠愿", re.compile(r"愿"), "同一句中「愿」出现 3 次及以上，祝福堆叠。"),
     ("语气词密度", re.compile(r"[～啦哈哦呢]"), "语气词密度过高（「～」×2 或句尾语气词×3 及以上）。"),
+    ("元叙述", re.compile(r"就这一句|简单一句|只说一句|不多打扰|不打扰您|不打扰了|不用急着回|不用回复|我记下了|记着这句话|记着您说|按您的意思|只想把这句送到|先说一句|先不多说|冒昧打扰|打扰一句"), "元叙述（交代写作过程的话），客户不需要知道，建议删除。"),
 )
 
 _SENTENCE_RE = re.compile(r"[^。！？!?；;]*[。！？!?；;]?")
@@ -33,7 +34,7 @@ _CLAUSE_SPLIT_RE = re.compile(r"[，,。！？!?；;]+")
 _CJK_RUN_RE = re.compile(r"[\u4e00-\u9fff]{10,}")
 _CLIENT_ROLES = {"client", "customer", "user"}
 _NORMALIZE_RE = re.compile(r"[\s，,。！？!?；;：:、·…—–\-～~“”‘’「」『』（）()《》<>【】\[\]…]")
-_BIRTHDAY_PROMO_RE = re.compile(r"试闻|到店|购买|上新|优惠|活动|折扣|推荐|比较|登记|留个位置|名额")
+_BIRTHDAY_PROMO_RE = re.compile(r"青岚|暮光|雨白|砚泊|试闻|到店|购买|上新|优惠|活动|折扣|推荐|比较|登记|留个位置|名额")
 
 # 清洗规则：仅这三类高置信清理；短语后须跟句读或文本结尾，避免切断仍在继续的句子。
 _CLOSE_CLEAN_RE = re.compile(r"[，,；;]?(?:" + _CLOSING_PHRASES + r")(?=[，,；;。！？!?]|$)[，,；;。！？!?]?")
@@ -100,12 +101,12 @@ def _context_duplication_hits(text: str, conversation_history: list[dict]) -> li
 
 
 def _scenario_hits(text: str, scenario: str | None) -> list[tuple[int, dict]]:
-    """生日与节庆场景：候选中出现推销词时仅报告（基于事实的商品名个性化提及不算），不修改文本。"""
+    """生日与节庆场景：候选中出现商品名或推销词时仅报告，不修改文本。"""
     if scenario != "生日与节庆":
         return []
     hits: list[tuple[int, dict]] = []
     for match in _BIRTHDAY_PROMO_RE.finditer(text):
-        hits.append((match.start(), {"category": "场景不适配", "match": match.group(), "message": "生日祝福不应包含推销内容，请删除或改写。"}))
+        hits.append((match.start(), {"category": "场景不适配", "match": match.group(), "message": "生日祝福不应包含商品或推销内容，请删除或改写。"}))
     return hits
 
 

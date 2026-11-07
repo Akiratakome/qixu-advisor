@@ -215,9 +215,11 @@ def test_lint_context_duplication_no_history_no_hit():
 
 # ---------- 场景适配检测 ----------
 
-def test_lint_birthday_scenario_product_name_alone_no_hit():
-    # 新规则允许基于事实的个性化提及（如「您上次选了青岚」），裸商品名不再命中。
-    assert "场景不适配" not in categories(lint_text("祝您生日快乐，您上次选了青岚。", scenario="生日与节庆"))
+def test_lint_birthday_scenario_product_name_hit():
+    # 最终标准：生日祝福不得出现任何商品相关内容，裸商品名（如「上次您选了青岚」）也命中。
+    hits = lint_text("祝您生日快乐，您上次选了青岚。", scenario="生日与节庆")
+    assert "场景不适配" in categories(hits)
+    assert any(hit["match"] == "青岚" for hit in hits if hit["category"] == "场景不适配")
 
 
 def test_lint_birthday_scenario_promo_words_hit():
@@ -246,6 +248,40 @@ def test_lint_other_scenario_no_birthday_hit():
 
 def test_lint_birthday_blessing_without_product_no_hit():
     assert "场景不适配" not in categories(lint_text("祝您生日快乐，愿新的一岁顺心如意。", scenario="生日与节庆"))
+
+
+# ---------- 元叙述检测 ----------
+
+def test_lint_meta_narration_hit():
+    hits = lint_text("就这一句祝福，祝您生日快乐。")
+    assert "元叙述" in categories(hits)
+    assert any(hit["match"] == "就这一句" for hit in hits if hit["category"] == "元叙述")
+
+
+def test_lint_meta_narration_no_disturb_hit():
+    hits = lint_text("不多打扰，祝您生日快乐。")
+    assert "元叙述" in categories(hits)
+
+
+def test_lint_meta_narration_normal_text_no_hit():
+    assert "元叙述" not in categories(lint_text("祝您生日快乐，愿新的一岁顺心如意。"))
+    assert "元叙述" not in categories(lint_text("我帮您登记意向，由门店与您确认试闻时间。"))
+
+
+def test_generate_reports_meta_narration_without_modifying_text(isolated_root: Path):
+    raw_texts = [
+        "就这一句祝福，祝您生日快乐，愿新的一岁顺心如意。",
+        "青岚100毫升是1580元，您可以先到店试闻。",
+        "您上次选了青岚，如需试闻我帮您登记。",
+    ]
+    request = GenerationRequest(scenario="生日与节庆", occasion="生日",
+        client_information={"buyer": {"address": "林女士"}, "current_need": "生日祝福"})
+    run = create_run(["CASE-1"], root=isolated_root, execution_mode="stub")
+    result = generate(request, run, "CASE-1", root=isolated_root, model_call=lambda *args: de_ai_stub(raw_texts), execution_mode="stub")
+    assert result.status == "success"
+    p0 = result.de_ai_report["per_candidate"][0]
+    assert "元叙述" in categories(p0["lint_hits"])
+    assert result.candidates[0].text == raw_texts[0]
 
 
 def test_generate_reports_new_hits_without_modifying_text(isolated_root: Path):
