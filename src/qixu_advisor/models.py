@@ -110,6 +110,7 @@ class GenerationResult(BaseModel):
     candidates: list[Candidate] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     missing_fields: list[str] = Field(default_factory=list)
+    de_ai_report: dict[str, Any] = Field(default_factory=dict)
     error: str | None = None
     fact_references: list[dict[str, Any]] = Field(default_factory=list)
     provenance: dict[str, Any] = Field(default_factory=dict)

@@ -194,9 +194,9 @@ HTTP 200 仅表示已有记录，前端仍须判断业务 status；422 字段错
 | --- | --- | --- |
 | A work-log.csv、真实步骤截图 | 日志和应用截图有，AI 对话步骤截图缺 | 持续记录真实行为和截图；历史拿不到留缺项，不重演冒充 |
 | B methodology.md | 工具、测试、量表与方法有；**已补 6 条多轮与 24 例语言组真实运行**（首轮＋关联技术重试，独立导出） | 由真实评阅者审查依据；英文自然度待具备语言能力的人评阅 |
-| C outputs.csv | 最终版 `formal-v3`：50 行／150 条中文，50/50 成功，八列严格，逐行对应机器原稿 | 真人评价后定稿；formal-v1（49/50＋重试）、formal-v2（50/50）作为版本回归证据单列 |
+| C outputs.csv | 最终版 `formal-v4`：50 行／150 条中文，50/50 成功，八列严格，逐行对应机器原稿（去 AI 味规则＋输出前门禁） | 真人评价后定稿；formal-v1/v2/v3 作为版本回归证据单列 |
 | D evaluation-report.md、评价截图 | 实际运行计数和 AI 审阅有，约定真人评价未完成 | 真评、改稿及截图；待评页面不能冒充已评价 |
-| E defects-and-next-steps.md、版本 | v1 缺陷清单 → S1 修复 → formal-v2 → 去 AI 味规则与工作台（formal-v3）→ 告警器两轮误报修复（9→0、13→0），前后对照齐全；内容自然度前后对比待真人评价 | 实施后附同输入前后、版本及判断；失败未做如实写 |
+| E defects-and-next-steps.md、版本 | v1 缺陷清单 → S1 修复 → 去 AI 味规则（humanize P1–P39 中文化＋真人语域样本）→ 输出前强制门禁插件（10 类 lint＋确定性清洗）→ formal-v4；告警器三轮误报修复（9→0、13→0、共享容量列表 1 条待修）；前后对照齐全 | 实施后附同输入前后、版本及判断；失败未做如实写 |
 | 附加 architecture.svg、submission-checklist.md、versions.json | 初版已有架构及索引 | 新图对应实际实现，证据随包可独立阅读，不依赖开发机路径 |
 
 A 表头严格为：`Step / What you did / Input / Output / Tool or agent used / Screenshots`。

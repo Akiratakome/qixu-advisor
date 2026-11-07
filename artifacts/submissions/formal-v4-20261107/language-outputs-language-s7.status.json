@@ -1,0 +1,24 @@
+{
+  "run_id": "language-s7",
+  "group": "language",
+  "rows": 24,
+  "successful_cases": 23,
+  "complete": false,
+  "missing": [
+    {
+      "case_id": "LG-EVENT-E2E",
+      "reason": "模型输出结构不合格：需要三条不同、非空且符合输出语言设置（en）的完整候选；原始返回已保存，未重抽"
+    }
+  ],
+  "source": "result.json 的机器候选；未使用 feedback.jsonl",
+  "columns": [
+    "Case ID",
+    "Scenario",
+    "Client information",
+    "Conversation history",
+    "Product information",
+    "Output 1",
+    "Output 2",
+    "Output 3"
+  ]
+}

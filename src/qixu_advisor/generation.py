@@ -11,6 +11,7 @@ from typing import Any, Callable
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from .data import PROJECT_ROOT, contact_is_blocked, load_facts, required_information
+from .de_ai import clean_text, lint_text
 from .model import ModelCallError, ModelConfig, call_model, get_config, public_config
 from .models import AnalysisResult, Candidate, GenerationRequest, GenerationResult, valid_id
 from .records import append_jsonl, begin_case, save_result, source_versions, timestamp
@@ -324,6 +325,47 @@ def check_explicit_facts(candidates: list[Candidate], facts: dict[str, Any], req
     return list(dict.fromkeys(warnings))
 
 
+def _apply_de_ai_gate(candidates: list[Candidate], output_language: str) -> tuple[list[Candidate], dict[str, Any]]:
+    """输出前必须过一遍的去 AI 味门槛：逐条 lint 并做确定性清洗；清洗是规则、不是模型重写、不新增事实。"""
+    originals = [candidate.text for candidate in candidates]
+    cleaned_versions: list[str] = []
+    applied_rules: list[list[str]] = []
+    per_candidate = []
+    for candidate in candidates:
+        hits = lint_text(candidate.text)
+        cleaned, applied = clean_text(candidate.text)
+        cleaned_versions.append(cleaned)
+        applied_rules.append(applied)
+        per_candidate.append({"candidate_id": candidate.candidate_id, "lint_hits": hits, "cleaned": False, "applied_rules": []})
+    final_texts: list[str] = []
+    for index, candidate in enumerate(candidates):
+        original_text = originals[index]
+        cleaned = cleaned_versions[index]
+        entry = per_candidate[index]
+        if cleaned == original_text:
+            final_texts.append(original_text)
+            continue
+        if not cleaned:
+            entry["skipped_reason"] = "清洗后为空"
+            final_texts.append(original_text)
+            continue
+        if not text_matches_language(cleaned, output_language):
+            entry["skipped_reason"] = "清洗后不符合输出语言设置"
+            final_texts.append(original_text)
+            continue
+        other_originals = {originals[other] for other in range(len(candidates)) if other != index}
+        other_cleaned = {cleaned_versions[other] for other in range(len(candidates)) if other != index and cleaned_versions[other]}
+        if cleaned in other_originals or cleaned in other_cleaned:
+            entry["skipped_reason"] = "清洗后与其他候选重复"
+            final_texts.append(original_text)
+            continue
+        entry["cleaned"] = True
+        entry["applied_rules"] = applied_rules[index]
+        final_texts.append(cleaned)
+    cleaned_candidates = [Candidate(candidate_id=candidate.candidate_id, text=text) for candidate, text in zip(candidates, final_texts)]
+    return cleaned_candidates, {"gate": "applied", "per_candidate": per_candidate}
+
+
 def generate(request: GenerationRequest | dict[str, Any], run_id: str, case_id: str, *, root: Path = PROJECT_ROOT, model_call: Callable[[list[dict[str, str]], ModelConfig], dict[str, Any]] | None = None, execution_mode: str = "real") -> GenerationResult:
     """一次请求只调用一次模型，先保存输入和原始返回，再检验结构。"""
     valid_id(run_id)
@@ -396,7 +438,9 @@ def generate(request: GenerationRequest | dict[str, Any], run_id: str, case_id: 
             raise ValueError(f"候选语言不符合输出语言设置（{request.output_language}）")
     except (ValidationError, ValueError, KeyError, TypeError):
         return finish("technical_failure", error=f"模型输出结构不合格：需要三条不同、非空且符合输出语言设置（{request.output_language}）的完整候选；原始返回已保存，未重抽")
-    return finish("success", candidates=candidates, warnings=check_explicit_facts(candidates, facts, request))
+    candidates, de_ai_report = _apply_de_ai_gate(candidates, request.output_language)
+    provenance["de_ai_gate"] = "applied"
+    return finish("success", candidates=candidates, warnings=check_explicit_facts(candidates, facts, request), de_ai_report=de_ai_report)
 
 
 def analyze_conversation(conversation_history: list[dict[str, Any]], client_information: dict[str, Any] | None, *, root: Path = PROJECT_ROOT, model_call: Callable[[list[dict[str, str]], ModelConfig], dict[str, Any]] | None = None, execution_mode: str = "real") -> AnalysisResult:

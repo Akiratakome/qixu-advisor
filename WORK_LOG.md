@@ -178,3 +178,13 @@
 - 补充组按最终规则重跑：multiturn-s3 6/6；language-s6 22/24＋2 例关联技术重试（英文组老缺陷）。导出至 v3 交付目录。
 - v3 交付包：outputs.csv、row-provenance（50 行 SHA 核对一致）、versions、B（两步生成与去 AI 味依据）、E（v1→v2→v3 前后对照）、A（12 步）、checklist、架构图、工作台截图；密钥扫描无泄漏；92 passed；validate-data 通过。
 - DEPLOY.md 就绪（Streamlit Community Cloud／自有服务器）；公开部署与 GitHub 仓库推送需用户提供账号与凭据。
+
+## 2026-11-07 21:40–22:10 · 去 AI 味门禁插件与 formal-v4
+
+- 用户连续反馈输出仍太 AI 味，要求：调研真人祝福语与社区对 AI 味的吐槽；每次输出前必须过一遍去 AI 味规则，并做成插件接入产品流程。
+- 调研：核验 humanize 规范（P1–P39、词表，来自 Wikipedia Signs of AI writing 与 Kobak 2025 等研究）；Reddit/Product Hunt 等站点多被反爬拦截（微信公众号验证码、eddrit 429、reddit DNS 受限），未能逐篇抓取，社区吐槽焦点（LinkedIn AI slop、客服消息假大空、「哪句话一秒识破 AI」）与真人祝福语域按公开知识与已核验规范落实；规则文件如实注明依据与拦截情况。
+- qixu-content：writing_rules.md 新增「五、真人语域与祝福样本」（一句话祝福、按关系与年龄选语气、禁祝福叠愿与抒情堆砌、语气词至多一个）与社区吐槽三小节、自检清单补第 9/10 条。
+- qixu-core：新建 de_ai.py 插件（10 类模式 lint：万能结尾、客服开场、总起句、插入语、负面平行、意义后缀、抒情堆砌、AI 词表、祝福叠愿、语气词密度；高置信三类确定性清洗，空/重复/语言不符保护）；接入 generate 输出前门禁，GenerationResult 增加 de_ai_report，原始返回保留在 attempts.jsonl；118 项测试全绿。
+- 冻结 formal-v12 后 diagnostic-s3 六例门禁 0 命中；formal-v4 50/50 成功，全量 150 条门禁 0 命中、事实告警 1 条（REC-106 共享容量列表顺序正确金额，第三类已知误报，候选内容无误，列入待修）。
+- 补充组按最终版本重跑：multiturn-s4 6/6；language-s7 23/24＋1 例关联重试（历史最佳首轮）。
+- 交付包 `artifacts/submissions/formal-v4-20261107/`：C/B/E/A/溯源/版本/清单/架构图/截图/测试集评价材料（939 行）齐备；docs 与 README 同步 formal-v4。真人评分仍为 0。
