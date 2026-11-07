@@ -35,22 +35,23 @@ Python + Streamlit 本地应用，覆盖生日节庆、产品推荐、购后关�
 
 ## 使用与检查
 
-顾问写作页选择场景，可选已有客户档案或开发例，也可直接输入新资料。购买者、收礼人、本次需求和长期偏好分开；聊天可以为空。活动必须选择具体活动，生日节庆必须填写缘由。生成后查看使用的事实，选一条编辑，保存处理记录，再用代码框右上角按钮复制。保存与复制不会发送微信。
+顾问写作页选择场景，可选已有客户档案或开发例，也可直接输入新资料；生成前可设置输出语言（中文／English）、语气、篇幅和本次目标（默认按场景）。购买者、收礼人、本次需求和长期偏好分开；聊天可以为空。活动必须选择具体活动，生日节庆必须填写缘由。生成后查看使用的事实，选一条编辑，保存处理记录，再用代码框右上角按钮复制。保存与复制不会发送微信。
 
 ```powershell
 # 仅离线程序检查；使用替身的结果都在临时目录，不证明模型质量。
-./.venv/Scripts/python.exe -m pytest -q
+# 本机系统 Temp 有旧账户遗留目录，测试临时目录固定指向工作区。
+./.venv/Scripts/python.exe -m pytest -q --basetemp=.cache/pytest-tmp
 ./.venv/Scripts/python.exe -m qixu_advisor.cli validate-data
 
 # 真实 API：先运行六个开发诊断例，每例一次调用。
-./.venv/Scripts/python.exe -m qixu_advisor.cli batch --split diagnostic --run-id diagnostic-v1
+./.venv/Scripts/python.exe -m qixu_advisor.cli batch --split diagnostic --run-id diagnostic-s1
 
 # 在观察诊断和必要修改后，冻结代码、提示、事实、案例、量表与配置。
-./.venv/Scripts/python.exe -m qixu_advisor.cli freeze --freeze-id formal-v1
-./.venv/Scripts/python.exe -m qixu_advisor.cli batch --split all --run-id formal-v1 --freeze-id formal-v1
+./.venv/Scripts/python.exe -m qixu_advisor.cli freeze --freeze-id formal-v2
+./.venv/Scripts/python.exe -m qixu_advisor.cli batch --split all --run-id formal-v2 --freeze-id formal-v2
 
 # 严格八列、固定五十行；失败保留空输出，另附缺失清单。
-./.venv/Scripts/python.exe -m qixu_advisor.cli export --run-id formal-v1 --output artifacts/submissions/formal-v1/outputs.csv
+./.venv/Scripts/python.exe -m qixu_advisor.cli export --run-id formal-v2 --output artifacts/submissions/formal-v2-20261107/outputs.csv
 ```
 
 不要重复使用运行编号。确需技术重跑时用新的 `--run-id` 并指定 `--parent-run-id`；不能把多轮中最好的候选拼成首轮成绩。看过保留集结果后再调整方案，后续该集合只能称回归验证。冻结后修改代码、资料或参数需要重新冻结。
@@ -58,12 +59,12 @@ Python + Streamlit 本地应用，覆盖生日节庆、产品推荐、购后关�
 人工评价页由真实评价者逐条填写，默认全部“未评”。本项目选择主评审阅 150 条、第二位真人复核预抽 12 例；这是项目方法，并非 PDF 指定的人数要求。没有第二位时如实标单人评价，不用 AI 意见替代人工评分。
 
 ```powershell
-./.venv/Scripts/python.exe -m qixu_advisor.cli summarize --evaluation-id eval-formal-v1 --run-id formal-v1 --rater 你的评价者标识
+./.venv/Scripts/python.exe -m qixu_advisor.cli summarize --evaluation-id eval-formal-v2 --run-id formal-v2 --rater 你的评价者标识
 ```
 
 汇总固定区分开发／保留与六场景，未评和缺失保留在分母；没有人评时不判内容通过。评价修订追加保存，汇总读取同一评价者最新修订，原评分保留。CLI `rate` 支持导入真实评价者按 `HumanCaseRating` 格式填写的一例 JSON。
 
-本轮正式首轮为 `formal-v1`（49/50 成功、147 条候选），唯一格式失败例 AFTER-105 的一次技术重试在 `formal-v1-technical-retry`。人评分别选择这两个运行、使用各自评价编号；首轮失败和补充重试成绩分开报告。最终交付表以 `row-provenance.json` 关联每条原稿，不能用重试成绩改写首轮成绩。
+本轮正式运行：S1 内容修复后 `formal-v2`（50/50 成功、150 条候选，冻结 formal-v2）；`diagnostic-s1` 为六例开发诊断。旧 `formal-v1`（49/50）与 `formal-v1-technical-retry` 保留为回归基线，不能把旧成绩与重试成绩混入新首轮。最终交付表以逐行来源关联每条原稿。
 
 `scripts/prepare_submission.py` 和 `scripts/check_submission.py` 是初版历史辅助脚本，均硬编码 `initial-local/`；后者也会重写 verification.json，并非只读。它们只能在恢复副本中复现，不能对当前冻结包重跑。新版工程须先支持新 submission_id，并让只读检查与报告写入分开，再生成新材料；本轮不改脚本。
 

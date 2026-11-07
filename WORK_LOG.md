@@ -117,3 +117,20 @@
   - 程序告警增强：商品名近似错字告警、预算金额白名单消除误报、未归属金额告警。
   - 验收：离线 pytest（--basetemp=.cache/pytest-tmp）、validate-data、真实 diagnostic-s1 六例对照，再决定 freeze formal-v2 与 50 例回归。
 - 分工：`qixu-content`（prompts 规则包、场景微调、示例草稿）、`qixu-core`（models／generation／data／app 设置与告警、测试）；lead 集成、真实运行、审阅、日志与 Git。
+
+## 2026-11-07 18:00–19:10 · S1 实施、诊断与 formal-v2
+
+- qixu-content 交付 `prompts/writing_rules.md`（事实纪律／去 AI 味／三条差异化／奢侈品克制四节）、system.txt 追加区块声明、scenarios.json 六场景收紧，并起草 12 条示例到 `.cache/s1-style-drafts.jsonl`；`approved.jsonl` 保持为空待人工审阅。lead 审阅后仅修正两处：system.txt 输出语言表述不再写死中文；活动示例日期与虚构活动卡对齐。
+- qixu-core 交付四项写作设置（output_language/tone/length/goal，场景默认目标）、build_messages 规则与示例加载、语言感知校验、三项新告警（错字／预算白名单／未归属金额）、app 设置控件与 17 项新测试；离线 52 passed、validate-data 通过、零真实调用。lead 审阅 diff 无实质问题。
+- 环境补充修复：`.venv/Lib/site-packages/_editable_impl_qixu_advisor.pth` 仍指向旧机器 src 路径，改后 `-m qixu_advisor.cli` 恢复；README 测试命令同步固定 `--basetemp=.cache/pytest-tmp`。
+- 真实诊断 `diagnostic-s1`：六例全部成功。lead 逐条审阅：商品名零错字、内部规则未再进入对客正文（AFTER-002 不再转售后流程）、预算与报价分开、三稿侧重可分；REC-001-C3 试闻登记表述等个别疑点留给真人评价。
+- 冻结 `formal-v2` 后真实回归 50 例：**50/50 成功、150 条**（首次全数通过，无需技术重试）；严格八列 C 表导出至 `artifacts/submissions/formal-v2-20261107/outputs.csv`，complete=true。
+- 告警核对：共 9 条告警集中在 PRICE-003／PRICE-103／REC-104，逐条读原文确认候选内容全部正确、告警均为程序误报（历史裸数字未入白名单、片段跨 SKU 配对、价格区间表述）。已交 qixu-core 修复告警器并补复现测试；候选文本不受影响，formal-v2 结果保持原样，修复后的新代码以 formal-v3 冻结供后续运行。
+- Git：S1 实现提交 `bbd7c6a`；README 同步 formal-v2 与设置说明。真人评价仍未开始（0 条），由用户审阅 150 条与 12 条示例草稿后推进 D。
+
+## 2026-11-07 19:10–19:30 · 告警器误报修复与 formal-v3
+
+- qixu-core 修复 check_explicit_facts 三类误报：历史裸数字白名单、容量→金额窗口锚定（含「分别是」顺序配对）、区间金额与派生总价豁免；新增 16 项回归测试（真实候选文本硬编码，含对照组）。68 passed、validate-data 通过。
+- lead 用 formal-v2 真实输入/候选重放告警器：9 条误报全部消除、其余案例零新增告警（REC-002 初检残留一条，核心 agent 二次修正后重放为 0）。formal-v2 候选文本未变，仍作为人评目标与 C 表来源。
+- 告警器修复提交 `504ec9f`，冻结 `formal-v3` 供后续运行；formal-v2 冻结与结果保持原样。
+- 补记（lead 操作失误）：为验证 formal-v3 冻结一致性，误用 `batch --split dev --run-id dry-run-verify`（batch 会真实调用模型），产生 20 例真实调用的临时运行（20/20 成功）。该运行无实验目的、不纳入任何统计，已删除目录并在此留痕；正确做法是用只读比较校验冻结指纹，不触发生成命令。

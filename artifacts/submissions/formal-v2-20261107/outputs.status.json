@@ -1,0 +1,20 @@
+{
+  "run_id": "formal-v2",
+  "rows": 50,
+  "successful_cases": 50,
+  "real_candidates": 150,
+  "complete": true,
+  "snapshot_status": "运行时固定50例快照",
+  "missing": [],
+  "source": "result.json 的机器候选；未使用 feedback.jsonl",
+  "columns": [
+    "Case ID",
+    "Scenario",
+    "Client information",
+    "Conversation history",
+    "Product information",
+    "Output 1",
+    "Output 2",
+    "Output 3"
+  ]
+}
