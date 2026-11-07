@@ -165,6 +165,25 @@ def _is_derived_total(value: float, fact_prices: set[float], prefix: str) -> boo
     return False
 
 
+def _is_derived_amount(value: float, products: list[dict[str, Any]], whitelist: set[float]) -> bool:
+    """推导金额：单位价（资料价格/容量，容差 0.05 元/毫升）或两个价格之差的绝对值（含白名单金额与事实价之差）。
+    单价符号即使不出现在资料中也按推导处理；推导金额不告警。"""
+    fact_prices: set[float] = set()
+    for item in products:
+        price = item.get("price_cny")
+        volume = item.get("volume_ml")
+        if not (isinstance(price, (int, float)) and not isinstance(price, bool) and isinstance(volume, (int, float)) and not isinstance(volume, bool) and volume):
+            continue
+        fact_prices.add(float(price))
+        if abs(value - float(price) / float(volume)) < 0.05:
+            return True
+    for first in fact_prices:
+        for second in fact_prices | whitelist:
+            if abs(value - abs(first - second)) < 1e-6:
+                return True
+    return False
+
+
 def _budget_whitelist(request: GenerationRequest | None) -> set[float]:
     """白名单金额=客户原话（预算字段与聊天中出现的金额），不是本品牌报价。"""
     amounts: set[float] = set()
@@ -242,7 +261,7 @@ def check_explicit_facts(candidates: list[Candidate], facts: dict[str, Any], req
                         warnings.append(f"{candidate.candidate_id}：{name} {volume:g} mL 附近出现 {low:g} 到 {high:g} 元，资料价格为 {expected}；请核对是品牌报价还是顾客原话。")
                     return
                 price = value
-                if not _close(price, whitelist) and not _is_derived_total(price, fact_prices, prefix) and not any(_close(price, {float(item.get("price_cny", -1))}) for item in matching):
+                if not _close(price, whitelist) and not _is_derived_total(price, fact_prices, prefix) and not _is_derived_amount(price, products, whitelist) and not any(_close(price, {float(item.get("price_cny", -1))}) for item in matching):
                     expected = " / ".join(f"{item['price_cny']} 元" for item in matching)
                     warnings.append(f"{candidate.candidate_id}：{name} {volume:g} mL 附近出现 {price:g} 元，资料价格为 {expected}；请核对是品牌报价还是顾客原话。")
 
@@ -298,6 +317,8 @@ def check_explicit_facts(candidates: list[Candidate], facts: dict[str, Any], req
             if _close(value, fact_prices) or _close(value, whitelist):
                 continue
             if _is_derived_total(value, fact_prices, candidate.text[max(0, match.start() - 10):match.start()]):
+                continue
+            if _is_derived_amount(value, products, whitelist):
                 continue
             warnings.append(f"{candidate.candidate_id}：候选出现 {value:g} 元；该金额未在本次资料中出现，请核对来源。")
     return list(dict.fromkeys(warnings))

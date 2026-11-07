@@ -169,3 +169,12 @@
 - qixu-content：writing_rules.md 重写为六子节去 AI 味规则（P1–P39 中文化＋中文 AI 词表＋八条自检清单），新建 analysis.txt（六场景原词、JSON 三字段、不补造）。qixu-core：AnalysisResult＋analyze_conversation（守卫、单次调用、严格解析、无凭据泄漏），14 项新测试。qixu-ui：app.py 重构为顾问工作台（主区仅对话→分析→确认→生成；候选卡＋JS 复制按钮；侧栏四分区；开发案例复选框门控；隐藏菜单；象牙白/墨色/香槟金主题与 Noto Serif SC），.streamlit/config.toml 新建；注：Streamlit 1.67 无 hideDeployButton 选项，以 toolbarMode=minimal＋menu_items 实现并留注释。
 - lead 端到端冒烟（真实分析＋生成各 1 次调用）：主区结构 7 项断言全过、开发案例默认不可见、旧手工字段已移除、分析摘要展示、三条候选与复制按钮正常；截图 workbench-analyze.png／workbench-candidates.png 入交付包。
 - 全量测试 85 passed；requirements.txt（-e .）与部署配置就绪。下一步：冻结 formal-v10 → diagnostic-s2 → formal-v3 五十例重跑（新规则下的 C 表）→ 更新 E 前后对比 → 公开部署（待用户提供平台与凭据）。
+
+## 2026-11-07 21:00–21:35 · formal-v3 与交付包定稿
+
+- 冻结 formal-v10 后 diagnostic-s2 六例成功，逐条审阅：新规则下输出更口语直接（「价格匹配我们目前没有，这点先跟您说清楚」「您不用急着回，想聊的时候发我就行」），无负面平行/客服话术/AI 词表命中。
+- formal-v3 50/50 成功（150 条），新 C 表导出至 `artifacts/submissions/formal-v3-20261107/outputs.csv`。
+- 告警器第二轮误报：formal-v3 13 条告警全部为模型推导金额（每毫升 19.6/26 元、差价 100/180/600 元，算术正确）；qixu-core 增加 _is_derived_amount（单位价容差 0.05 元/毫升、差价 1e-6、白名单×事实价），修复后 formal-v3 全 50 例重放零告警、formal-v2 无回归，92 passed；冻结 formal-v11。
+- 补充组按最终规则重跑：multiturn-s3 6/6；language-s6 22/24＋2 例关联技术重试（英文组老缺陷）。导出至 v3 交付目录。
+- v3 交付包：outputs.csv、row-provenance（50 行 SHA 核对一致）、versions、B（两步生成与去 AI 味依据）、E（v1→v2→v3 前后对照）、A（12 步）、checklist、架构图、工作台截图；密钥扫描无泄漏；92 passed；validate-data 通过。
+- DEPLOY.md 就绪（Streamlit Community Cloud／自有服务器）；公开部署与 GitHub 仓库推送需用户提供账号与凭据。

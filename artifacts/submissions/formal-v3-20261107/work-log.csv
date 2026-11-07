@@ -1,0 +1,14 @@
+Step,What you did,Input,Output,Tool or agent used,Screenshots
+00,承接既有工作：阅读产品设计、技术计划、约束与岗位要求,两份 docs 报告；AGENTS.md；JD；两页题目,确认六场景、三候选、A–E 严格表头与交付边界,Codex 主 agent；pypdf,待补：历史 AI 对话截图
+01,v1 实现与真实运行（细节见 initial-local/work-log.csv）,模块合同；合成资料；DeepSeek 凭据,六场景本地应用、formal-v1 49/50＋关联重试、缺陷清单 F01–F19,主 agent 与子 agent；DeepSeek API,待补：AI 对话截图
+02,自查、备份、选型与文档收敛（S0）,v1 真实结果；官方文档,两份权威报告定稿；回滚标签与完整备份,主 agent 与子 agent,待补：AI 对话截图
+03,环境迁移恢复并建立回滚点,迁移后工作区,23 项测试恢复；pre-s1-20261107 回滚点,PowerShell；pytest,待补：AI 对话截图
+04,S1 内容修复：写作规则包、四项写作设置、事实告警器,ai-formal-review.md；FAQ 结构,formal-v2 50/50 成功；9 条告警误报修复后零告警,qixu-content/qixu-core；DeepSeek API,待补：AI 对话截图
+05,多轮与语言组：6 多轮＋24 语言组真实运行,新用例文件；冻结与组级标准,多轮 6 例、语言 22/24＋2 例关联重试；发现英文输出遵从不稳定缺陷并修复,qixu-content；DeepSeek API,待补：AI 对话截图
+06,去 AI 味调研：核验 humanize 写作规范（P1–P39 与词表）,Wikipedia Signs of AI writing 相关研究；SKILL 原文,规则包去 AI 味六子节＋八条自检清单,qixu-content；Web 调研,待补：AI 对话截图
+07,工作台重构：主区对话→分析→确认→生成；设置/开发案例入侧栏；候选卡复制按钮；美化与隐藏 Deploy,用户反馈四点；现版 app.py,新工作台（85 项测试）；真实端到端冒烟通过,qixu-ui/qixu-core；Playwright,artifacts/submissions/formal-v3-20261107/screenshots/workbench-analyze.png、workbench-candidates.png（应用截图；AI 对话待补）
+08,冻结 formal-v10 并真实回归 50 例（去 AI 味规则版）,诊断 diagnostic-s2 6/6；冻结指纹,formal-v3 50/50 成功、150 条；严格八列 outputs.csv,DeepSeek API；batch/export,待补：AI 对话截图
+09,核对 13 条推导金额告警并修复告警器,formal-v3 候选原文,50 例重放零告警；错误单位价对照组仍告警；formal-v11 冻结,qixu-core；lead 逐条核对,待补：AI 对话截图
+10,补充组重跑（formal-v11）与交付包整理,multiturn-s3、language-s6,多轮 6/6、语言 22/24＋2 例关联重试；B/E/A/溯源/版本/清单/架构图齐备,DeepSeek API；主 agent,待补：AI 对话截图
+11,真人评价 formal-v3 全部 150 条（第二位复核 12 例，无则单人）,真实评价者逐条阅读机器原稿,评分进 ratings.jsonl；汇总 D,真实评价者；应用评价页,待补：评价过程真实截图（完成时补充）
+12,公开部署并发送交付链接,部署平台与凭据；最终交付包,免账号可打开的公开链接；邮件由用户发送,用户执行（见 DEPLOY.md）,待补：部署后页面截图

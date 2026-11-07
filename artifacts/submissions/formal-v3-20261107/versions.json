@@ -1,0 +1,50 @@
+{
+  "submission_id": "formal-v3-20261107",
+  "created_at": "2026-11-07T21:06:57.088+08:00",
+  "tool_versions": {
+    "python": "3.12.15",
+    "pydantic": "2.14.3",
+    "streamlit": "1.67.0",
+    "httpx": "0.28.1"
+  },
+  "runs": {
+    "formal-v3": {
+      "freeze": "formal-v10",
+      "cases": 50,
+      "statuses": "50 success",
+      "role": "最终 C 表（50 例中文八列，去 AI 味规则版）"
+    },
+    "formal-v2": {
+      "role": "前一版本 C（50/50），E 中作前后对比"
+    },
+    "formal-v1": {
+      "role": "v1 回归基线（49/50＋关联技术重试）"
+    },
+    "diagnostic-s2": {
+      "cases": 6,
+      "role": "去 AI 味规则后六场景诊断"
+    },
+    "multiturn-s3 / language-s6": {
+      "role": "补充组（formal-v11 重跑，首轮＋关联技术重试）"
+    }
+  },
+  "freeze_ids": [
+    "formal-v10",
+    "formal-v11"
+  ],
+  "git_commits": [
+    "5df2dcf",
+    "adb79b2",
+    "bb82463",
+    "77b5789",
+    "7523aee",
+    "08fdd7c",
+    "bbd7c6a",
+    "504ec9f",
+    "b561019",
+    "a1dd570",
+    "b21de6d",
+    "2dc5321",
+    "c52cae7"
+  ]
+}
