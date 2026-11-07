@@ -1,0 +1,56 @@
+{
+  "submission_id": "formal-v2-20261107",
+  "created_at": "2026-11-07T19:02:06.278+08:00",
+  "tool_versions": {
+    "python": "3.12.15",
+    "pydantic": "2.14.3",
+    "streamlit": "1.67.0",
+    "httpx": "0.28.1"
+  },
+  "runs": {
+    "formal-v2": {
+      "freeze": "formal-v2",
+      "cases": 50,
+      "statuses": "50 success",
+      "role": "正式 C 表（50 例中文八列）"
+    },
+    "formal-v1": {
+      "role": "回归基线（49/50＋关联技术重试）"
+    },
+    "diagnostic-s1": {
+      "cases": 6,
+      "role": "六场景开发诊断"
+    },
+    "multiturn-s2": {
+      "cases": 6,
+      "role": "多轮补充组首轮（5/6）＋ multiturn-s2-technical-retry（1 例）"
+    },
+    "language-s5": {
+      "cases": 24,
+      "role": "语言补充组首轮（22/24）＋ language-s5-technical-retry（2 例）"
+    }
+  },
+  "freeze_ids": [
+    "formal-v2",
+    "formal-v3",
+    "formal-v4",
+    "formal-v5",
+    "formal-v6",
+    "formal-v7",
+    "formal-v8",
+    "formal-v9"
+  ],
+  "git_commits": [
+    "5df2dcf",
+    "adb79b2",
+    "bb82463",
+    "77b5789",
+    "7523aee",
+    "08fdd7c",
+    "bbd7c6a",
+    "504ec9f",
+    "b561019",
+    "a1dd570",
+    "b21de6d"
+  ]
+}
