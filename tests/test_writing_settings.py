@@ -107,19 +107,26 @@ def test_build_messages_includes_rules_and_settings(isolated_root: Path):
     messages = build_messages(request, load_facts(request, root=isolated_root), root=isolated_root)
     system = messages[0]["content"]
     base = (isolated_root / "src/qixu_advisor/prompts/system.txt").read_text(encoding="utf-8")
-    assert system.startswith(base)
-    # 加载机制追加的【写作规则】段必须位于 system.txt 之后。
-    assert system.count("【写作规则】") == base.count("【写作规则】") + 1
-    rules_pos = system.index("【写作规则】", len(base))
-    settings_pos = system.index("【写作设置】", len(base))
-    scene_pos = system.index("本场景要求：", len(base))
+    # en 请求在 system 最前增加语言要求，system.txt 正文随后，写作规则仍位于正文之后。
+    assert system.startswith("【语言要求】")
+    base_pos = system.find(base[:40])
+    assert base_pos > 0
+    # 加载机制追加的【写作规则】段必须位于 system.txt 之后；用块首特征定位，避开正文第 11 行的字样提及。
+    assert system.count("【写作规则】\n") == base.count("【写作规则】\n") + 1
+    rules_pos = system.index("【写作规则】\n", base_pos)
+    settings_pos = system.index("【写作设置】\n- 输出语言", base_pos)
+    scene_pos = system.index("本场景要求：", base_pos)
     assert rules_pos < settings_pos < scene_pos
     settings_block = system[settings_pos:scene_pos]
     assert "事实先于文风" in system
     assert "- 输出语言：英文（en）" in settings_block
+    assert "【最高优先】" in settings_block
     assert "- 语气：直接" in settings_block
     assert "- 篇幅：简短" in settings_block
     assert "- 本次目标：帮助选择（场景默认）" in settings_block
+    # 结尾英文提醒与用户消息首行语言标记：en 组三重语言约束。
+    assert "Language reminder" in system
+    assert messages[1]["content"].startswith("【语言】请仅用英文撰写三条候选")
 
 
 def test_build_messages_without_rules_file_skips_section(isolated_root: Path):

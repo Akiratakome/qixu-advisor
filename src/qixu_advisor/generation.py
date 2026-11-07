@@ -107,13 +107,17 @@ def build_messages(request: GenerationRequest, facts: dict[str, Any], *, root: P
     goal_text = GOAL_LABELS[settings["goal"]]
     if settings["goal_source"] == "scenario_default":
         goal_text += "（场景默认）"
-    system += (
-        "\n\n【写作设置】\n"
-        f"- 输出语言：{LANGUAGE_LABELS[settings['output_language']]}\n"
-        f"- 语气：{TONE_LABELS[settings['tone']]}\n"
-        f"- 篇幅：{LENGTH_LABELS[settings['length']]}\n"
-        f"- 本次目标：{goal_text}\n"
-    )
+    settings_lines = [f"- 输出语言：{LANGUAGE_LABELS[settings['output_language']]}"]
+    if settings["output_language"] == "en":
+        settings_lines.append("【最高优先】本组三条候选必须全部使用英文撰写，输出中文即视为不合格；商品规范名保留中文原文（青岚、暮光、雨白、砚泊）；币种人民币、规格、日期与时区不变。")
+    settings_lines += [
+        f"- 语气：{TONE_LABELS[settings['tone']]}",
+        f"- 篇幅：{LENGTH_LABELS[settings['length']]}",
+        f"- 本次目标：{goal_text}",
+    ]
+    system += "\n\n【写作设置】\n" + "\n".join(settings_lines) + "\n"
+    if settings["output_language"] == "en":
+        system = "【语言要求】本次任务所有输出必须使用英文（仅英文，不得输出中文）；商品规范名保留中文原文（青岚、暮光、雨白、砚泊）；币种人民币、规格、日期与时区不变。\n\n" + system
     scenes = json.loads((prompt_dir / "scenarios.json").read_text(encoding="utf-8"))
     system += "\n本场景要求：" + scenes[request.scenario]
     examples = load_approved_examples(root=root)
@@ -123,9 +127,14 @@ def build_messages(request: GenerationRequest, facts: dict[str, Any], *, root: P
             label = f"（{record['scenario']}）" if record.get("scenario") else ""
             rendered.append(f"- {label}{record['text'].strip()}")
         system += "\n\n【经审阅参考示例】\n" + "\n".join(rendered)
+    if settings["output_language"] == "en":
+        system += "\n\nLanguage reminder: write all three candidates entirely in English; keep product names in Chinese."
+    user_content = json.dumps({"request": request.model_dump(mode="json"), "facts": facts}, ensure_ascii=False)
+    if settings["output_language"] == "en":
+        user_content = "【语言】请仅用英文撰写三条候选，商品名保留中文。\n" + user_content
     return [
         {"role": "system", "content": system},
-        {"role": "user", "content": json.dumps({"request": request.model_dump(mode="json"), "facts": facts}, ensure_ascii=False)},
+        {"role": "user", "content": user_content},
     ]
 
 

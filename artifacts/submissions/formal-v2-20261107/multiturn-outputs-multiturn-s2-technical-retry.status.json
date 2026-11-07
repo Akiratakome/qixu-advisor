@@ -1,0 +1,19 @@
+{
+  "run_id": "multiturn-s2-technical-retry",
+  "group": "multiturn",
+  "rows": 1,
+  "successful_cases": 1,
+  "complete": true,
+  "missing": [],
+  "source": "result.json 的机器候选；未使用 feedback.jsonl",
+  "columns": [
+    "Case ID",
+    "Scenario",
+    "Client information",
+    "Conversation history",
+    "Product information",
+    "Output 1",
+    "Output 2",
+    "Output 3"
+  ]
+}
