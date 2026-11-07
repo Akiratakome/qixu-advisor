@@ -1,0 +1,17 @@
+# Streamlit 1.67：顶层标量键会令配置解析器崩溃（'bool' object has no attribute 'items'），
+# 且 hideDeployButton 已不是有效选项；保留该键仅作标识，实际隐藏 Deploy 按钮由
+# [client] toolbarMode="minimal" 与 app.py 中 set_page_config(menu_items) 实现。
+[client]
+toolbarMode = "minimal"
+hideDeployButton = true
+
+[browser]
+gatherUsageStats = false
+
+[theme]
+base = "light"
+primaryColor = "#B08D57"
+backgroundColor = "#FAF7F2"
+secondaryBackgroundColor = "#F3EDE2"
+textColor = "#1F1B16"
+font = "serif"

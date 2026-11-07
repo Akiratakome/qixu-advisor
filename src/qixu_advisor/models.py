@@ -46,6 +46,31 @@ class GenerationRequest(BaseModel):
         return value
 
 
+class AnalysisResult(BaseModel):
+    """「分析并提问」交互的输出：模型识别场景与需求，给出待确认问题（不落 runs 留档）。"""
+    model_config = ConfigDict(extra="forbid")
+
+    scenario: Scenario
+    current_need: str
+    missing_questions: list[str] = Field(default_factory=list, max_length=3)
+
+    @field_validator("current_need")
+    @classmethod
+    def non_empty_need(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("current_need 不能为空")
+        return value
+
+    @field_validator("missing_questions")
+    @classmethod
+    def check_questions(cls, value: list[str]) -> list[str]:
+        cleaned = [question.strip() for question in value]
+        if any(not question for question in cleaned):
+            raise ValueError("missing_questions 每条不能为空")
+        return cleaned
+
+
 class CaseSpec(BaseModel):
     # source、family 与诊断标记属于实验元数据，永远不自动传入模型。
     model_config = ConfigDict(extra="allow")

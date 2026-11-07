@@ -12,7 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from .data import PROJECT_ROOT, contact_is_blocked, load_facts, required_information
 from .model import ModelCallError, ModelConfig, call_model, get_config, public_config
-from .models import Candidate, GenerationRequest, GenerationResult, valid_id
+from .models import AnalysisResult, Candidate, GenerationRequest, GenerationResult, valid_id
 from .records import append_jsonl, begin_case, save_result, source_versions, timestamp
 
 
@@ -376,3 +376,34 @@ def generate(request: GenerationRequest | dict[str, Any], run_id: str, case_id: 
     except (ValidationError, ValueError, KeyError, TypeError):
         return finish("technical_failure", error=f"模型输出结构不合格：需要三条不同、非空且符合输出语言设置（{request.output_language}）的完整候选；原始返回已保存，未重抽")
     return finish("success", candidates=candidates, warnings=check_explicit_facts(candidates, facts, request))
+
+
+def analyze_conversation(conversation_history: list[dict[str, Any]], client_information: dict[str, Any] | None, *, root: Path = PROJECT_ROOT, model_call: Callable[[list[dict[str, str]], ModelConfig], dict[str, Any]] | None = None, execution_mode: str = "real") -> AnalysisResult:
+    """「分析并提问」交互：一次调用、严格解析；失败不重试，交互步骤不入 runs 留档，错误信息不含凭据。"""
+    if model_call is not None and execution_mode != "stub":
+        raise ValueError("注入测试替身必须显式标记 execution_mode='stub'")
+    if execution_mode == "stub" and model_call is None:
+        raise ValueError("stub 模式须提供替身，不能调用真实模型")
+    analysis_path = Path(root) / "src" / "qixu_advisor" / "prompts" / "analysis.txt"
+    if not analysis_path.exists():
+        raise ValueError(f"缺少分析提示文件：{analysis_path.relative_to(Path(root)).as_posix()}，请先补充 prompts/analysis.txt")
+    system = analysis_path.read_text(encoding="utf-8")
+    user = json.dumps({"conversation_history": conversation_history, "client_information": client_information or {}}, ensure_ascii=False)
+    messages = [{"role": "system", "content": system}, {"role": "user", "content": user}]
+    config = get_config(root)
+    if execution_mode == "real" and not config.api_key.get_secret_value().strip():
+        raise ValueError("未配置 DEEPSEEK_API_KEY；未发起真实模型请求")
+    caller = model_call or call_model
+    try:
+        response = caller(messages, config)
+    except ModelCallError as exc:
+        # ModelCallError 已经清洗，不含凭据。
+        raise ValueError(f"对话分析失败：{exc}；未自动重试") from exc
+    except Exception as exc:
+        # 非预期适配器错误不带异常文本，防止其中包含环境凭据。
+        raise ValueError(f"对话分析发生 {type(exc).__name__}；未自动重试") from exc
+    try:
+        payload = json.loads(response["raw_text"])
+        return AnalysisResult.model_validate(payload)
+    except (ValidationError, ValueError, TypeError, KeyError) as exc:
+        raise ValueError("分析结果结构不合格：需要含 scenario（六场景之一）、current_need（非空）与 missing_questions（0–3 条非空）的 JSON；未重试") from exc

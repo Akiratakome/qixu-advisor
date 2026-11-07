@@ -151,3 +151,21 @@
 - 边界如实记录：deepseek-flash 在中文主导提示下英文输出遵从仍非 100%（全组波动 6~10/12），最终以「首轮＋关联技术重试」补全；英文自然度须具备相应语言能力的人评阅，AI 审阅不代替。
 - 导出：multiturn／language 首轮与重试的严格八列 CSV 及 status.json 入 `artifacts/submissions/formal-v2-20261107/`；正式 C 仍只有 outputs.csv（50 行中文）。
 - 离线 68 passed；freeze formal-v4~v9 保留版本谱系；模型 API 测试经用户明确允许，无需逐次汇报。
+
+## 2026-11-07 20:05–20:20 · 交付包收尾与评价入口修复
+
+- 交付包补齐：B methodology.md、E defects-and-next-steps.md、A work-log.csv（严格六列，v1 浓缩＋S1 全步骤，AI 对话截图逐格待补）、work-log-detail.md、row-provenance.json（50 行 SHA 与 result.json 核对一致）、versions.json、submission-checklist.md、architecture.svg、本轮真实截图（写作设置页、评价页）。
+- 交互检查发现评价页默认运行按名称倒序排在旧 smoke 运行上，易误评；修复为按时间倒序并默认选中含正式 50 例快照的运行，重启应用后验证默认 formal-v2（成功案例 50）。app.py 改动提交，运行与冻结证据不受影响。
+- 最终 QA：C 表 50 行严格八列全填、溯源 SHA 全部核对一致；68 passed；validate-data 通过；交付目录与文档密钥扫描无泄漏。真人评分仍为 0，D 待真实评价者完成后生成。
+
+## 2026-11-07 20:25 · 用户反馈与工作台冲刺（先方案）
+
+- 用户四条反馈：① 交付要用公开地址而非 127.0.0.1；② 文案去 AI 味（调研奢侈品回复范例与去 AI 味 skill）；③ 使用与设置分离——主界面只保留「对话 → AI 分析提问 → 对方确认 → 生成」，需求由 AI 从对话分析，其他设置全部进侧栏，开发案例不得展示给用户，隐藏 Deploy，候选一键复制；④ 页面美化。
+- 调研采用 `shir-danishyar/humanize`（SKILL.md：39 条 AI 写作模式 P1–P39＋词汇替换表＋自检清单，声明兼容 Codex；依据 Wikipedia「Signs of AI writing」及 Kobak 2025／Juzek & Ward 2025／Reinhart 2025 语料研究）作为去 AI 味规则依据；奢侈品私人回复仍无可核验公开样例，维持 Hermès／Jo Malone／Diptyque FAQ 结构借鉴。OUBIGFA 去 AI 味仓库本次抓取失败，后续按需再取。
+- 分工：qixu-content 重写 writing_rules.md（humanize 模式中文化＋微信场景自检）并新写 analysis.txt；qixu-core 增加 analyze_conversation（单次调用、严格 JSON、测试替身）；新 qixu-ui 重构 app.py（对话→分析→确认→生成主流程、候选卡＋复制按钮、设置侧栏、内部管理区、美化 CSS 与 config.toml）；lead 集成验证、部署准备与交付包更新。
+
+## 2026-11-07 20:30–21:00 · 工作台 S1b 实施与端到端验证
+
+- qixu-content：writing_rules.md 重写为六子节去 AI 味规则（P1–P39 中文化＋中文 AI 词表＋八条自检清单），新建 analysis.txt（六场景原词、JSON 三字段、不补造）。qixu-core：AnalysisResult＋analyze_conversation（守卫、单次调用、严格解析、无凭据泄漏），14 项新测试。qixu-ui：app.py 重构为顾问工作台（主区仅对话→分析→确认→生成；候选卡＋JS 复制按钮；侧栏四分区；开发案例复选框门控；隐藏菜单；象牙白/墨色/香槟金主题与 Noto Serif SC），.streamlit/config.toml 新建；注：Streamlit 1.67 无 hideDeployButton 选项，以 toolbarMode=minimal＋menu_items 实现并留注释。
+- lead 端到端冒烟（真实分析＋生成各 1 次调用）：主区结构 7 项断言全过、开发案例默认不可见、旧手工字段已移除、分析摘要展示、三条候选与复制按钮正常；截图 workbench-analyze.png／workbench-candidates.png 入交付包。
+- 全量测试 85 passed；requirements.txt（-e .）与部署配置就绪。下一步：冻结 formal-v10 → diagnostic-s2 → formal-v3 五十例重跑（新规则下的 C 表）→ 更新 E 前后对比 → 公开部署（待用户提供平台与凭据）。

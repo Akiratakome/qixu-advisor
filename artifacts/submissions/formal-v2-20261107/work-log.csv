@@ -1,0 +1,17 @@
+Step,What you did,Input,Output,Tool or agent used,Screenshots
+00,承接既有工作：阅读产品设计、技术计划、约束与岗位要求,两份 docs 报告；AGENTS.md；JD；两页题目,确认六场景、三候选、A–E 严格表头与交付边界,Codex 主 agent；read 工具；pypdf,待补：历史 AI 对话截图
+01,v1 实现：共享生成核心、合成资料、50 例、Streamlit 界面与评价入口（细节见 initial-local/work-log.csv）,既定模块合同；虚构品牌资料,六场景本地应用与审计记录,主 agent 与 core/dataset/ui_eval 子 agent,initial-local/screenshots/application/*（应用截图；AI 对话截图待补）
+02,v1 真实运行：诊断、冻结 formal-v1、50 例（49/50＋关联技术重试）、AI 辅助审阅,本地凭据；cases-v1.1,150 条机器候选与缺陷清单（F01–F19）,DeepSeek API；子 agent 审阅,待补：本步 AI 对话截图；initial-local/evidence/ai-formal-review.md
+03,自查、备份、技术选型与文档收敛（S0 方案）,v1 真实结果；官方文档调研,两份权威报告定稿；回滚标签与完整备份,主 agent 与子 agent；Web 调研,待补：AI 对话截图
+04,环境迁移恢复：修复 venv 旧路径与测试临时目录；建立回滚点,迁移后工作区；旧 .venv 配置,离线测试 23 passed；pre-s1-20261107 回滚点（bundle+ZIP+SHA）,PowerShell；uv；pytest,待补：AI 对话截图
+05,方案对齐：按七条原始想法逐条分析对 PDF 的帮助与设计,S1–S5 路线；两份报告,确认先修内容质量（S1）再交付的顺序,主 agent,待补：AI 对话截图
+06,S1 内容修复：写作规则包、六场景收紧、示例草稿,ai-formal-review.md 缺陷证据；FAQ 结构,writing_rules.md 四节规则；12 条草稿存 .cache 待审,qixu-content 子 agent；lead 审阅,待补：AI 对话截图
+07,S1 工程：四项写作设置、规则加载、语言校验、三项事实告警、界面控件,模块合同；测试契约,68 项测试；app 设置控件,qixu-core 子 agent；pytest；AppTest,artifacts/submissions/formal-v2-20261107/screenshots/advisor-settings-desktop.png（应用截图；AI 对话待补）
+08,真实诊断六例并逐条审阅,S1 新代码；六个开发例,diagnostic-s1 6/6 成功；零错字、内部规则未入正文,DeepSeek API；lead 审阅,待补：本步 AI 对话截图
+09,冻结 formal-v2 并真实回归 50 例,冻结指纹；50 例源例,50/50 成功、150 条；严格八列 outputs.csv,DeepSeek API；batch/export,待补：AI 对话截图；outputs.csv 与 row-provenance.json
+10,核对 9 条金额告警并修复告警器三类误报,formal-v2 候选原文与输入快照,告警 9→0；真实错误对照组仍告警；formal-v3 冻结,qixu-core 子 agent；lead 逐条核对,待补：AI 对话截图
+11,编写并运行 6 条多轮与 24 例语言组,multiturn/language 用例；运行前冻结与组级标准,多轮 6 例（1 例关联重试）；语言组 22/24＋2 例关联重试,DeepSeek API；qixu-content；extra_groups.py,待补：AI 对话截图
+12,发现并修复英文输出遵从缺陷：系统提示中文锚点,语言组首轮英文组仅 6/12 合规,language-s5 22/24；缺陷与波动数据记入 E,DeepSeek API；lead 定位；qixu-core 实现,待补：本步 AI 对话截图
+13,撰写 B 方法论与 E 缺陷、生成溯源与版本清单、交付清单,全部真实运行与审阅证据,formal-v2-20261107 交付目录齐备（C/B/E/架构图/溯源）,主 agent,待补：AI 对话截图
+14,修复评价页默认运行选择（改为默认含 50 例快照的运行）并重启应用,评价页实际交互检查,默认选中 formal-v2（成功案例 50）,主 agent；Playwright/Edge,artifacts/submissions/formal-v2-20261107/screenshots/evaluation-pending.png（应用截图；AI 对话待补）
+15,真人评价 formal-v2 全部 150 条（第二位复核 12 例，无则单人）,真实评价者逐条阅读机器原稿,评分与理由进 ratings.jsonl；汇总 D,真实评价者；应用评价页,待补：评价过程真实截图（完成时补充）
