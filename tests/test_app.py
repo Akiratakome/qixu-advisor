@@ -73,3 +73,50 @@ def test_form_submit_is_only_generation_trigger_and_edit_keeps_original(tmp_path
     assert not app.exception
     assert not any(widget.label == "编辑稿" for widget in app.text_area)
     assert any("新请求保存失败" in error.value for error in app.error)
+
+
+def test_writing_settings_controls_pass_to_request(tmp_path, monkeypatch):
+    source_root = evaluation.ROOT
+    shutil.copytree(source_root / "data", tmp_path / "data")
+    shutil.copytree(source_root / "src/qixu_advisor/prompts", tmp_path / "src/qixu_advisor/prompts")
+    monkeypatch.setattr(evaluation, "ROOT", tmp_path)
+    original_create, original_generate = records.create_run, generation.generate
+    captured_requests = []
+
+    def stub_model(messages, config):
+        system = messages[0]["content"]
+        if "英文（en）" in system:
+            texts = [f"Offline form candidate {i} for stub testing only." for i in (1, 2, 3)]
+        else:
+            texts = [f"这是离线表单测试候选{i}，祝您生日愉快。" for i in (1, 2, 3)]
+        return {"raw_text": json.dumps({"candidates": [{"text": text} for text in texts]}, ensure_ascii=False), "model": "explicit-test-stub", "usage": {}, "finish_reason": "stop"}
+
+    def stub_create(case_ids, **kwargs):
+        kwargs["execution_mode"] = "stub"
+        return original_create(case_ids, **kwargs)
+
+    def stub_generate(request, run_id, case_id, **kwargs):
+        captured_requests.append(request)
+        return original_generate(request, run_id, case_id, **kwargs, execution_mode="stub", model_call=stub_model)
+
+    monkeypatch.setattr(records, "create_run", stub_create)
+    monkeypatch.setattr(generation, "generate", stub_generate)
+    app = AppTest.from_file(str(source_root / "src/qixu_advisor/app.py")).run()
+    assert not app.exception
+    next(widget for widget in app.text_input if widget.label == "联系对象").input("测试客户")
+    next(widget for widget in app.text_input if widget.label == "祝福缘由").input("今天生日")
+    next(widget for widget in app.selectbox if widget.label == "输出语言").select("English")
+    next(widget for widget in app.selectbox if widget.label == "语气").select("温和")
+    next(widget for widget in app.selectbox if widget.label == "篇幅").select("简短")
+    next(widget for widget in app.selectbox if widget.label == "本次目标").select("提出下一步")
+    next(button for button in app.button if button.label == "生成三条候选").click().run()
+    assert not app.exception
+    assert len(captured_requests) == 1
+    request = captured_requests[0]
+    assert request.output_language == "en"
+    assert request.tone == "warm"
+    assert request.length == "short"
+    assert request.goal == "next_step"
+    active = app.session_state["active_result"]
+    assert active["status"] == "success"
+    assert active["provenance"]["effective_settings"]["output_language"] == "en"

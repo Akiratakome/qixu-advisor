@@ -61,6 +61,12 @@ def _parse_chat(value: str) -> list[dict]:
     return result
 
 
+_LANGUAGE_OPTIONS = {"中文": "zh-CN", "English": "en"}
+_TONE_OPTIONS = {"自然": "natural", "温和": "warm", "直接": "direct"}
+_LENGTH_OPTIONS = {"简短": "short", "标准": "standard"}
+_GOAL_OPTIONS = {"按场景默认": None, "回答问题": "answer", "帮助选择": "recommend", "提出下一步": "next_step"}
+
+
 def advisor_page() -> None:
     status = config_status(ROOT)
     if not status["configured"]:
@@ -129,6 +135,14 @@ def advisor_page() -> None:
                 format_func=lambda x: "请选择具体活动" if x is None else f"{event_map[x].get('name', x)} · {event_map[x]['start_at']}")
         chat = st.text_area("对话记录（可为空，每条一行）", value=_chat_text(preset.conversation_history) if preset else "", height=120,
             placeholder="客户：这次想给妹妹挑一款。\n顾问：她平时喜欢哪一类气味？")
+        preset_language = preset.output_language if preset else "zh-CN"
+        language = st.selectbox("输出语言", list(_LANGUAGE_OPTIONS), index=list(_LANGUAGE_OPTIONS.values()).index(preset_language))
+        preset_tone = preset.tone if preset else "natural"
+        tone = st.selectbox("语气", list(_TONE_OPTIONS), index=list(_TONE_OPTIONS.values()).index(preset_tone))
+        preset_length = preset.length if preset else "standard"
+        length = st.selectbox("篇幅", list(_LENGTH_OPTIONS), index=list(_LENGTH_OPTIONS.values()).index(preset_length))
+        preset_goal = preset.goal if preset else None
+        goal = st.selectbox("本次目标", list(_GOAL_OPTIONS), index=list(_GOAL_OPTIONS.values()).index(preset_goal))
         submitted = st.form_submit_button("生成三条候选", type="primary")
     if submitted:
         previous_result = st.session_state.pop("active_result", None)
@@ -142,7 +156,9 @@ def advisor_page() -> None:
         try:
             request = GenerationRequest(scenario=scenario, client_information=client_information,
                 conversation_history=_parse_chat(chat), product_ids=selected_products, event_id=event_id,
-                occasion=occasion, client_id=client_id)
+                occasion=occasion, client_id=client_id,
+                output_language=_LANGUAGE_OPTIONS[language], tone=_TONE_OPTIONS[tone],
+                length=_LENGTH_OPTIONS[length], goal=_GOAL_OPTIONS[goal])
             parent_run_id = None
             if previous_result:
                 previous_input = ROOT / "artifacts/runs" / previous_result["run_id"] / "cases" / previous_result["case_id"] / "input.json"

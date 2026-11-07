@@ -96,3 +96,24 @@
 - 自查发现 prepare_submission.py 会覆盖初版包，继续读代码发现 check_submission.py 也会写 verification.json；README 将两者标为仅供恢复副本复现，S4 先改为新 submission_id 并分离只读检查。此轮没有运行这两份脚本、修改它们或改写初版材料。
 - 技术复核补齐 product_ids／event_id／occasion 等输入归属、幂等旧键优先与原子占位、数据库为新版草稿动作真值、反馈导出及 copied_text 留证。两位复核 agent 确认修订后无影响当前方案交接的实质遗漏；不把方案通过当工程或内容质量通过。
 - 已检查核心文档本地链接／锚点与中文编码，docs 仍两份，归档 CRC／12 文件摘要一致；git diff 确认 src、data、scripts、tests、依赖、旧 submissions 与基线未变。本轮不重复程序测试，既有 23 项仅作历史结果。A 的真实 AI 步骤截图与项目约定真人评价仍待补，C 的首轮／重试来源不变；没有新效果或新评分。
+
+## 2026-11-07 · 环境迁移恢复与回滚点（未动产品代码）
+
+- 迁移后 `.venv/pyvenv.cfg` 仍指向旧机器 `C:\Users\HX\...`，venv 启动器失效；依赖与工作区内缓存 Python 3.12.15 完好。修正路径后解释器 3.12.15 与 streamlit/pydantic/httpx/pypdf 导入正常。
+- 系统 Temp 下旧账户遗留的 `pytest-of-HX` 导致 pytest 默认临时目录权限被拒；以 `--basetemp=.cache\pytest-tmp` 指向工作区后，离线测试恢复 23 passed in 2.32s。README 默认测试命令待随方案确认后同步。
+- 建立回滚点 `pre-s1-20261107`（→ 08fdd7c）：Git bundle 与 HEAD 受控文件 ZIP 存 `artifacts/backups/20261107-pre-s1/`，SHA-256 与恢复方法记入 NOTES.md。未改产品代码、数据、旧提交包，未调用模型。
+- 用户补回旧会话记录，确认七条原始想法与 docs 两份报告的下一版计划一致；按“先方案后设计”汇报想法与 PDF 的对应分析，待确认后进入 S1。
+
+## 2026-11-07 · S1 方案定稿与分工（先方案后协同）
+
+- 用户授权按下一版计划实施（不接受 v1 原样交付），主 agent 负责对齐与集成、可用子 agent 分工，完工后再汇报；外部研究可自行进行，需登录的站点（如小红书）不进入，需要时向用户申请。
+- 外部研究：微信公众号／小红书内容多为营销文，仍未找到可核验的私人顾问聊天实录（与历史结论一致）；GitHub 参考项目 `usernamermh/help-sale`（话术知识库、跟进任务）与 `cgk100/aiwechat`（微信+LLM 应答）仅作结构借鉴，不引入其代码或外部政策。风格依据仍为 docs 已核验的三家 FAQ 答复结构 + `ai-formal-review.md` 的真实缺陷证据（F01–F19 与内部规则话术清单）。
+- S1 设计（实施后回填结果）：
+  - 事实纪律：商品规范名逐字一致（青岚／暮光／雨白／砚泊）；所选 SKU 子集不得表述为完整规格；预算／他方价格与品牌报价分开；购买≠使用、转述≠已核实、不声称改档；内部约束转译为对客得体表达且仅在当前决定需要时说；未知保持未知。
+  - 去 AI 味：短句口语、一次一事、单条 2–4 句；禁敬语堆叠、空泛形容词、总起句、万能结尾、列表式微信；称呼有依据；未问不铺开优惠／库存／渠道／留香。
+  - 三条差异化：直接回应＋事实 ／ 关系感受（有依据）／ 明确下一步；不得为差异虚构商品或承诺。
+  - 四项写作设置：output_language zh-CN|en、tone natural|warm|direct、length short|standard、goal answer|recommend|next_step（场景默认）；进入提示与快照。
+  - 规则运行时加载：`prompts/writing_rules.md` 由 build_messages 显式加载；`approved.jsonl` 建立加载机制但保持为空，起草示例存 `.cache/s1-style-drafts.jsonl`，经用户审阅后才入 approved。
+  - 程序告警增强：商品名近似错字告警、预算金额白名单消除误报、未归属金额告警。
+  - 验收：离线 pytest（--basetemp=.cache/pytest-tmp）、validate-data、真实 diagnostic-s1 六例对照，再决定 freeze formal-v2 与 50 例回归。
+- 分工：`qixu-content`（prompts 规则包、场景微调、示例草稿）、`qixu-core`（models／generation／data／app 设置与告警、测试）；lead 集成、真实运行、审阅、日志与 Git。

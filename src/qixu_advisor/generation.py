@@ -26,22 +26,149 @@ class _Drafts(BaseModel):
     candidates: list[_Draft] = Field(min_length=3, max_length=3)
 
 
+DEFAULT_GOALS = {
+    "生日与节庆": "answer",
+    "产品推荐": "recommend",
+    "购后关怀": "answer",
+    "沉睡唤醒": "next_step",
+    "活动邀请": "next_step",
+    "价格异议": "answer",
+}
+
+LANGUAGE_LABELS = {"zh-CN": "中文（zh-CN）", "en": "英文（en）"}
+TONE_LABELS = {"natural": "自然", "warm": "温和", "direct": "直接"}
+LENGTH_LABELS = {"short": "简短", "standard": "标准"}
+GOAL_LABELS = {"answer": "回答问题", "recommend": "帮助选择", "next_step": "提出下一步"}
+
+_CJK_RE = re.compile(r"[\u4e00-\u9fff]")
+_ASCII_LETTER_RE = re.compile(r"[A-Za-z]")
+_AMOUNT_RE = re.compile(r"(?:¥|￥)\s*(\d[\d,]*(?:\.\d+)?)|(\d[\d,]*(?:\.\d+)?)\s*(?:元|块)")
+_BUDGET_CONTEXT_RE = re.compile(r"(?:预算|最多|不超过|以内|上限)[^0-9¥￥\n]{0,8}?(\d[\d,]*(?:\.\d+)?)")
+
+
+def effective_settings(request: GenerationRequest) -> dict[str, Any]:
+    """goal=None 时按场景解析默认目标；显式设置优先，供提示组装与 provenance 共用。"""
+    goal = request.goal if request.goal is not None else DEFAULT_GOALS[request.scenario]
+    return {
+        "output_language": request.output_language,
+        "tone": request.tone,
+        "length": request.length,
+        "goal": goal,
+        "goal_source": "explicit" if request.goal is not None else "scenario_default",
+    }
+
+
+def text_matches_language(text: str, output_language: str) -> bool:
+    """zh-CN 须含 CJK 字符；en 须含 ASCII 字母。"""
+    if output_language == "zh-CN":
+        return bool(_CJK_RE.search(text))
+    if output_language == "en":
+        return bool(_ASCII_LETTER_RE.search(text))
+    return False
+
+
+def load_approved_examples(*, root: Path = PROJECT_ROOT) -> list[dict[str, Any]]:
+    """经审阅参考示例：文件缺失或为空时返回 []；结构非法行显式报错，不静默跳过。"""
+    path = Path(root) / "data" / "style_examples" / "approved.jsonl"
+    if not path.exists():
+        return []
+    records = []
+    for index, line in enumerate(path.read_text(encoding="utf-8-sig").splitlines(), 1):
+        if not line.strip():
+            continue
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"经审阅参考示例第 {index} 行不是合法 JSON：{exc}") from exc
+        if not isinstance(record, dict) or not str(record.get("text", "")).strip():
+            raise ValueError(f"经审阅参考示例第 {index} 行结构非法：须为含非空 text 字段的 JSON 对象")
+        records.append(record)
+    return records
+
+
 def build_messages(request: GenerationRequest, facts: dict[str, Any], *, root: Path = PROJECT_ROOT) -> list[dict[str, str]]:
     prompt_dir = Path(root) / "src" / "qixu_advisor" / "prompts"
     system = (prompt_dir / "system.txt").read_text(encoding="utf-8")
+    rules_path = prompt_dir / "writing_rules.md"
+    if rules_path.exists():
+        system += "\n\n【写作规则】\n" + rules_path.read_text(encoding="utf-8").strip()
+    settings = effective_settings(request)
+    goal_text = GOAL_LABELS[settings["goal"]]
+    if settings["goal_source"] == "scenario_default":
+        goal_text += "（场景默认）"
+    system += (
+        "\n\n【写作设置】\n"
+        f"- 输出语言：{LANGUAGE_LABELS[settings['output_language']]}\n"
+        f"- 语气：{TONE_LABELS[settings['tone']]}\n"
+        f"- 篇幅：{LENGTH_LABELS[settings['length']]}\n"
+        f"- 本次目标：{goal_text}\n"
+    )
     scenes = json.loads((prompt_dir / "scenarios.json").read_text(encoding="utf-8"))
+    system += "\n本场景要求：" + scenes[request.scenario]
+    examples = load_approved_examples(root=root)
+    if examples:
+        rendered = []
+        for record in examples:
+            label = f"（{record['scenario']}）" if record.get("scenario") else ""
+            rendered.append(f"- {label}{record['text'].strip()}")
+        system += "\n\n【经审阅参考示例】\n" + "\n".join(rendered)
     return [
-        {"role": "system", "content": system + "\n本场景要求：" + scenes[request.scenario]},
+        {"role": "system", "content": system},
         {"role": "user", "content": json.dumps({"request": request.model_dump(mode="json"), "facts": facts}, ensure_ascii=False)},
     ]
 
 
-def check_explicit_facts(candidates: list[Candidate], facts: dict[str, Any]) -> list[str]:
-    """只提示能定位的商品容量/金额矛盾；绝不把规则通过等同于内容合格。"""
+def _edit_distance(first: str, second: str) -> int:
+    if len(first) < len(second):
+        first, second = second, first
+    previous = list(range(len(second) + 1))
+    for row, char_a in enumerate(first, 1):
+        current = [row]
+        for column, char_b in enumerate(second, 1):
+            current.append(min(previous[column] + 1, current[column - 1] + 1, previous[column - 1] + (char_a != char_b)))
+        previous = current
+    return previous[-1]
+
+
+def _close(value: float, pool: set[float]) -> bool:
+    return any(abs(value - item) < 1e-6 for item in pool)
+
+
+def _budget_whitelist(request: GenerationRequest | None) -> set[float]:
+    """白名单金额=客户原话（预算字段与聊天中出现的金额），不是本品牌报价。"""
+    amounts: set[float] = set()
+    if request is None:
+        return amounts
+
+    def add(value: str) -> None:
+        cleaned = value.replace(",", "").strip()
+        if cleaned:
+            amounts.add(float(cleaned))
+
+    budget = request.client_information.get("budget_cny")
+    if isinstance(budget, bool):
+        budget = None
+    if isinstance(budget, (int, float)):
+        add(str(budget))
+    elif isinstance(budget, str) and re.fullmatch(r"\d[\d,]*(?:\.\d+)?", budget.strip()):
+        add(budget)
+    history_text = "\n".join(turn.get("content", "") for turn in request.conversation_history)
+    for match in _AMOUNT_RE.finditer(history_text):
+        add(match.group(1) or match.group(2))
+    for match in _BUDGET_CONTEXT_RE.finditer(history_text):
+        add(match.group(1))
+    return amounts
+
+
+def check_explicit_facts(candidates: list[Candidate], facts: dict[str, Any], request: GenerationRequest | None = None) -> list[str]:
+    """只提示能定位的商品容量/金额矛盾、疑似商品名错字与未归属金额；告警仅顾问可见，绝不改变候选。"""
     products = facts.get("products", [])
     names = sorted({item.get("name", "") for item in products if item.get("name")}, key=len, reverse=True)
     if not names:
         return []
+    whitelist = _budget_whitelist(request)
+    fact_prices = {float(item["price_cny"]) for item in products if isinstance(item.get("price_cny"), (int, float)) and not isinstance(item.get("price_cny"), bool)}
+    materials_text = json.dumps({"facts": facts, "client_information": request.client_information if request else {}, "conversation_history": request.conversation_history if request else []}, ensure_ascii=False)
     names_pattern = "|".join(re.escape(name) for name in names)
     pair_pattern = re.compile(r"(\d+(?:\.\d+)?)\s*(?:mL|ml|ML|毫升)[^。；;\n]{0,30}?(\d[\d,]*(?:\.\d+)?)\s*元")
     warnings = []
@@ -57,9 +184,26 @@ def check_explicit_facts(candidates: list[Candidate], facts: dict[str, Any]) -> 
                 matching = [item for item in variants if float(item.get("volume_ml", -1)) == volume]
                 if not matching:
                     warnings.append(f"{candidate.candidate_id}：{name} {volume:g} mL 未在本次商品资料中找到，请核对规格。")
-                elif not any(float(item.get("price_cny", -1)) == price for item in matching):
+                elif not _close(price, whitelist) and not any(float(item.get("price_cny", -1)) == price for item in matching):
                     expected = " / ".join(f"{item['price_cny']} 元" for item in matching)
                     warnings.append(f"{candidate.candidate_id}：{name} {volume:g} mL 附近出现 {price:g} 元，资料价格为 {expected}；请核对是品牌报价还是顾客原话。")
+        for name in names:
+            width = len(name)
+            if width < 2:
+                continue
+            for start in range(len(candidate.text) - width + 1):
+                window = candidate.text[start:start + width]
+                if not all("\u4e00" <= char <= "\u9fff" for char in window):
+                    continue
+                if window == name or window in materials_text:
+                    continue
+                if _edit_distance(window, name) == 1:
+                    warnings.append(f"{candidate.candidate_id}：疑似商品名错字：{window}（资料规范名：{name}）")
+                    break
+        for match in _AMOUNT_RE.finditer(candidate.text):
+            value = float((match.group(1) or match.group(2)).replace(",", ""))
+            if not _close(value, fact_prices) and not _close(value, whitelist):
+                warnings.append(f"{candidate.candidate_id}：候选出现 {value:g} 元；该金额未在本次资料中出现，请核对来源。")
     return list(dict.fromkeys(warnings))
 
 
@@ -83,7 +227,7 @@ def generate(request: GenerationRequest | dict[str, Any], run_id: str, case_id: 
     except (OSError, ValueError, TypeError, KeyError) as exc:
         setup_error = f"本地资料、提示或配置读取失败（{type(exc).__name__}），请检查文件与参数"
         config = ModelConfig()
-    provenance = {"execution_mode": execution_mode, "created_at": timestamp(), "versions": source_versions(root), "model_config": public_config(config), "model_call_count": 0, "quality_status": "not_human_evaluated"}
+    provenance = {"execution_mode": execution_mode, "created_at": timestamp(), "versions": source_versions(root), "model_config": public_config(config), "model_call_count": 0, "quality_status": "not_human_evaluated", "effective_settings": effective_settings(request)}
     path = begin_case(run_id, case_id, {"schema_version": "1.0", "run_id": run_id, "case_id": case_id, "created_at": timestamp(), "request": request.model_dump(mode="json"), "facts": facts, "messages": messages, "provenance": provenance}, root=root, execution_mode=execution_mode)
 
     def finish(status: str, **fields: Any) -> GenerationResult:
@@ -131,6 +275,8 @@ def generate(request: GenerationRequest | dict[str, Any], run_id: str, case_id: 
         candidates = [Candidate(candidate_id=f"{case_id}-C{index}", text=draft.text) for index, draft in enumerate(drafts.candidates, 1)]
         if len({candidate.text for candidate in candidates}) != 3:
             raise ValueError("三条候选完全重复")
+        if not all(text_matches_language(candidate.text, request.output_language) for candidate in candidates):
+            raise ValueError(f"候选语言不符合输出语言设置（{request.output_language}）")
     except (ValidationError, ValueError, KeyError, TypeError):
-        return finish("technical_failure", error="模型输出结构不合格：需要三条不同、非空的中文完整候选；原始返回已保存，未重抽")
-    return finish("success", candidates=candidates, warnings=check_explicit_facts(candidates, facts))
+        return finish("technical_failure", error=f"模型输出结构不合格：需要三条不同、非空且符合输出语言设置（{request.output_language}）的完整候选；原始返回已保存，未重抽")
+    return finish("success", candidates=candidates, warnings=check_explicit_facts(candidates, facts, request))

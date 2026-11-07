@@ -29,6 +29,11 @@ class GenerationRequest(BaseModel):
     event_id: str | None = None
     occasion: str | None = None
     client_id: str | None = None
+    # 写作设置；旧 jsonl 无这些字段时默认值生效。goal=None 表示按场景默认，生成时解析。
+    output_language: Literal["zh-CN", "en"] = "zh-CN"
+    tone: Literal["natural", "warm", "direct"] = "natural"
+    length: Literal["short", "standard"] = "standard"
+    goal: Literal["answer", "recommend", "next_step"] | None = None
 
     @field_validator("conversation_history")
     @classmethod
@@ -63,10 +68,11 @@ class Candidate(BaseModel):
 
     @field_validator("text")
     @classmethod
-    def chinese_message(cls, text: str) -> str:
+    def non_empty_text(cls, text: str) -> str:
+        # 语言校验移到生成层按 output_language 进行；这里只保留非空与长度上限。
         text = text.strip()
-        if not re.search(r"[\u4e00-\u9fff]", text):
-            raise ValueError("候选必须包含中文消息")
+        if not text:
+            raise ValueError("候选文本不能为空")
         return text
 
 
