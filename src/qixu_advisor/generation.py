@@ -44,6 +44,17 @@ _CJK_RE = re.compile(r"[\u4e00-\u9fff]")
 _ASCII_LETTER_RE = re.compile(r"[A-Za-z]")
 _AMOUNT_RE = re.compile(r"(?:¥|￥)\s*(\d[\d,]*(?:\.\d+)?)|(\d[\d,]*(?:\.\d+)?)\s*(?:元|块)")
 _BUDGET_CONTEXT_RE = re.compile(r"(?:预算|最多|不超过|以内|上限)[^0-9¥￥\n]{0,8}?(\d[\d,]*(?:\.\d+)?)")
+# 聊天中的三位及以上裸数字也算客户原话金额；紧邻日期语境（年月日天号时分秒点周）或容量单位的数字不收。
+_BARE_AMOUNT_RE = re.compile(r"(?<![年月日天号时分秒点周\d])\d[\d,]{2,}(?:\.\d+)?(?![\d年月日天号时分秒点周])(?!\s*(?:毫升|mL|ml|ML))")
+_CLAUSE_BREAK_RE = re.compile(r"[。；;\n]")
+_VOLUME_RE = re.compile(r"(\d+(?:\.\d+)?)\s*(?:mL|ml|ML|毫升)")
+_SINGLE_PRICE_RE = re.compile(r"(?:¥|￥)\s*(\d[\d,]*(?:\.\d+)?)|(\d[\d,]*(?:\.\d+)?)\s*(?:元|块)")
+_RANGE_PRICE_RE = re.compile(r"(\d[\d,]*(?:\.\d+)?)\s*(?:到|至|-|–|—|－)\s*(\d[\d,]*(?:\.\d+)?)\s*(?:元|块)")
+# 显式合计语境：候选自己推算总价的标记；金额还必须恰为目录价的小整数倍才豁免告警。
+_TOTAL_CONTEXT_RE = re.compile(r"(?:合计|共计|总共|一共|总计|加起来|[0-9两三四五六七八九十]\s*瓶)")
+# 「A 和 B 分别是 X 元和 Y 元」：容量与金额按顺序一一对应，不再按就近配对。
+_LIST_CONNECTOR_RE = re.compile(r"分别是|分别为|依次是|各为|依次为")
+_LIST_JOINER_RE = re.compile(r"[\s和与、]*")
 
 
 def effective_settings(request: GenerationRequest) -> dict[str, Any]:
@@ -134,6 +145,17 @@ def _close(value: float, pool: set[float]) -> bool:
     return any(abs(value - item) < 1e-6 for item in pool)
 
 
+def _is_derived_total(value: float, fact_prices: set[float], prefix: str) -> bool:
+    """金额处在显式合计语境（合计/两瓶等）且恰为目录价 2–9 倍，视为候选自己的正确推算，不告警。"""
+    if not _TOTAL_CONTEXT_RE.search(prefix):
+        return False
+    for price in fact_prices:
+        multiple = round(value / price)
+        if abs(value / price - multiple) < 1e-6 and 2 <= multiple <= 9:
+            return True
+    return False
+
+
 def _budget_whitelist(request: GenerationRequest | None) -> set[float]:
     """白名单金额=客户原话（预算字段与聊天中出现的金额），不是本品牌报价。"""
     amounts: set[float] = set()
@@ -157,6 +179,9 @@ def _budget_whitelist(request: GenerationRequest | None) -> set[float]:
         add(match.group(1) or match.group(2))
     for match in _BUDGET_CONTEXT_RE.finditer(history_text):
         add(match.group(1))
+    # 无币种标记的客户原话金额（如「昨天说980，今天怎么变1080」）；年份与容量数字不进白名单。
+    for match in _BARE_AMOUNT_RE.finditer(history_text):
+        add(match.group(0))
     return amounts
 
 
@@ -170,7 +195,6 @@ def check_explicit_facts(candidates: list[Candidate], facts: dict[str, Any], req
     fact_prices = {float(item["price_cny"]) for item in products if isinstance(item.get("price_cny"), (int, float)) and not isinstance(item.get("price_cny"), bool)}
     materials_text = json.dumps({"facts": facts, "client_information": request.client_information if request else {}, "conversation_history": request.conversation_history if request else []}, ensure_ascii=False)
     names_pattern = "|".join(re.escape(name) for name in names)
-    pair_pattern = re.compile(r"(\d+(?:\.\d+)?)\s*(?:mL|ml|ML|毫升)[^。；;\n]{0,30}?(\d[\d,]*(?:\.\d+)?)\s*元")
     warnings = []
     for candidate in candidates:
         mentions = list(re.finditer(names_pattern, candidate.text))
@@ -179,14 +203,74 @@ def check_explicit_facts(candidates: list[Candidate], facts: dict[str, Any], req
             fragment = candidate.text[mention.end():end]
             name = mention.group()
             variants = [item for item in products if item.get("name") == name]
-            for pair in pair_pattern.finditer(fragment):
-                volume, price = float(pair[1]), float(pair[2].replace(",", ""))
+            # 每个容量只与「容量→金额」邻近窗口内的第一个金额配对：窗口到下一个容量、句读或 30 字符为止，
+            # 片段里稍远处属于另一个容量的价格不得跨配。
+            volume_tokens = [(match.start(), match.end(), float(match.group(1))) for match in _VOLUME_RE.finditer(fragment)]
+            amount_tokens: list[tuple[int, int, str, Any]] = []
+            range_spans: list[tuple[int, int]] = []
+            for match in _RANGE_PRICE_RE.finditer(fragment):
+                range_spans.append((match.start(), match.end()))
+                amount_tokens.append((match.start(), match.end(), "range", (float(match.group(1).replace(",", "")), float(match.group(2).replace(",", "")))))
+            for match in _SINGLE_PRICE_RE.finditer(fragment):
+                if any(match.start() < range_end and match.end() > range_start for range_start, range_end in range_spans):
+                    continue
+                amount_tokens.append((match.start(), match.end(), "price", float((match.group(1) or match.group(2)).replace(",", ""))))
+            amount_tokens.sort(key=lambda token: token[0])
+
+            def check_pair(volume: float, kind: str, value: Any, amount_start: int) -> None:
                 matching = [item for item in variants if float(item.get("volume_ml", -1)) == volume]
                 if not matching:
                     warnings.append(f"{candidate.candidate_id}：{name} {volume:g} mL 未在本次商品资料中找到，请核对规格。")
-                elif not _close(price, whitelist) and not any(float(item.get("price_cny", -1)) == price for item in matching):
+                    return
+                prefix = fragment[max(0, amount_start - 10):amount_start]
+                if kind == "range":
+                    low, high = value
+                    if low > high:
+                        low, high = high, low
+                    prices = {float(item.get("price_cny", -1)) for item in matching}
+                    if not (_close(low, prices) or _close(high, prices)):
+                        expected = " / ".join(f"{item['price_cny']} 元" for item in matching)
+                        warnings.append(f"{candidate.candidate_id}：{name} {volume:g} mL 附近出现 {low:g} 到 {high:g} 元，资料价格为 {expected}；请核对是品牌报价还是顾客原话。")
+                    return
+                price = value
+                if not _close(price, whitelist) and not _is_derived_total(price, fact_prices, prefix) and not any(_close(price, {float(item.get("price_cny", -1))}) for item in matching):
                     expected = " / ".join(f"{item['price_cny']} 元" for item in matching)
                     warnings.append(f"{candidate.candidate_id}：{name} {volume:g} mL 附近出现 {price:g} 元，资料价格为 {expected}；请核对是品牌报价还是顾客原话。")
+
+            consumed_volumes: set[int] = set()
+            consumed_amounts: set[int] = set()
+            # 「50 mL 和 100 mL 标价分别是 980 元和 1580 元」：容量与金额按顺序一一对应。
+            connector = _LIST_CONNECTOR_RE.search(fragment)
+            if connector:
+                volumes_before = [token for token in volume_tokens if token[0] < connector.start()]
+                amounts_after = [token for token in amount_tokens if token[0] >= connector.end() and token[0] - connector.end() <= 12]
+                chain = amounts_after[:1]
+                for previous, following in zip(amounts_after, amounts_after[1:]):
+                    if _LIST_JOINER_RE.fullmatch(fragment[previous[1]:following[0]]):
+                        chain.append(following)
+                    else:
+                        break
+                if volumes_before and len(volumes_before) == len(chain):
+                    for (volume_start, volume_end, volume), (amount_start, amount_end, kind, value) in zip(volumes_before, chain):
+                        check_pair(volume, kind, value, amount_start)
+                        consumed_volumes.add(volume_start)
+                        consumed_amounts.add(amount_start)
+            # 其余容量只与「容量→金额」邻近窗口内的第一个金额配对：窗口到下一个容量、句读或 30 字符为止，
+            # 片段里稍远处属于另一个容量的价格不得跨配。
+            for volume_index, (volume_start, volume_end, volume) in enumerate(volume_tokens):
+                if volume_start in consumed_volumes:
+                    continue
+                next_volume_start = volume_tokens[volume_index + 1][0] if volume_index + 1 < len(volume_tokens) else None
+                for start, _end, kind, value in amount_tokens:
+                    if start in consumed_amounts or start <= volume_end:
+                        continue
+                    if next_volume_start is not None and start > next_volume_start:
+                        break
+                    between = fragment[volume_end:start]
+                    if len(between) > 30 or _CLAUSE_BREAK_RE.search(between):
+                        break
+                    check_pair(volume, kind, value, start)
+                    break
         for name in names:
             width = len(name)
             if width < 2:
@@ -202,8 +286,11 @@ def check_explicit_facts(candidates: list[Candidate], facts: dict[str, Any], req
                     break
         for match in _AMOUNT_RE.finditer(candidate.text):
             value = float((match.group(1) or match.group(2)).replace(",", ""))
-            if not _close(value, fact_prices) and not _close(value, whitelist):
-                warnings.append(f"{candidate.candidate_id}：候选出现 {value:g} 元；该金额未在本次资料中出现，请核对来源。")
+            if _close(value, fact_prices) or _close(value, whitelist):
+                continue
+            if _is_derived_total(value, fact_prices, candidate.text[max(0, match.start() - 10):match.start()]):
+                continue
+            warnings.append(f"{candidate.candidate_id}：候选出现 {value:g} 元；该金额未在本次资料中出现，请核对来源。")
     return list(dict.fromkeys(warnings))
 
 
