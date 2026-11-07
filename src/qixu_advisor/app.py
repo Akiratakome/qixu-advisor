@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import html as html_lib
 import json
+import time
 from pathlib import Path
 
 import streamlit as st
@@ -20,6 +21,16 @@ from qixu_advisor.model import config_status
 from qixu_advisor.models import SCENARIOS, GenerationRequest
 from qixu_advisor.records import create_run, load_result, save_feedback
 
+# S2 会话/偏好层：core 落地后可用；未落地时工作台退化为纯输入模式，不中断主流程。
+try:
+    from qixu_advisor import conversations as conversations_module
+    from qixu_advisor import preferences as preferences_module
+    from qixu_advisor import storage as storage_module
+except ImportError:  # pragma: no cover - S2 已落地，仅防御旧检出
+    conversations_module = None
+    preferences_module = None
+    storage_module = None
+
 
 _CHAT_KEY = "qixu_chat_text"
 _CLIENT_KEY = "qixu_client"
@@ -32,7 +43,14 @@ _LENGTH_KEY = "qixu_set_length"
 _GOAL_KEY = "qixu_set_goal"
 _SHOW_DEV_KEY = "qixu_show_dev_cases"
 _DEV_CASE_KEY = "qixu_dev_case"
-_DEV_PENDING_KEY = "qixu_dev_pending"
+_PENDING_APPLY_KEY = "qixu_pending_apply"
+_CONVERSATION_KEY = "selected_conversation_id"
+_LOADED_CONVERSATION_KEY = "qixu_loaded_conversation_id"
+_PERSISTED_MESSAGES_KEY = "qixu_persisted_messages"
+_REVISION_IDS_KEY = "qixu_revision_ids"
+_GENERATION_IDS_KEY = "qixu_generation_ids"
+_AUTOCOPY_KEY = "qixu_autocopy"
+_ANALYSIS_PREFIX = "【分析】"
 
 _LANGUAGE_OPTIONS = {"中文": "zh-CN", "English": "en"}
 _TONE_OPTIONS = {"自然": "natural", "温和": "warm", "直接": "direct"}
@@ -144,44 +162,44 @@ p, li, span, [data-testid="stMarkdownContainer"] {
 </style>
 """
 
-# components.html 不支持 key；各卡片以唯一 DOM id 与独立嵌入正文区分，互不影响。
+# components.html 不支持 key；各卡片以唯一 DOM id 与独立嵌入正文区分。
+# 复制证据由 Streamlit 按钮记录（add_draft_action），剪贴板操作由本 iframe 的 JS 完成：
+# autocopy 模式下加载即复制（writeText 失败回退 execCommand，再失败显示手动复制文本）。
 _COPY_HTML_TEMPLATE = """
 <div style="font-family: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;">
-  <button id="__ID__-btn" title="复制当前正文（含未保存修改）" onclick="__qixuCopy('__ID__')"
-          style="appearance:none; border:1px solid #B08D57; background:#B08D57; color:#FFFFFF;
-                 border-radius:8px; padding:8px 28px; font-size:15px; letter-spacing:0.10em; cursor:pointer;">复制</button>
-  <span id="__ID__-status" style="margin-left:14px; color:#B08D57; font-size:14px;"></span>
+  <span id="__ID__-status" style="color:#B08D57; font-size:14px;">__HINT__</span>
   <textarea id="__ID__-manual" style="display:none; width:100%; height:110px; margin-top:10px;">__TEXT__</textarea>
   <script>
-    window.__qixuText = window.__qixuText || {};
-    window.__qixuText['__ID__'] = __PAYLOAD__;
-    function __qixuCopy(id) {
-      var status = document.getElementById(id + '-status');
-      var manual = document.getElementById(id + '-manual');
-      var finish = function (ok) {
-        if (ok) {
-          status.textContent = '已复制';
-        } else {
-          manual.style.display = 'block';
-          status.textContent = '自动复制失败，请手动复制下方文本';
-        }
-      };
-      var legacy = function () {
+    var TEXT = __PAYLOAD__;
+    var AUTOMATIC = __AUTOCOPY__;
+    var status = document.getElementById('__ID__-status');
+    var manual = document.getElementById('__ID__-manual');
+    function finish(ok) {
+      if (ok) {
+        status.textContent = '已复制';
+      } else {
         manual.style.display = 'block';
-        manual.focus();
-        manual.select();
-        try {
-          finish(document.execCommand('copy'));
-        } catch (error) {
-          finish(false);
-        }
-      };
+        status.textContent = '自动复制失败，请手动复制下方文本';
+      }
+    }
+    function legacy() {
+      manual.style.display = 'block';
+      manual.focus();
+      manual.select();
+      try {
+        finish(document.execCommand('copy'));
+      } catch (error) {
+        finish(false);
+      }
+    }
+    function runCopy() {
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(window.__qixuText[id]).then(function () { finish(true); }, function () { legacy(); });
+        navigator.clipboard.writeText(TEXT).then(function () { finish(true); }, function () { legacy(); });
       } else {
         legacy();
       }
     }
+    if (AUTOMATIC) { runCopy(); }
   </script>
 </div>
 """
@@ -230,12 +248,16 @@ def _parse_chat(value: str) -> list[dict]:
     return result
 
 
-def _copy_button(text: str, unique_id: str) -> None:
+def _copy_button(text: str, unique_id: str, autocopy: bool = False) -> None:
     escaped = html_lib.escape(text)
     payload = json.dumps(text, ensure_ascii=False)
+    hint = "复制中…" if autocopy else "点击上方「复制本候选」按钮复制并留证"
     document = (_COPY_HTML_TEMPLATE.replace("__ID__", unique_id)
-                .replace("__TEXT__", escaped).replace("__PAYLOAD__", payload))
-    components.html(document, height=56, scrolling=True)
+                .replace("__TEXT__", escaped)
+                .replace("__PAYLOAD__", payload)
+                .replace("__AUTOCOPY__", "true" if autocopy else "false")
+                .replace("__HINT__", hint))
+    components.html(document, height=64, scrolling=True)
 
 
 def _analysis_fields(result):
@@ -301,6 +323,240 @@ def _model_status() -> None:
     st.sidebar.caption("资料均为虚构 · " + " · ".join(parts))
 
 
+def _open_db():
+    """每次脚本运行打开并初始化工作库；结束由调用方关闭。失败返回 None，工作台降级。"""
+    if storage_module is None:
+        return None
+    try:
+        path = storage_module.default_db_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        conn = storage_module.connect_db()
+        storage_module.init_schema(conn)
+        return conn
+    except Exception as exc:  # noqa: BLE001 存储未就绪时界面降级并提示，不中断
+        st.sidebar.warning(f"会话存储初始化失败（QIXU_RUNTIME_DIR）：{exc}")
+        return None
+
+
+def _apply_pending() -> None:
+    """on_click 回调写入的待应用队列：在新一轮脚本开始时（控件实例化前）落回 session_state。"""
+    pending = st.session_state.pop(_PENDING_APPLY_KEY, None)
+    if not pending:
+        return
+    for key, value in pending.items():
+        if value is None:
+            st.session_state.pop(key, None)
+        else:
+            st.session_state[key] = value
+
+
+def _is_analysis_line(content: str) -> bool:
+    return content.startswith(_ANALYSIS_PREFIX)
+
+
+def _customer_display_name(conn, customer_id: str) -> str | None:
+    try:
+        profile = storage_module.get_customer(conn, customer_id).get("profile") or {}
+    except storage_module.StorageError:
+        return None
+    return profile.get("display_name") or profile.get("name")
+
+
+def _conversation_label(conn, item: dict) -> str:
+    parts = [str(item.get("updated_at") or "")[:16], item.get("scenario") or "场景未定"]
+    customer_id = item.get("customer_id")
+    if customer_id:
+        parts.append(_customer_display_name(conn, customer_id) or customer_id)
+    else:
+        parts.append("无档案")
+    return " · ".join(parts)
+
+
+def _sync_selected_conversation(conn, selected) -> None:
+    """选择变化时把数据库消息预填到主区对话记录；已加载后不再覆盖顾问手头编辑。"""
+    if not selected:
+        return
+    if st.session_state.get(_LOADED_CONVERSATION_KEY) == selected:
+        return
+    try:
+        conversation = conversations_module.get_conversation(conn, selected)
+        messages = conversations_module.list_messages(conn, selected)
+    except conversations_module.StorageError as exc:
+        st.sidebar.warning(f"会话消息读取失败：{exc}")
+        return
+    lines, known = [], []
+    for message in messages:
+        content = str(message.get("content") or "")
+        if _is_analysis_line(content):
+            continue
+        role_label = "顾问" if message.get("role") in {"advisor", "assistant"} else "客户"
+        lines.append(f"{role_label}：{content}")
+        known.append({"role": message.get("role"), "content": content})
+    st.session_state[_CHAT_KEY] = "\n".join(lines)
+    st.session_state[_LOADED_CONVERSATION_KEY] = selected
+    st.session_state[_PERSISTED_MESSAGES_KEY] = known
+    st.session_state.pop(_ANALYSIS_KEY, None)
+    st.session_state.pop(_SCENARIO_KEY, None)
+    st.session_state.pop("active_result", None)
+    if conversation.get("customer_id"):
+        st.session_state[_CLIENT_KEY] = conversation["customer_id"]
+
+
+def _conversations_section(conn) -> None:
+    st.sidebar.markdown("### 会话")
+    error = st.session_state.pop("qixu_sidebar_error", None)
+    if error:
+        st.sidebar.error(error)
+    if conn is None or conversations_module is None:
+        st.sidebar.caption("会话存储未就绪；当前为独立输入模式。")
+        return
+    try:
+        items = conversations_module.list_conversations(conn)
+    except conversations_module.StorageError as exc:
+        st.sidebar.warning(f"会话读取失败：{exc}")
+        items = []
+    items.sort(key=lambda item: item.get("updated_at") or "", reverse=True)
+    labels = {item["id"]: _conversation_label(conn, item) for item in items}
+    options = [None, *[item["id"] for item in items]]
+    current = st.session_state.get(_CONVERSATION_KEY)
+    if current in options:
+        index = options.index(current)
+    else:
+        st.session_state.pop(_CONVERSATION_KEY, None)
+        index = 0
+    selected = st.sidebar.selectbox("当前会话", options, index=index,
+        format_func=lambda value: "（未选择会话 · 独立输入）" if value is None else labels.get(value, str(value)),
+        key=_CONVERSATION_KEY)
+    if st.sidebar.button("新建会话"):
+        try:
+            conversation = conversations_module.open_conversation(conn)
+        except conversations_module.StorageError as exc:
+            st.sidebar.error(f"新建会话失败：{exc}")
+        else:
+            st.session_state[_PENDING_APPLY_KEY] = {
+                _CONVERSATION_KEY: conversation["id"],
+                _LOADED_CONVERSATION_KEY: None,
+                _CHAT_KEY: "",
+                _ANALYSIS_KEY: None,
+                _SCENARIO_KEY: None,
+                "active_result": None,
+                _PERSISTED_MESSAGES_KEY: [],
+            }
+            st.rerun()
+    _sync_selected_conversation(conn, selected)
+
+
+def _persist_workbench_messages(conn, chat_text: str) -> None:
+    """把对话记录中尚未入库的行追加到所选会话；客户行 source=manual，顾问行 source=workbench。"""
+    conversation_id = st.session_state.get(_CONVERSATION_KEY)
+    if conn is None or not conversation_id:
+        return
+    known = list(st.session_state.get(_PERSISTED_MESSAGES_KEY, []))
+    known_pairs = {(item["role"], item["content"]) for item in known}
+    try:
+        for item in _parse_chat(chat_text):
+            if (item["role"], item["content"]) in known_pairs:
+                continue
+            source = "workbench" if item["role"] == "advisor" else "manual"
+            conversations_module.append_message(conn, conversation_id, item["role"], item["content"], source=source)
+            known.append({"role": item["role"], "content": item["content"]})
+    except conversations_module.StorageError as exc:
+        st.warning(f"会话消息保存失败：{exc}")
+        return
+    st.session_state[_PERSISTED_MESSAGES_KEY] = known
+
+
+def _append_analysis_message(conn, scenario: str, current_need: str, missing: list[str]) -> None:
+    conversation_id = st.session_state.get(_CONVERSATION_KEY)
+    if conn is None or not conversation_id:
+        return
+    text = f"{_ANALYSIS_PREFIX}场景：{scenario}；本次需求：{current_need}"
+    if missing:
+        text += "；待确认：" + "、".join(missing)
+    try:
+        conversations_module.append_message(conn, conversation_id, "advisor", text, source="workbench")
+    except conversations_module.StorageError as exc:
+        st.warning(f"分析结果保存失败：{exc}")
+
+
+def _record_generation_result(conn, generation_id: str, result) -> None:
+    try:
+        storage_module.complete_generation(conn, generation_id, result.status, result.run_id, result.case_id)
+    except storage_module.StorageError as exc:
+        st.warning(f"生成完成记录失败：{exc}")
+        return
+    if result.status != "success":
+        return
+    revisions: dict[str, int] = {}
+    for candidate in result.candidates:
+        try:
+            revision = conversations_module.record_draft_revision(conn, generation_id, candidate.candidate_id, candidate.text)
+            revisions[f"{result.run_id}-{candidate.candidate_id}"] = revision["id"]
+        except storage_module.StorageError as exc:
+            st.warning(f"草稿修订保存失败：{exc}")
+    st.session_state[_REVISION_IDS_KEY] = revisions
+
+
+def _kind_label(kind: str) -> str:
+    return {"like": "喜欢", "dislike": "不喜欢", "budget": "预算"}.get(kind, kind)
+
+
+def _status_label(status: str) -> str:
+    return {"pending": "待确认", "confirmed": "已确认", "revoked": "已撤销"}.get(status, status)
+
+
+def _preferences_section(conn) -> None:
+    st.sidebar.markdown("### 偏好")
+    if conn is None or preferences_module is None:
+        st.sidebar.caption("偏好存储未就绪。")
+        return
+    try:
+        items = preferences_module.list_preferences(conn)
+    except preferences_module.StorageError as exc:
+        st.sidebar.warning(f"偏好读取失败：{exc}")
+        items = []
+    if items:
+        rows = [{"主体": item["subject"], "类别": _kind_label(item["kind"]),
+                 "原文": item["original_text"], "状态": _status_label(item["status"]), "ID": item["id"]} for item in items]
+        st.sidebar.table(rows)
+        for item in items:
+            left, right = st.sidebar.columns([3, 1])
+            with left:
+                st.caption(f"{item['subject']} · {_kind_label(item['kind'])} · {_status_label(item['status'])}")
+            with right:
+                if item["status"] != "confirmed":
+                    if st.button("确认", key=f"qixu-pref-confirm-{item['id']}"):
+                        try:
+                            preferences_module.confirm(conn, item["id"])
+                            st.rerun()
+                        except preferences_module.StorageError as exc:
+                            st.sidebar.warning(f"偏好确认失败：{exc}")
+                if item["status"] != "revoked":
+                    if st.button("撤销", key=f"qixu-pref-revoke-{item['id']}"):
+                        try:
+                            preferences_module.revoke(conn, item["id"])
+                            st.rerun()
+                        except preferences_module.StorageError as exc:
+                            st.sidebar.warning(f"偏好撤销失败：{exc}")
+    else:
+        st.sidebar.caption("暂无偏好记录。")
+    with st.sidebar.form("qixu-pref-new"):
+        st.markdown("**新增偏好**")
+        subject = st.text_input("主体", placeholder="例如：C001 或「收礼人妹妹」")
+        kind = st.selectbox("类别", ["like", "dislike", "budget"], format_func=_kind_label)
+        original = st.text_input("原文", placeholder="有来源的客户原话")
+        explicit = st.radio("来源性质", ["明确", "推测"], horizontal=True)
+        if st.form_submit_button("保存偏好"):
+            if not subject.strip() or not original.strip():
+                st.error("主体与原文不能为空。")
+            else:
+                try:
+                    preferences_module.record(conn, subject.strip(), kind, original.strip(), explicit == "明确", source="workbench")
+                    st.success("偏好已保存；推测记录保持待确认。")
+                except preferences_module.StorageError as exc:
+                    st.error(f"偏好保存失败：{exc}")
+
+
 def _queue_dev_case() -> None:
     """按钮 on_click 回调：把预设写入待应用队列并重跑；重跑开始时所有控件尚未实例化，可安全写入。"""
     selected = st.session_state.get(_DEV_CASE_KEY)
@@ -308,23 +564,21 @@ def _queue_dev_case() -> None:
         return
     preset = selected.request
     customers = {c.get("client_id", c.get("customer_id")): c for c in _records("customers")}
-    st.session_state[_DEV_PENDING_KEY] = {
+    st.session_state[_PENDING_APPLY_KEY] = {
         _CHAT_KEY: _chat_text(preset.conversation_history),
         _CLIENT_KEY: preset.client_id if preset.client_id in customers else None,
         _LANG_KEY: _LANGUAGE_LABELS.get(preset.output_language, "中文"),
         _TONE_KEY: _TONE_LABELS.get(preset.tone, "自然"),
         _LENGTH_KEY: _LENGTH_LABELS.get(preset.length, "标准"),
         _GOAL_KEY: _GOAL_LABELS.get(preset.goal, "按场景默认"),
+        _CONVERSATION_KEY: None,
+        _LOADED_CONVERSATION_KEY: None,
+        _PERSISTED_MESSAGES_KEY: [],
+        _ANALYSIS_KEY: None,
+        _SCENARIO_KEY: None,
+        "active_result": None,
     }
     st.rerun()
-
-
-def _apply_dev_pending() -> None:
-    pending = st.session_state.pop(_DEV_PENDING_KEY, None)
-    if not pending:
-        return
-    for key, value in pending.items():
-        st.session_state[key] = value
 
 
 def _dev_cases() -> None:
@@ -337,9 +591,43 @@ def _dev_cases() -> None:
     st.sidebar.button("载入到主区", on_click=_queue_dev_case)
 
 
-def advisor_page() -> None:
-    customers = _records("customers")
-    customer_map = {c.get("client_id", c.get("customer_id")): c for c in customers}
+def _customers(conn) -> dict:
+    """客户档案下拉：优先工作库快照；库为空时回退只读合成目录（不回写）。"""
+    if conn is not None and storage_module is not None:
+        try:
+            rows = storage_module.list_customers(conn)
+            if rows:
+                return {row["id"]: row.get("profile") or {} for row in rows}
+        except storage_module.StorageError as exc:
+            st.warning(f"客户档案读取失败：{exc}")
+            return {}
+    return {c.get("client_id", c.get("customer_id")): c for c in _records("customers")}
+
+
+def _render_preference_hints(conn, scenario: str, client_id) -> None:
+    """产品类场景在分析区展示已确认偏好（仅提示，不自动改写请求）。"""
+    if conn is None or preferences_module is None or not client_id:
+        return
+    if scenario not in {"产品推荐", "购后关怀", "价格异议"}:
+        return
+    try:
+        confirmed = preferences_module.list_preferences(conn, subject=client_id, status="confirmed")
+    except preferences_module.StorageError as exc:
+        st.warning(f"偏好读取失败：{exc}")
+        return
+    dislikes = [item["original_text"] for item in confirmed if item.get("kind") == "dislike"]
+    budgets = [item["original_text"] for item in confirmed if item.get("kind") == "budget"]
+    if dislikes or budgets:
+        parts = []
+        if dislikes:
+            parts.append("已确认排除：" + "、".join(dislikes))
+        if budgets:
+            parts.append("已确认预算：" + "、".join(budgets))
+        st.info("客户偏好提示（仅顾问可见，不自动改写请求）：" + "；".join(parts))
+
+
+def advisor_page(conn) -> None:
+    customer_map = _customers(conn)
     customer_ids = [None, *customer_map]
     default_client = st.session_state.get(_CLIENT_KEY)
     client_id = st.selectbox("客户档案（可不选）", customer_ids,
@@ -370,6 +658,8 @@ def advisor_page() -> None:
                         "conversation_text": chat,
                     }
                     st.session_state.pop(_SCENARIO_KEY, None)
+                    _persist_workbench_messages(conn, chat)
+                    _append_analysis_message(conn, scenario, current_need, missing)
                     st.success("分析完成。可调整场景；把客户答复以「客户：…」补进对话后再生成。")
 
     analysis = st.session_state.get(_ANALYSIS_KEY)
@@ -391,6 +681,7 @@ def advisor_page() -> None:
         st.caption("本轮资料足够，暂无必须确认的问题。")
     if chat != analysis["conversation_text"]:
         st.info("对话内容较分析时已有更新；如需按最新对话重新识别，请再次点击「分析并提问」。")
+    _render_preference_hints(conn, scenario, client_id)
 
     event_id = None
     if scenario == "活动邀请":
@@ -422,24 +713,53 @@ def advisor_page() -> None:
             length=_LENGTH_OPTIONS.get(st.session_state.get(_LENGTH_KEY), "standard"),
             goal=_GOAL_OPTIONS.get(st.session_state.get(_GOAL_KEY), None),
         )
-        previous_result = st.session_state.pop("active_result", None)
-        try:
-            parent_run_id = None
-            if previous_result:
-                previous_input = ROOT / "artifacts/runs" / previous_result["run_id"] / "cases" / previous_result["case_id"] / "input.json"
-                if previous_input.exists() and _read(previous_input).get("request") == request.model_dump(mode="json"):
-                    parent_run_id = previous_result["run_id"]
-            run_id = create_run(["UI-001"], root=ROOT, execution_mode="real", parent_run_id=parent_run_id)
-            with st.spinner("正在生成并保存原始记录…"):
-                result = generate(request, run_id, "UI-001", root=ROOT)
-            st.session_state["active_result"] = result.model_dump(mode="json")
-        except (ValueError, OSError) as exc:
-            st.error(f"未完成：{exc}")
+        generation_id, replayed = None, False
+        conversation_id = st.session_state.get(_CONVERSATION_KEY)
+        if conn is not None and conversation_id:
+            try:
+                conversation = conversations_module.get_conversation(conn, conversation_id)
+                request_key = f"v{conversation['version']}-{int(time.time() * 1000)}"
+                generation = storage_module.create_generation(
+                    conn, conversation_id, request_key,
+                    json.dumps(request.model_dump(mode="json"), ensure_ascii=False),
+                    conversation["version"])
+                generation_id = generation["id"]
+                replayed = not generation.get("running")
+            except storage_module.StorageError as exc:
+                st.warning(f"生成记录占位失败：{exc}")
+        if replayed:
+            st.info("已存在相同请求的生成记录，未重复调用模型。")
+        else:
+            previous_result = st.session_state.pop("active_result", None)
+            run_id = None
+            try:
+                parent_run_id = None
+                if previous_result:
+                    previous_input = ROOT / "artifacts/runs" / previous_result["run_id"] / "cases" / previous_result["case_id"] / "input.json"
+                    if previous_input.exists() and _read(previous_input).get("request") == request.model_dump(mode="json"):
+                        parent_run_id = previous_result["run_id"]
+                run_id = create_run(["UI-001"], root=ROOT, execution_mode="real", parent_run_id=parent_run_id)
+                with st.spinner("正在生成并保存原始记录…"):
+                    result = generate(request, run_id, "UI-001", root=ROOT)
+                st.session_state["active_result"] = result.model_dump(mode="json")
+            except (ValueError, OSError) as exc:
+                st.error(f"未完成：{exc}")
+                if generation_id:
+                    try:
+                        storage_module.complete_generation(conn, generation_id, "technical_failure", run_id, "UI-001" if run_id else None)
+                    except storage_module.StorageError:
+                        pass
+            else:
+                _persist_workbench_messages(conn, chat)
+                if generation_id:
+                    _record_generation_result(conn, generation_id, result)
+                    generations = st.session_state.setdefault(_GENERATION_IDS_KEY, {})
+                    generations[result.run_id] = generation_id
 
-    _render_result()
+    _render_result(conn)
 
 
-def _render_result() -> None:
+def _render_result(conn) -> None:
     active = st.session_state.get("active_result")
     if not active:
         return
@@ -456,11 +776,41 @@ def _render_result() -> None:
     for warning in active.get("warnings", []):
         st.warning(warning)
     for index, candidate in enumerate(active["candidates"], start=1):
-        _render_candidate_card(active, index, candidate)
+        _render_candidate_card(conn, active, index, candidate)
     st.caption("结构检查通过不代表内容已经通过人工评价。请核对人物、价格、规格和承诺。")
 
 
-def _render_candidate_card(active: dict, index: int, candidate: dict) -> None:
+def _record_draft_action(conn, active: dict, action: str, draft: str, operator, candidate_id=None) -> None:
+    """编辑追加修订；选用/弃用/复制在数据库按当前基准修订记动作；feedback.jsonl 证据由调用方保留。"""
+    if conn is None or conversations_module is None:
+        return
+    revision_ids = st.session_state.get(_REVISION_IDS_KEY, {})
+    generation_id = st.session_state.get(_GENERATION_IDS_KEY, {}).get(active["run_id"])
+    if generation_id is None:
+        return
+    try:
+        if action == "保存编辑稿":
+            revision = conversations_module.record_draft_revision(conn, generation_id, candidate_id, draft)
+            revision_ids[f"{active['run_id']}-{candidate_id}"] = revision["id"]
+            st.session_state[_REVISION_IDS_KEY] = revision_ids
+            return
+        targets = [candidate_id] if candidate_id else [item["candidate_id"] for item in active["candidates"]]
+        for target in targets:
+            base = revision_ids.get(f"{active['run_id']}-{target}")
+            if base is None:
+                continue
+            mapped = {"选用原稿": "selected", "弃用本组三条": "discarded", "复制本候选": "copied"}.get(action)
+            if mapped is None:
+                continue
+            conversations_module.record_draft_action(
+                conn, base, mapped,
+                copied_text=draft if mapped == "copied" else "",
+                editor=operator or None)
+    except (conversations_module.StorageError, ValueError) as exc:
+        st.warning(f"草稿动作留档失败：{exc}")
+
+
+def _render_candidate_card(conn, active: dict, index: int, candidate: dict) -> None:
     candidate_id = candidate["candidate_id"]
     draft_key = f"qixu-draft-{active['run_id']}-{candidate_id}"
     original = candidate["text"]
@@ -480,6 +830,7 @@ def _render_candidate_card(active: dict, index: int, candidate: dict) -> None:
                     save_feedback(active["run_id"], active["case_id"], None if action == "弃用本组三条" else candidate_id,
                         actions[action], edited_text=draft if action == "保存编辑稿" else "",
                         operator=operator or None, root=ROOT)
+                    _record_draft_action(conn, active, action, draft, operator, None if action == "弃用本组三条" else candidate_id)
                     st.success("处理记录已保存；机器原稿保持原样。保存与复制均不会发送微信。")
                 except (ValueError, OSError) as exc:
                     st.error(f"未保存：{exc}")
@@ -487,7 +838,16 @@ def _render_candidate_card(active: dict, index: int, candidate: dict) -> None:
         current_text = st.session_state.get(draft_key) or original
         body = html_lib.escape(current_text).replace("\n", "<br>")
         st.markdown(f'<div class="qixu-card-body">{body}</div>', unsafe_allow_html=True)
-        _copy_button(current_text, f"qixu-copy-{active['run_id']}-{candidate_id}")
+        unique_id = f"qixu-copy-{active['run_id']}-{candidate_id}"
+        if st.button("复制本候选", key=f"qixu-copybtn-{active['run_id']}-{candidate_id}", type="secondary"):
+            _record_draft_action(conn, active, "复制本候选", current_text, None, candidate_id)
+            st.session_state[_AUTOCOPY_KEY] = {"target": unique_id, "text": current_text}
+        autocopy = st.session_state.get(_AUTOCOPY_KEY) or {}
+        if autocopy.get("target") == unique_id:
+            _copy_button(current_text, unique_id, autocopy=True)
+            st.session_state[_AUTOCOPY_KEY] = {}
+        else:
+            _copy_button(current_text, unique_id, autocopy=False)
     st.caption("复制读取点击当下的正文；未保存的修改同样可复制。复制与保存都不是发送，当前没有微信发送。")
 
 
@@ -562,14 +922,21 @@ def main() -> None:
     st.set_page_config(page_title="栖序 QIXU · 顾问助手", layout="centered",
         menu_items={"Get help": None, "Report a bug": None, "About": "栖序 QIXU 顾问助手 · 资料均为虚构"})
     st.markdown(_CSS, unsafe_allow_html=True)
-    _apply_dev_pending()
-    _writing_settings()
-    _model_status()
-    with st.sidebar.expander("人工评价"):
-        evaluation_page()
-    _dev_cases()
-    _brand_header()
-    advisor_page()
+    _apply_pending()
+    conn = _open_db()
+    try:
+        _conversations_section(conn)
+        _writing_settings()
+        _model_status()
+        _preferences_section(conn)
+        with st.sidebar.expander("人工评价"):
+            evaluation_page()
+        _dev_cases()
+        _brand_header()
+        advisor_page(conn)
+    finally:
+        if conn is not None:
+            conn.close()
 
 
 if __name__ == "__main__":

@@ -3,10 +3,13 @@
 import json
 import shutil
 
+import pytest
 from streamlit.testing.v1 import AppTest
 
 from qixu_advisor import evaluation, generation, records
 from qixu_advisor.data import load_cases
+
+_ANALYSIS_PREFIX = "【分析】"
 
 
 def _setup_app(tmp_path, monkeypatch):
@@ -14,6 +17,7 @@ def _setup_app(tmp_path, monkeypatch):
     shutil.copytree(source_root / "data", tmp_path / "data")
     shutil.copytree(source_root / "src/qixu_advisor/prompts", tmp_path / "src/qixu_advisor/prompts")
     monkeypatch.setattr(evaluation, "ROOT", tmp_path)
+    monkeypatch.setenv("QIXU_RUNTIME_DIR", str(tmp_path / "runtime"))
     return source_root
 
 
@@ -242,3 +246,161 @@ def test_dev_cases_hidden_until_opted_in(tmp_path, monkeypatch):
     assert not app.exception
     chat = next(widget for widget in app.text_area if widget.label == "对话记录（每行一条）")
     assert chat.value.strip()
+
+
+def test_conversation_create_select_restore_and_message_persistence(tmp_path, monkeypatch):
+    """新建会话→分析后消息与分析结果落库；重开应用选中会话可恢复对话（不含内部分析行）。"""
+    storage = pytest.importorskip("qixu_advisor.storage")
+    source_root = _setup_app(tmp_path, monkeypatch)
+    analyze_calls = []
+    monkeypatch.setattr(generation, "analyze_conversation", _analyze_stub(analyze_calls))
+    app = AppTest.from_file(str(source_root / "src/qixu_advisor/app.py")).run()
+    assert not app.exception
+    next(button for button in app.sidebar.button if button.label == "新建会话").click().run()
+    assert not app.exception
+    conversation_id = app.session_state["selected_conversation_id"]
+    assert conversation_id
+    next(widget for widget in app.text_area if widget.label == "对话记录（每行一条）").input("客户：想给妹妹挑一款香水。")
+    next(button for button in app.button if button.label == "分析并提问").click().run()
+    assert not app.exception
+    assert len(analyze_calls) == 1
+    conn = storage.connect_db()
+    try:
+        messages = storage.list_messages(conn, conversation_id)
+    finally:
+        conn.close()
+    assert [(m["role"], m["source"], m["content"]) for m in messages] == [
+        ("client", "manual", "想给妹妹挑一款香水。"),
+        ("advisor", "workbench", f"{_ANALYSIS_PREFIX}场景：生日与节庆；本次需求：客户今天生日，希望送上生日祝福"),
+    ]
+    # 重开应用：会话列表存在，选中后恢复对话，内部分析行不回填主区。
+    app2 = AppTest.from_file(str(source_root / "src/qixu_advisor/app.py")).run()
+    assert not app.exception
+    selector = next(widget for widget in app2.sidebar.selectbox if widget.label == "当前会话")
+    assert selector.value is None
+    selector.select_index(1).run()
+    assert not app.exception
+    chat = next(widget for widget in app2.text_area if widget.label == "对话记录（每行一条）")
+    assert chat.value == "客户：想给妹妹挑一款香水。"
+    assert _ANALYSIS_PREFIX not in chat.value
+
+
+def test_generation_draft_revisions_and_actions_recorded(tmp_path, monkeypatch):
+    """生成记录、三条草稿修订与编辑/选用/弃用/复制动作在数据库中留证。"""
+    storage = pytest.importorskip("qixu_advisor.storage")
+    source_root = _setup_app(tmp_path, monkeypatch)
+    analyze_calls, model_calls = [], []
+    monkeypatch.setattr(generation, "analyze_conversation", _analyze_stub(analyze_calls))
+    _install_generation_stubs(monkeypatch, model_calls, _birthday_model_stub(model_calls))
+    app = AppTest.from_file(str(source_root / "src/qixu_advisor/app.py")).run()
+    next(button for button in app.sidebar.button if button.label == "新建会话").click().run()
+    next(widget for widget in app.text_area if widget.label == "对话记录（每行一条）").input("客户：今天是我生日。")
+    next(button for button in app.button if button.label == "分析并提问").click().run()
+    next(button for button in app.button if button.label == "生成三条候选").click().run()
+    assert not app.exception
+    conn = storage.connect_db()
+    try:
+        generations = conn.execute("SELECT * FROM generations ORDER BY created_at").fetchall()
+        assert len(generations) == 1
+        assert generations[0]["status"] == "success"
+        assert generations[0]["run_id"] and generations[0]["case_id"] == "UI-001"
+        revisions = conn.execute("SELECT * FROM draft_revisions ORDER BY id").fetchall()
+        assert len(revisions) == 3
+        assert {row["revision"] for row in revisions} == {1}
+    finally:
+        conn.close()
+    # 选用原稿（基准修订 1）
+    next(widget for widget in app.radio if widget.label == "处理方式").set_value("选用原稿")
+    next(button for button in app.button if button.label == "保存处理记录").click().run()
+    assert not app.exception
+    # 编辑候选 1（追加修订 2）
+    next(widget for widget in app.radio if widget.label == "处理方式").set_value("保存编辑稿")
+    next(widget for widget in app.text_area if widget.label == "编辑稿").input("人工改写的程序测试文本")
+    next(button for button in app.button if button.label == "保存处理记录").click().run()
+    assert not app.exception
+    # 弃用本组三条
+    next(widget for widget in app.radio if widget.label == "处理方式").set_value("弃用本组三条")
+    next(button for button in app.button if button.label == "保存处理记录").click().run()
+    assert not app.exception
+    conn = storage.connect_db()
+    try:
+        rows = conn.execute(
+            "SELECT a.action, a.copied_text, r.revision, r.candidate_id "
+            "FROM draft_actions a JOIN draft_revisions r ON r.id = a.draft_revision_id ORDER BY a.id").fetchall()
+        actions = [(row["action"], row["revision"], row["candidate_id"], row["copied_text"]) for row in rows]
+        assert ("selected", 1, "UI-001-C1", "") in actions
+        discarded = [item for item in actions if item[0] == "discarded"]
+        assert len(discarded) == 3
+        assert {(item[1], item[2]) for item in discarded} == {(2, "UI-001-C1"), (1, "UI-001-C2"), (1, "UI-001-C3")}
+        revisions = conn.execute("SELECT candidate_id, revision, text FROM draft_revisions ORDER BY id").fetchall()
+        assert any(row["candidate_id"] == "UI-001-C1" and row["revision"] == 2 and row["text"] == "人工改写的程序测试文本" for row in revisions)
+    finally:
+        conn.close()
+
+
+def test_copy_action_recorded_with_live_draft(tmp_path, monkeypatch):
+    """复制留证：未保存的编辑稿按实际复制文本与基准修订记 copied 动作。"""
+    storage = pytest.importorskip("qixu_advisor.storage")
+    source_root = _setup_app(tmp_path, monkeypatch)
+    analyze_calls, model_calls = [], []
+    monkeypatch.setattr(generation, "analyze_conversation", _analyze_stub(analyze_calls))
+    _install_generation_stubs(monkeypatch, model_calls, _birthday_model_stub(model_calls))
+    app = AppTest.from_file(str(source_root / "src/qixu_advisor/app.py")).run()
+    next(button for button in app.sidebar.button if button.label == "新建会话").click().run()
+    next(widget for widget in app.text_area if widget.label == "对话记录（每行一条）").input("客户：今天是我生日。")
+    next(button for button in app.button if button.label == "分析并提问").click().run()
+    next(button for button in app.button if button.label == "生成三条候选").click().run()
+    assert not app.exception
+    next(widget for widget in app.text_area if widget.label == "编辑稿").input("未保存的修改稿")
+    next(button for button in app.button if button.label == "复制本候选").click().run()
+    assert not app.exception
+    conn = storage.connect_db()
+    try:
+        rows = conn.execute(
+            "SELECT a.action, a.copied_text, r.revision, r.candidate_id "
+            "FROM draft_actions a JOIN draft_revisions r ON r.id = a.draft_revision_id").fetchall()
+    finally:
+        conn.close()
+    copied = [(row["action"], row["revision"], row["candidate_id"], row["copied_text"]) for row in rows]
+    assert copied == [("copied", 1, "UI-001-C1", "未保存的修改稿")]
+
+
+def test_preferences_confirm_revoke_and_add(tmp_path, monkeypatch):
+    """偏好表格、确认/撤销与新增小表单落库。"""
+    storage = pytest.importorskip("qixu_advisor.storage")
+    source_root = _setup_app(tmp_path, monkeypatch)
+    (tmp_path / "runtime").mkdir(parents=True, exist_ok=True)
+    conn = storage.connect_db()
+    try:
+        storage.init_schema(conn)
+        storage.add_preference(conn, "C001", "dislike", "不喜欢浓郁花香", False, "workbench")
+    finally:
+        conn.close()
+    app = AppTest.from_file(str(source_root / "src/qixu_advisor/app.py")).run()
+    assert not app.exception
+    tables = app.sidebar.get("table")
+    assert len(tables) == 1
+    assert "不喜欢浓郁花香" in tables[0].value.to_string()
+    next(button for button in app.sidebar.button if button.label == "确认").click().run()
+    assert not app.exception
+    next(button for button in app.sidebar.button if button.label == "撤销").click().run()
+    assert not app.exception
+    next(widget for widget in app.sidebar.text_input if widget.label == "主体").input("C002")
+    next(widget for widget in app.sidebar.text_input if widget.label == "原文").input("预算一千左右")
+    next(widget for widget in app.sidebar.selectbox if widget.label == "类别").select_index(2)
+    next(widget for widget in app.sidebar.radio if widget.label == "来源性质").set_value("推测")
+    next(button for button in app.sidebar.form_submit_button if button.label == "保存偏好").click().run()
+    assert not app.exception
+    conn = storage.connect_db()
+    try:
+        rows = conn.execute("SELECT * FROM preferences ORDER BY id").fetchall()
+    finally:
+        conn.close()
+    assert len(rows) == 2
+    assert rows[0]["status"] == "revoked"
+    added = rows[1]
+    assert added["subject"] == "C002"
+    assert added["kind"] == "budget"
+    assert added["original_text"] == "预算一千左右"
+    assert added["explicit"] == 0
+    assert added["status"] == "pending"

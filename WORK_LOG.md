@@ -206,3 +206,23 @@
 - 冻结 formal-v15/v16 后 formal-v6 首轮 48/50，2 例（PRICE-001、REC-003）结构失败经关联技术重试补齐；最终 C 合并 50 行 150 条，逐行来源记入 row-provenance。
 - 补充组：multiturn-s6 6/6；language-s10 首轮 23/24，LG-EVENT-C2E 唯一一次关联重试仍失败（中文主导提示波动），如实保留不重抽。
 - 交付包 `artifacts/submissions/formal-v6-20261107/`：C/B/E/A/溯源/版本/清单/架构图/截图/测试集评价材料/可填写评价表（evaluation-form-formal-v6.md，1581 行）齐备。真人评分仍为 0；部署仍待用户账号。
+
+## 2026-11-07 23:30–24:00 · 纯祝福、素材调研与 formal-v8
+
+- 用户最终标准：生日纯祝福零商品零元叙述、2–4 句有诚意、代入客户读一遍。qixu-content 重写祝福规则＋6 条句式样本（正式/温和/亲切三档）＋CCSE-CS 18 类策略结构映射；qixu-core 门禁恢复生日商品名拦截并新增「元叙述」类别（就这一句/不多打扰/我记下了等 18 短语）；136 项测试。
+- 素材调研：Hugging Face 祝福数据集（sanbu/tianji-chinese、BelleGroup）经核查均为 LLM 合成、呈 AI 腔，不采用；CCSE-CS 仅借结构；GitHub 参考项目 WechatVibe（情感/意图分析＋会话回复风格）与 LiveGalGame（多候选带情感标签与效果预估）已评审，候选侧重标签列入后续增强。
+- 冻结 formal-v17~v19：formal-v7 首轮 49/50＋1 例关联重试；formal-v8 **50/50 首轮全成**；multiturn-s7 6/6；language-s11 **24/24 首轮全成**。最终交付包 `artifacts/submissions/formal-v8-20261107/`（含 evaluation-form-formal-v8.md、test-cases-review.md）。
+
+## 2026-11-08 00:00 · 功能优先：S2 会话/偏好/API 开工（语气冻结）
+
+- 用户指示：先完善 S1/S2 全部功能，语气问题由用户最后统一处理。即日起写作规则冻结，不再迭代文案；formal-v8 的 C 表暂定稿。
+- 环境：uv add fastapi uvicorn（0.162.2/0.54.0），同时修正可编辑安装路径到当前用户目录。
+- 分工（合同先行）：qixu-core 实现 storage.py（SQLite＋迁移＋版本乐观锁/冲突/幂等键）、conversations.py（会话/消息/快照/草稿动作）、preferences.py（偏好确认/撤销/硬筛选/等权匹配）与测试；新 qixu-api 实现 api.py/api_models.py（FastAPI，按技术报告接口表）与测试；qixu-ui 接入工作台（会话列表与恢复、草稿落库、偏好管理）并更新测试；lead 集成、真实验证、文档与 Git。
+
+## 2026-11-08 00:10–00:40 · S2 落地与集成
+
+- qixu-core：migrations/001_initial.sql 七表＋meta；storage.py（乐观锁/冲突/幂等键/外部键去重）；conversations.py（open/append/snapshot_for_generation/草稿动作）；preferences.py（确认/撤销/hard_filter/match_and_rank）；19 项新测试。
+- qixu-api：api.py（create_app，同步 def 路由、每请求短连接、重启标 interrupted、16 类端点、统一错误体＋X-Request-Id）＋api_models.py；21 项 TestClient 测试（替身模型）；与 core 落地的 8 项签名差异已按 core 适配并记录（generations.status 单列、preferences.subject 存客户 ID 等）。
+- qixu-ui：工作台接入会话（列表/新建/恢复，重开从 SQLite 恢复）、分析/生成消息落库、生成幂等占位＋草稿修订/动作落库（copied 带 copied_text 与基准 revision，feedback.jsonl 保留）、偏好管理区、客户下拉 DB 快照；test_app.py 9 例。
+- lead 集成验证：全量 180 passed（此前 36 errors 为多 agent 并行共享 basetemp 的 Windows 锁残留，换干净 basetemp 全绿）；API 冒烟 settings/model 200、catalog 6 SKU；工作台侧栏会话/新建会话/偏好/写作设置/人工评价全部在，runtime/qixu.sqlite3 正常创建（runtime/ 已入 .gitignore）。
+- 冻结 formal-v20（含 S2 代码）；formal-v8 的 C 表不变（提示未改、语气冻结）。React 工作台（S3）与渠道（S5）仍未实施。

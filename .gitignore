@@ -9,6 +9,7 @@ __pycache__/
 *.egg-info/
 private/
 .streamlit/secrets.toml
+runtime/
 artifacts/runs/
 artifacts/evaluations/
 artifacts/submissions/*.zip
