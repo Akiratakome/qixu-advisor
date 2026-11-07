@@ -134,3 +134,20 @@
 - lead 用 formal-v2 真实输入/候选重放告警器：9 条误报全部消除、其余案例零新增告警（REC-002 初检残留一条，核心 agent 二次修正后重放为 0）。formal-v2 候选文本未变，仍作为人评目标与 C 表来源。
 - 告警器修复提交 `504ec9f`，冻结 `formal-v3` 供后续运行；formal-v2 冻结与结果保持原样。
 - 补记（lead 操作失误）：为验证 formal-v3 冻结一致性，误用 `batch --split dev --run-id dry-run-verify`（batch 会真实调用模型），产生 20 例真实调用的临时运行（20/20 成功）。该运行无实验目的、不纳入任何统计，已删除目录并在此留痕；正确做法是用只读比较校验冻结指纹，不触发生成命令。
+
+## 2026-11-07 19:40 · 多轮与语言组方案（先方案后协同）
+
+- 目标：完成计划中的 6 条客户→顾问→客户多轮序列与 24 例语言补充组（六场景 × 英→中、中→英、英→英、混合→中），作为 B／E 补充证据；不进入正式 50 例与八列 C。
+- 方案：新建 `data/cases/multiturn.jsonl`（6 例，group=multiturn）与 `data/cases/language.jsonl`（24 例，group=language），不修改既有 50 例源文件与量表；英文输入/输出中的商品名保留中文规范名（青岚等），输入可为中英混合。多轮历史以客户最新消息结尾，中间顾问话术不得被当作客户偏好。
+- 运行前标准（先冻结再运行）：结构三条不同非空；输出语言与设置一致（语言组）；多轮回应最新消息且沿用前文人物／预算／事件；AI 审阅为辅助，不冒充真人。
+- 流程：qixu-content 编写用例（task-3）→ lead 审阅 → freeze formal-v4 → `scripts/extra_groups.py`（校验冻结后真实运行、先写 criteria 再生成）→ lead 审阅输出 → 独立导出语言组／多轮 CSV 到 formal-v2-20261107 交付目录。
+
+## 2026-11-07 19:40–20:15 · 多轮与语言组实施
+
+- qixu-content 完成 task-3：multiturn.jsonl 6 例、language.jsonl 24 例（六场景 × E2C/C2E/E2E/MIX2C）；lead 独立校验 30/30 CaseSpec 通过、语言映射 12/12 正确、事实与虚构资料一致。
+- 新建 `scripts/extra_groups.py`：校验冻结 → 先写运行级标准 → 真实生成 → 独立导出；支持 case 过滤与关联技术重跑（--parent-run-id）。
+- 多轮组：首轮 multiturn-s1 6/6（formal-v4）；formal-v9 下 multiturn-s2 5/6，MT-PRICE 结构失败（模型仅返回 1 条候选），关联技术重试 1/1 成功。审阅：单位价／总价区分正确、回应最新消息、沿用前文事实。
+- 语言组英文输出稳定性缺陷（E 前后对比）：首轮 language-s1 英文组 12 例仅 6 例合规（模型回落中文）；定位 system.txt 开场句与 JSON 模板写死「中文」为诱因后修复并逐轮强化（设置块最前语言要求、user 消息首行语言标记、system 结尾英文提醒）。formal-v9 的 language-s5 为 22/24 首轮成功，2 例经关联技术重试补齐（1/1、2/2 全成）。language-s1~s4 与两个探针运行保留为版本证据，全部未删除。
+- 边界如实记录：deepseek-flash 在中文主导提示下英文输出遵从仍非 100%（全组波动 6~10/12），最终以「首轮＋关联技术重试」补全；英文自然度须具备相应语言能力的人评阅，AI 审阅不代替。
+- 导出：multiturn／language 首轮与重试的严格八列 CSV 及 status.json 入 `artifacts/submissions/formal-v2-20261107/`；正式 C 仍只有 outputs.csv（50 行中文）。
+- 离线 68 passed；freeze formal-v4~v9 保留版本谱系；模型 API 测试经用户明确允许，无需逐次汇报。
