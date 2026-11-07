@@ -166,6 +166,18 @@ def _is_derived_total(value: float, fact_prices: set[float], prefix: str) -> boo
     return False
 
 
+_TOTAL_CLAUSE_BREAKS = "。；;！!？?\n"
+
+
+def _total_context_prefix(text: str, end: int) -> str:
+    """合计语境前缀：从金额向前取至最近一个句读（。；;！?\\n）或最多 40 字符，两者取短。"""
+    window = text[max(0, end - 40):end]
+    cut = -1
+    for char in _TOTAL_CLAUSE_BREAKS:
+        cut = max(cut, window.rfind(char))
+    return window[cut + 1:]
+
+
 def _is_derived_amount(value: float, products: list[dict[str, Any]], whitelist: set[float]) -> bool:
     """推导金额：单位价（资料价格/容量，容差 0.05 元/毫升）或两个价格之差的绝对值（含白名单金额与事实价之差）。
     单价符号即使不出现在资料中也按推导处理；推导金额不告警。"""
@@ -251,7 +263,7 @@ def check_explicit_facts(candidates: list[Candidate], facts: dict[str, Any], req
                 if not matching:
                     warnings.append(f"{candidate.candidate_id}：{name} {volume:g} mL 未在本次商品资料中找到，请核对规格。")
                     return
-                prefix = fragment[max(0, amount_start - 10):amount_start]
+                prefix = _total_context_prefix(fragment, amount_start)
                 if kind == "range":
                     low, high = value
                     if low > high:
@@ -317,7 +329,7 @@ def check_explicit_facts(candidates: list[Candidate], facts: dict[str, Any], req
             value = float((match.group(1) or match.group(2)).replace(",", ""))
             if _close(value, fact_prices) or _close(value, whitelist):
                 continue
-            if _is_derived_total(value, fact_prices, candidate.text[max(0, match.start() - 10):match.start()]):
+            if _is_derived_total(value, fact_prices, _total_context_prefix(candidate.text, match.start())):
                 continue
             if _is_derived_amount(value, products, whitelist):
                 continue
@@ -325,14 +337,14 @@ def check_explicit_facts(candidates: list[Candidate], facts: dict[str, Any], req
     return list(dict.fromkeys(warnings))
 
 
-def _apply_de_ai_gate(candidates: list[Candidate], output_language: str) -> tuple[list[Candidate], dict[str, Any]]:
-    """输出前必须过一遍的去 AI 味门槛：逐条 lint 并做确定性清洗；清洗是规则、不是模型重写、不新增事实。"""
+def _apply_de_ai_gate(candidates: list[Candidate], output_language: str, conversation_history: list[dict[str, Any]] | None = None, scenario: str | None = None) -> tuple[list[Candidate], dict[str, Any]]:
+    """输出前必须过一遍的去 AI 味门槛：逐条 lint（含上下文重复与场景适配，仅报告）并做确定性清洗；清洗是规则、不是模型重写、不新增事实。"""
     originals = [candidate.text for candidate in candidates]
     cleaned_versions: list[str] = []
     applied_rules: list[list[str]] = []
     per_candidate = []
     for candidate in candidates:
-        hits = lint_text(candidate.text)
+        hits = lint_text(candidate.text, conversation_history=conversation_history, scenario=scenario)
         cleaned, applied = clean_text(candidate.text)
         cleaned_versions.append(cleaned)
         applied_rules.append(applied)
@@ -438,7 +450,7 @@ def generate(request: GenerationRequest | dict[str, Any], run_id: str, case_id: 
             raise ValueError(f"候选语言不符合输出语言设置（{request.output_language}）")
     except (ValidationError, ValueError, KeyError, TypeError):
         return finish("technical_failure", error=f"模型输出结构不合格：需要三条不同、非空且符合输出语言设置（{request.output_language}）的完整候选；原始返回已保存，未重抽")
-    candidates, de_ai_report = _apply_de_ai_gate(candidates, request.output_language)
+    candidates, de_ai_report = _apply_de_ai_gate(candidates, request.output_language, request.conversation_history, request.scenario)
     provenance["de_ai_gate"] = "applied"
     return finish("success", candidates=candidates, warnings=check_explicit_facts(candidates, facts, request), de_ai_report=de_ai_report)
 

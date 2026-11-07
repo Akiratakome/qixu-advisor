@@ -143,3 +143,36 @@ def test_random_non_derived_amount_still_warned(isolated_root: Path):
     warnings = check_explicit_facts([candidate], facts, request)
     assert any("请核对是品牌报价还是顾客原话" in warning for warning in warnings)
     assert any("该金额未在本次资料中出现" in warning for warning in warnings)
+
+
+def price103_request() -> GenerationRequest:
+    # 真实 input 快照（holdout PRICE-103）：暮光两规格，客户问两瓶 50 mL 能否便宜。
+    return GenerationRequest(scenario="价格异议",
+        client_information={"buyer": {"address": "叶女士"}, "long_term_preferences": {"likes": ["玫瑰"], "dislikes": []},
+            "contact_permission": "allowed", "relationship": "购过暮光",
+            "history": [{"type": "purchase", "sku_id": "MUGUANG-50", "date": "2026-10-31"}],
+            "current_need": "问一次买两瓶暮光能否便宜一些。"},
+        conversation_history=[{"role": "client", "content": "如果我买两瓶50毫升的暮光，能少一点吗？"}],
+        product_ids=["MUGUANG-50", "MUGUANG-100"])
+
+
+def test_price103_formal_v5_real_candidates_no_warnings(isolated_root: Path):
+    """formal-v5 PRICE-103：合计语境「两瓶/一共」与金额间隔超过 10 字符时仍识别为推导总价，不告警。"""
+    request = price103_request()
+    facts = load_facts(request, root=isolated_root)
+    real_texts = [
+        "两瓶50毫升暮光目前没有折扣，一共2160元。要是想省一点，100毫升的暮光1680元，单价更低。您按自己的用量选就好。",
+        "两瓶50毫升暮光没有优惠，按标价是2160元。同款100毫升是1680元，您方便的话可以比较一下两种规格。",
+        "目前两瓶50毫升暮光没有折扣，一共2160元。这个价格我这边没法再动，您要是想按更低的单价买，100毫升的暮光是1680元。您看要不要先算一下自己的用量？",
+    ]
+    candidates = [Candidate(candidate_id=f"PRICE-103-C{i}", text=text) for i, text in enumerate(real_texts, 1)]
+    assert check_explicit_facts(candidates, facts, request) == []
+
+
+def test_two_bottle_sum_without_total_context_still_warned(isolated_root: Path):
+    """对照组：没有合计语境标记（无「合计/一共/N瓶」等）的两个瓶价之和仍告警。"""
+    request = price103_request()
+    facts = load_facts(request, root=isolated_root)
+    candidate = Candidate(candidate_id="T", text="暮光50毫升1080元，两支共2160元。")
+    warnings = check_explicit_facts([candidate], facts, request)
+    assert any("该金额未在本次资料中出现" in warning and "2160" in warning for warning in warnings)

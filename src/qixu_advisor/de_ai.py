@@ -30,6 +30,10 @@ AI_PATTERNS: tuple[tuple[str, re.Pattern[str], str], ...] = (
 
 _SENTENCE_RE = re.compile(r"[^。！？!?；;]*[。！？!?；;]?")
 _CLAUSE_SPLIT_RE = re.compile(r"[，,。！？!?；;]+")
+_CJK_RUN_RE = re.compile(r"[\u4e00-\u9fff]{10,}")
+_CLIENT_ROLES = {"client", "customer", "user"}
+_NORMALIZE_RE = re.compile(r"[\s，,。！？!?；;：:、·…—–\-～~“”‘’「」『』（）()《》<>【】\[\]…]")
+_BIRTHDAY_PROMO_RE = re.compile(r"青岚|暮光|雨白|砚泊|试闻|到店|购买|上新|优惠|活动")
 
 # 清洗规则：仅这三类高置信清理；短语后须跟句读或文本结尾，避免切断仍在继续的句子。
 _CLOSE_CLEAN_RE = re.compile(r"[，,；;]?(?:" + _CLOSING_PHRASES + r")(?=[，,；;。！？!?]|$)[，,；;。！？!?]?")
@@ -45,8 +49,71 @@ def _clauses(text: str) -> list[str]:
     return [part.strip() for part in _CLAUSE_SPLIT_RE.split(text) if part.strip()]
 
 
-def lint_text(text: str) -> list[dict]:
-    """返回命中项 [{category, match, message}]，按出现位置排序；只报告，不修改文本。"""
+def _normalize(text: str) -> tuple[str, list[int]]:
+    """去除空白与常见标点；返回归一化文本及每个归一化字符在原文中的位置。"""
+    chars: list[str] = []
+    index_map: list[int] = []
+    for index, char in enumerate(text):
+        if _NORMALIZE_RE.fullmatch(char):
+            continue
+        chars.append(char)
+        index_map.append(index)
+    return "".join(chars), index_map
+
+
+def _longest_common_substring(first: str, second: str) -> str:
+    """返回 first 中出现在 second 里的最长子串（要求 ≥10 个字符）；没有则返回空串。"""
+    limit = min(len(first), len(second))
+    for length in range(limit, 9, -1):
+        for start in range(0, len(first) - length + 1):
+            if first[start:start + length] in second:
+                return first[start:start + length]
+    return ""
+
+
+def _context_duplication_hits(text: str, conversation_history: list[dict]) -> list[tuple[int, dict]]:
+    """候选与客户原话（role in {client, customer, user}）重复 ≥10 个连续 CJK 字符的片段，仅报告。"""
+    if not conversation_history:
+        return []
+    sources = []
+    for turn in conversation_history:
+        role = turn.get("role")
+        content = turn.get("content")
+        if role in _CLIENT_ROLES and isinstance(content, str) and content.strip():
+            sources.append((role, _normalize(content)[0]))
+    if not sources:
+        return []
+    candidate_norm, index_map = _normalize(text)
+    hits: list[tuple[int, dict]] = []
+    for run_match in _CJK_RUN_RE.finditer(candidate_norm):
+        run = run_match.group()
+        best: tuple[int, str, str] | None = None
+        for role, source in sources:
+            fragment = _longest_common_substring(run, source)
+            if fragment and (best is None or len(fragment) > best[0]):
+                best = (len(fragment), fragment, role)
+        if best:
+            _length, fragment, role = best
+            display = fragment if len(fragment) <= 40 else fragment[:40] + "…"
+            hits.append((index_map[run_match.start()], {"category": "上下文重复", "match": display, "message": f"该片段与客户原话重复（来源：{role} 消息），建议用顾问自己的话改写。"}))
+    return hits
+
+
+def _scenario_hits(text: str, scenario: str | None) -> list[tuple[int, dict]]:
+    """生日与节庆场景：候选中出现商品名或推销词时仅报告，不修改文本。"""
+    if scenario != "生日与节庆":
+        return []
+    hits: list[tuple[int, dict]] = []
+    for match in _BIRTHDAY_PROMO_RE.finditer(text):
+        hits.append((match.start(), {"category": "场景不适配", "match": match.group(), "message": "生日祝福不应包含商品或推销内容，请删除或改写。"}))
+    return hits
+
+
+def lint_text(text: str, *, conversation_history: list[dict] | None = None, scenario: str | None = None) -> list[dict]:
+    """返回命中项 [{category, match, message}]，按出现位置排序；只报告，不修改文本。
+
+    conversation_history 用于上下文重复检测（客户角色消息为来源）；scenario 用于场景适配检测。
+    """
     hits: list[tuple[int, dict]] = []
     for category, pattern, message in AI_PATTERNS:
         if category == "祝福叠愿":
@@ -65,6 +132,8 @@ def lint_text(text: str) -> list[dict]:
         else:
             for match in pattern.finditer(text):
                 hits.append((match.start(), {"category": category, "match": match.group(), "message": message}))
+    hits.extend(_context_duplication_hits(text, conversation_history or []))
+    hits.extend(_scenario_hits(text, scenario))
     hits.sort(key=lambda item: item[0])
     return [hit for _, hit in hits]
 

@@ -176,3 +176,85 @@ def test_generate_skips_cleaning_on_duplicate(isolated_root: Path):
 def test_non_success_result_has_empty_de_ai_report():
     result = GenerationResult(run_id="r", case_id="c", status="needs_input")
     assert result.de_ai_report == {}
+
+
+# ---------- 上下文重复检测 ----------
+
+def test_lint_context_duplication_hit():
+    history = [{"role": "client", "content": "我想给妹妹挑一款柑橘调的香水，预算一千以内。"}]
+    hits = lint_text("我想给妹妹挑一款柑橘调的香水，这款很合适。", conversation_history=history)
+    assert "上下文重复" in categories(hits)
+    hit = next(hit for hit in hits if hit["category"] == "上下文重复")
+    assert "我想给妹妹挑一款柑橘调的香水" in hit["match"]
+    assert "来源" in hit["message"] and "client" in hit["message"]
+
+
+def test_lint_context_duplication_below_threshold_no_hit():
+    history = [{"role": "client", "content": "挑一款柑橘调的香水，预算一千以内。"}]
+    # 「挑一款柑橘调的香水」只有 9 个连续 CJK 字符，未到 10 字阈值。
+    assert "上下文重复" not in categories(lint_text("挑一款柑橘调的香水", conversation_history=history))
+
+
+def test_lint_context_duplication_ignores_punctuation_and_space():
+    history = [{"role": "client", "content": "我想，给妹妹 挑一款柑橘调的香水。"}]
+    hits = lint_text("我想给妹妹挑一款柑橘调的香水", conversation_history=history)
+    assert "上下文重复" in categories(hits)
+
+
+def test_lint_context_duplication_advisor_message_not_source():
+    history = [
+        {"role": "advisor", "content": "您平时喜欢哪一种气味呢？"},
+        {"role": "client", "content": "我预算一千以内。"},
+    ]
+    assert "上下文重复" not in categories(lint_text("您平时喜欢哪一种气味呢", conversation_history=history))
+
+
+def test_lint_context_duplication_no_history_no_hit():
+    assert "上下文重复" not in categories(lint_text("我想给妹妹挑一款柑橘调的香水。"))
+
+
+# ---------- 场景适配检测 ----------
+
+def test_lint_birthday_scenario_product_name_hit():
+    hits = lint_text("祝您生日快乐，青岚新款很适合您。", scenario="生日与节庆")
+    assert "场景不适配" in categories(hits)
+    assert any(hit["match"] == "青岚" for hit in hits if hit["category"] == "场景不适配")
+
+
+def test_lint_birthday_scenario_promo_words_hit():
+    hits = lint_text("祝您生日快乐，本周有优惠活动，欢迎到店。", scenario="生日与节庆")
+    promo = {hit["match"] for hit in hits if hit["category"] == "场景不适配"}
+    assert promo >= {"优惠", "活动", "到店"}
+
+
+def test_lint_other_scenario_no_birthday_hit():
+    text = "青岚50毫升是980元，可以到店试闻。"
+    assert "场景不适配" not in categories(lint_text(text, scenario="产品推荐"))
+    assert "场景不适配" not in categories(lint_text(text))
+
+
+def test_lint_birthday_blessing_without_product_no_hit():
+    assert "场景不适配" not in categories(lint_text("祝您生日快乐，愿新的一岁顺心如意。", scenario="生日与节庆"))
+
+
+def test_generate_reports_new_hits_without_modifying_text(isolated_root: Path):
+    history = [{"role": "client", "content": "今天是我生日，想收到一份祝福。"}]
+    raw_texts = [
+        "今天是我生日，想收到一份祝福。祝您生日快乐！",
+        "青岚50毫升是980元，您可以到店试闻。",
+        "祝您生日快乐，愿新的一岁顺心如意。",
+    ]
+    request = GenerationRequest(scenario="生日与节庆", occasion="生日",
+        client_information={"buyer": {"address": "林女士"}, "current_need": "生日祝福"},
+        conversation_history=history)
+    run = create_run(["CASE-1"], root=isolated_root, execution_mode="stub")
+    result = generate(request, run, "CASE-1", root=isolated_root, model_call=lambda *args: de_ai_stub(raw_texts), execution_mode="stub")
+    assert result.status == "success"
+    p0, p1, p2 = result.de_ai_report["per_candidate"]
+    assert "上下文重复" in categories(p0["lint_hits"])
+    assert "场景不适配" in categories(p1["lint_hits"])
+    assert p2["lint_hits"] == []
+    # 新两类仅报告，不自动修改文本。
+    assert result.candidates[0].text == raw_texts[0]
+    assert result.candidates[1].text == raw_texts[1]
+    assert result.candidates[2].text == raw_texts[2]

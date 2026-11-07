@@ -1,0 +1,19 @@
+{
+  "run_id": "language-s9",
+  "group": "language",
+  "rows": 24,
+  "successful_cases": 24,
+  "complete": true,
+  "missing": [],
+  "source": "result.json 的机器候选；未使用 feedback.jsonl",
+  "columns": [
+    "Case ID",
+    "Scenario",
+    "Client information",
+    "Conversation history",
+    "Product information",
+    "Output 1",
+    "Output 2",
+    "Output 3"
+  ]
+}

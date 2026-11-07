@@ -1,0 +1,55 @@
+{
+  "submission_id": "formal-v5-20261107",
+  "created_at": "2026-11-07T22:47:52.891+08:00",
+  "tool_versions": {
+    "python": "3.12.15",
+    "pydantic": "2.14.3",
+    "streamlit": "1.67.0",
+    "httpx": "0.28.1"
+  },
+  "runs": {
+    "formal-v5": {
+      "freeze": "formal-v13",
+      "cases": 50,
+      "statuses": "50 success",
+      "role": "最终 C 表（极简与上下文规则＋门禁版）"
+    },
+    "formal-v4": {
+      "role": "上一版 C，E 中作前后对比"
+    },
+    "formal-v3": {
+      "role": "去 AI 味规则版"
+    },
+    "formal-v2": {
+      "role": "事实修复版"
+    },
+    "formal-v1": {
+      "role": "v1 回归基线"
+    }
+  },
+  "freeze_ids": [
+    "formal-v10",
+    "formal-v11",
+    "formal-v12",
+    "formal-v13"
+  ],
+  "git_commits": [
+    "5df2dcf",
+    "adb79b2",
+    "bb82463",
+    "77b5789",
+    "7523aee",
+    "08fdd7c",
+    "bbd7c6a",
+    "504ec9f",
+    "b561019",
+    "a1dd570",
+    "b21de6d",
+    "2dc5321",
+    "c52cae7",
+    "ac48913",
+    "2567f5d",
+    "105fae9",
+    "a23fb14"
+  ]
+}
