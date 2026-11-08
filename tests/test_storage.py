@@ -1,6 +1,7 @@
 """S2 存储层离线检查：tmp_path SQLite、短事务与约束；零真实模型调用。"""
 
 import sqlite3
+import threading
 from pathlib import Path
 
 import pytest
@@ -21,6 +22,31 @@ def test_connect_db_configuration(tmp_path: Path):
     connection = storage.connect_db(tmp_path / "config.sqlite3")
     assert connection.row_factory is sqlite3.Row
     assert connection.execute("PRAGMA foreign_keys").fetchone()[0] == 1
+    connection.close()
+
+
+def test_connect_db_allows_sequential_cross_thread_access(tmp_path: Path):
+    """uvicorn 线程池场景：连接在主线程创建，另一线程顺序执行 SELECT，再回到主线程继续使用。"""
+    connection = storage.connect_db(tmp_path / "cross-thread.sqlite3")
+    storage.init_schema(connection)
+    storage.create_customer(connection, "C001", {"display_name": "林女士"})
+    result: dict = {}
+    errors: list = []
+
+    def select_in_other_thread():
+        try:
+            row = connection.execute("SELECT COUNT(*) AS total FROM customers").fetchone()
+            result["total"] = row["total"]
+        except Exception as exc:  # 测试需要捕获跨线程异常并回传主线程断言
+            errors.append(exc)
+
+    thread = threading.Thread(target=select_in_other_thread)
+    thread.start()
+    thread.join()
+    assert errors == []
+    assert result["total"] == 1
+    # 回到主线程仍可顺序使用同一连接。
+    assert storage.get_customer(connection, "C001")["id"] == "C001"
     connection.close()
 
 

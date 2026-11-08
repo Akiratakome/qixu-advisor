@@ -17,3 +17,6 @@ artifacts/backups/
 artifacts/submissions/**/screenshots/process/*
 !artifacts/submissions/**/screenshots/process/.gitkeep
 *.pdf
+
+web/node_modules/
+web/dist/

@@ -44,7 +44,13 @@ def default_db_path() -> Path:
 
 
 def connect_db(path: str | Path | None = None) -> sqlite3.Connection:
-    conn = sqlite3.connect(str(path) if path is not None else str(default_db_path()), timeout=5.0)
+    """创建 SQLite 连接（row_factory=Row、外键开启、timeout 5s）。
+
+    check_same_thread=False：FastAPI 对同步 def 路由用线程池执行，依赖生成器的 __enter__ 与
+    端点体/__exit__ 可能在不同线程访问同一连接。安全前提：每请求独占一条连接、同一连接
+    不并发使用——SQLite 对象只允许跨线程顺序访问；并发写入仍由 busy timeout 处理，禁止共享并发连接。
+    """
+    conn = sqlite3.connect(str(path) if path is not None else str(default_db_path()), timeout=5.0, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn

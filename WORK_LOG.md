@@ -226,3 +226,9 @@
 - qixu-ui：工作台接入会话（列表/新建/恢复，重开从 SQLite 恢复）、分析/生成消息落库、生成幂等占位＋草稿修订/动作落库（copied 带 copied_text 与基准 revision，feedback.jsonl 保留）、偏好管理区、客户下拉 DB 快照；test_app.py 9 例。
 - lead 集成验证：全量 180 passed（此前 36 errors 为多 agent 并行共享 basetemp 的 Windows 锁残留，换干净 basetemp 全绿）；API 冒烟 settings/model 200、catalog 6 SKU；工作台侧栏会话/新建会话/偏好/写作设置/人工评价全部在，runtime/qixu.sqlite3 正常创建（runtime/ 已入 .gitignore）。
 - 冻结 formal-v20（含 S2 代码）；formal-v8 的 C 表不变（提示未改、语气冻结）。React 工作台（S3）与渠道（S5）仍未实施。
+
+## 2026-11-08 15:30 · S3 React 工作台开工（先保存基线）
+
+- 用户指示：继续完善并尝试 React，先保存基线可回退。已建回滚点：标签 `pre-s3-react-20261108` → 4ec61b9，备份 `artifacts/backups/pre-s3-react-20261108/`（working-tree-HEAD.zip 与 qixu-history.bundle，SHA-256 记录）。
+- 方案：React＋TS＋Vite（web/，普通 CSS、api.ts typed 客户端、会话/分析/生成/候选卡/复制留证/偏好/设置，奢华风格响应式）；后端由现有 FastAPI 承载——qixu-api 新增 POST /api/v1/analyze 与 web/dist 静态托管＋SPA 回退（dist 不存在则不挂载）；qixu-ui 实现前端；lead 集成构建、E2E 验证。Streamlit 工作台保留不删。
+- qixu-api 已交付：/analyze（错误映射 422/500/502、统一错误体）与静态托管＋SPA 回退；test_api 26/26，全量 185 passed。

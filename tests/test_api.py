@@ -11,9 +11,9 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from qixu_advisor import api, storage
+from qixu_advisor import api, generation as generation_module, storage
 from qixu_advisor.api import create_app
-from qixu_advisor.models import Candidate, GenerationResult
+from qixu_advisor.models import AnalysisResult, Candidate, GenerationResult
 
 
 @pytest.fixture
@@ -30,6 +30,19 @@ def client(app):
 @pytest.fixture
 def db_path(tmp_path: Path) -> Path:
     return tmp_path / "api.sqlite3"
+
+
+@pytest.fixture(autouse=True)
+def stub_create_run(monkeypatch):
+    """所有用例默认替身 records.create_run，避免测试写入真实 artifacts/runs。"""
+    calls: list[dict] = []
+
+    def fake_create_run(case_ids, *, root=None, run_id=None, execution_mode="real", parent_run_id=None):
+        calls.append({"case_ids": list(case_ids), "run_id": run_id, "execution_mode": execution_mode, "root": root})
+        return run_id or "stub-run"
+
+    monkeypatch.setattr(api.records, "create_run", fake_create_run)
+    return calls
 
 
 def success_result(request=None, run_id="stub-run", case_id="stub-case") -> GenerationResult:
@@ -99,6 +112,43 @@ def test_conversation_create_patch_version_conflict(client):
     assert client.get("/api/v1/conversations/C404").status_code == 404
 
 
+def test_patch_conversation_updates_settings_and_product_ids(client):
+    """生产联调修复：settings/product_ids 必须映射到 settings_json/product_ids_json 列，
+    序列化后落库；再次 GET 能读回相同值；expected_version 不符仍 409。"""
+    conversation = make_conversation(client)
+    url = f"/api/v1/conversations/{conversation['conversation_id']}"
+    settings = {"output_language": "en", "tone": "warm"}
+    product_ids = ["QINGLAN-50", "YUBAI-50"]
+
+    patched = client.patch(
+        url,
+        json={
+            "expected_version": 1,
+            "settings": settings,
+            "product_ids": product_ids,
+            "current_need": "为妹妹选柑橘香",
+        },
+    )
+    assert patched.status_code == 200, patched.text
+    payload = patched.json()
+    # settings 以整份字典落库（含非 None 默认项，与 create 一致），断言更新项已生效。
+    assert payload["settings"]["output_language"] == "en"
+    assert payload["settings"]["tone"] == "warm"
+    assert payload["product_ids"] == product_ids
+    assert payload["current_need"] == "为妹妹选柑橘香"
+    assert payload["version"] == 2
+
+    fetched = client.get(url)
+    assert fetched.status_code == 200
+    assert fetched.json()["settings"] == payload["settings"]
+    assert fetched.json()["product_ids"] == product_ids
+    assert fetched.json()["version"] == 2
+
+    conflict = client.patch(url, json={"expected_version": 1, "settings": {"tone": "direct"}})
+    assert conflict.status_code == 409
+    assert conflict.json()["error"]["code"] == "conflict"
+
+
 def test_message_external_key_dedupe(client):
     conversation = make_conversation(client, scenario="价格异议")
     url = f"/api/v1/conversations/{conversation['conversation_id']}/messages"
@@ -122,7 +172,7 @@ def test_message_external_key_dedupe(client):
 # ---------- 生成 ----------
 
 
-def test_generation_idempotency_same_key_same_content(client, monkeypatch):
+def test_generation_idempotency_same_key_same_content(client, monkeypatch, stub_create_run):
     fake = FakeGenerator(result=success_result)
     monkeypatch.setattr(api, "generate", fake)
     conversation = make_conversation(client)
@@ -146,6 +196,14 @@ def test_generation_idempotency_same_key_same_content(client, monkeypatch):
     assert different.json()["error"]["code"] == "conflict"
 
     assert len(fake.calls) == 1
+    # create_run 在 generate 之前被调用一次（重放与 409 不重复创建运行）：
+    # 参数含 run_id/case_id 且 execution_mode=real。
+    assert len(stub_create_run) == 1
+    create_run_call = stub_create_run[0]
+    assert create_run_call["execution_mode"] == "real"
+    assert create_run_call["run_id"] == payload["run_id"]
+    assert create_run_call["run_id"].startswith("web-")
+    assert create_run_call["case_ids"] == [payload["case_id"]]
 
 
 def test_generation_new_key_creates_new_task(client, monkeypatch):
@@ -233,6 +291,35 @@ def test_generation_without_scenario_is_422(client, monkeypatch):
     )
     assert response.status_code == 422
     assert fake.calls == []
+
+
+def test_generation_create_run_failure_marks_interrupted(client, monkeypatch, db_path):
+    """create_run 抛错时端点 500，且 generation 占位行被标 interrupted，不残留 running。"""
+    fake = FakeGenerator(result=success_result)
+    monkeypatch.setattr(api, "generate", fake)
+
+    def failing_create_run(case_ids, *, root=None, run_id=None, execution_mode="real", parent_run_id=None):
+        raise OSError("运行目录不可写")
+
+    monkeypatch.setattr(api.records, "create_run", failing_create_run)
+    conversation = make_conversation(client)
+    response = client.post(
+        f"/api/v1/conversations/{conversation['conversation_id']}/generations",
+        json={"expected_version": 1},
+        headers={"Idempotency-Key": "key-1"},
+    )
+    assert response.status_code == 500
+    body = response.json()
+    assert body["error"]["code"] == "internal"
+    assert body["request_id"]
+    assert "Traceback" not in response.text
+    assert fake.calls == []  # create_run 失败时不调用 generate
+
+    with storage.connect_db(db_path) as conn:
+        rows = [dict(row) for row in conn.execute("SELECT status FROM generations").fetchall()]
+    assert rows
+    assert all(row["status"] != "running" for row in rows)
+    assert any(row["status"] == "interrupted" for row in rows)
 
 
 def test_get_generation_returns_three_drafts(client, monkeypatch):
@@ -468,3 +555,126 @@ def test_preference_body_json_roundtrip():
 
     assert json.loads(GenerationIn(expected_version=1).model_dump_json())["expected_version"] == 1
     assert PreferenceIn(kind="like", original_text="喜欢玫瑰", source="消息1").explicit is True
+
+
+# ---------- 对话分析 ----------
+
+
+def test_analyze_valid_passes_history_and_client_info(client, monkeypatch):
+    captured: dict = {}
+
+    def fake_analyze(conversation_history, client_information, *, root=None, **kwargs):
+        captured["conversation_history"] = conversation_history
+        captured["client_information"] = client_information
+        captured["calls"] = captured.get("calls", 0) + 1
+        return AnalysisResult(scenario="产品推荐", current_need="为朋友选香", missing_questions=["预算大概多少？"])
+
+    monkeypatch.setattr(generation_module, "analyze_conversation", fake_analyze)
+    response = client.post(
+        "/api/v1/analyze",
+        json={
+            "conversation_history": [
+                {"role": "client", "content": "想帮朋友挑一瓶香水"},
+                {"role": "advisor", "content": "您朋友偏好什么香调？"},
+            ],
+            "client_information": {"budget_cny": 1200},
+        },
+    )
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["scenario"] == "产品推荐"
+    assert payload["current_need"] == "为朋友选香"
+    assert payload["missing_questions"] == ["预算大概多少？"]
+    assert payload["request_id"]
+    assert captured["calls"] == 1
+    assert captured["conversation_history"][0] == {"role": "client", "content": "想帮朋友挑一瓶香水"}
+    assert captured["conversation_history"][1]["role"] == "advisor"
+    assert captured["client_information"] == {"budget_cny": 1200}
+
+    invalid = client.post("/api/v1/analyze", json={"conversation_history": [{"role": "system", "content": "非法角色"}]})
+    assert invalid.status_code == 422
+    assert invalid.json()["error"]["code"] == "validation_error"
+    assert captured["calls"] == 1  # 参数校验失败不触发模型调用
+
+
+def test_analyze_failure_error_body(client, monkeypatch):
+    def fail_structural(conversation_history, client_information, *, root=None, **kwargs):
+        raise ValueError("分析结果结构不合格：需要含 scenario（六场景之一）、current_need（非空）与 missing_questions（0–3 条非空）的 JSON；未重试")
+
+    monkeypatch.setattr(generation_module, "analyze_conversation", fail_structural)
+    structural = client.post("/api/v1/analyze", json={"conversation_history": [{"role": "client", "content": "你好"}]})
+    assert structural.status_code == 502
+    body = structural.json()
+    assert body["error"]["code"] == "upstream_error"
+    assert "结构不合格" in body["error"]["message"]
+    assert body["request_id"]
+    assert "Traceback" not in structural.text
+
+    def fail_model(conversation_history, client_information, *, root=None, **kwargs):
+        raise ValueError("对话分析失败：模型请求超时；没有自动重试")
+
+    monkeypatch.setattr(generation_module, "analyze_conversation", fail_model)
+    model_failure = client.post("/api/v1/analyze", json={"conversation_history": [{"role": "client", "content": "你好"}]})
+    assert model_failure.status_code == 502
+    assert model_failure.json()["error"]["code"] == "upstream_error"
+    assert "自动重试" in model_failure.json()["error"]["message"]
+
+    def fail_config(conversation_history, client_information, *, root=None, **kwargs):
+        raise ValueError("未配置 DEEPSEEK_API_KEY；未发起真实模型请求")
+
+    monkeypatch.setattr(generation_module, "analyze_conversation", fail_config)
+    config_failure = client.post("/api/v1/analyze", json={"conversation_history": [{"role": "client", "content": "你好"}]})
+    assert config_failure.status_code == 500
+    assert config_failure.json()["error"]["code"] == "internal"
+    assert config_failure.json()["request_id"]
+    assert "Traceback" not in config_failure.text
+
+
+# ---------- 静态托管（web/dist SPA） ----------
+
+
+def test_static_dir_missing_keeps_api_and_json_404(tmp_path: Path):
+    application = create_app(tmp_path / "no-dist.sqlite3")
+    with TestClient(application, raise_server_exceptions=False) as test_client:
+        root_response = test_client.get("/")
+        assert root_response.status_code == 404
+        assert root_response.json()["error"]["code"] == "not_found"
+        assert test_client.get("/api/v1/settings/model").status_code == 200
+
+
+def test_static_dir_without_index_not_mounted(tmp_path: Path):
+    empty_dist = tmp_path / "empty-dist"
+    empty_dist.mkdir()
+    application = create_app(tmp_path / "empty.sqlite3", static_dir=empty_dist)
+    with TestClient(application, raise_server_exceptions=False) as test_client:
+        assert test_client.get("/").status_code == 404
+        assert test_client.get("/api/v1/settings/model").status_code == 200
+
+
+def test_static_dir_serves_index_spa_fallback_and_api_json_404(tmp_path: Path):
+    dist = tmp_path / "dist"
+    (dist / "assets").mkdir(parents=True)
+    (dist / "index.html").write_text("<html><body>QIXU 工作台</body></html>", encoding="utf-8")
+    (dist / "assets" / "app.js").write_text("console.log('qixu');", encoding="utf-8")
+
+    application = create_app(tmp_path / "with-dist.sqlite3", static_dir=dist)
+    with TestClient(application, raise_server_exceptions=False) as test_client:
+        index_response = test_client.get("/")
+        assert index_response.status_code == 200
+        assert "QIXU 工作台" in index_response.text
+
+        fallback = test_client.get("/app")
+        assert fallback.status_code == 200
+        assert "QIXU 工作台" in fallback.text
+
+        asset = test_client.get("/assets/app.js")
+        assert asset.status_code == 200
+        assert "console.log" in asset.text
+
+        unknown_api = test_client.get("/api/v1/unknown")
+        assert unknown_api.status_code == 404
+        assert unknown_api.json()["error"]["code"] == "not_found"
+        assert unknown_api.json()["request_id"]
+
+        assert test_client.get("/api/v1/settings/model").status_code == 200
+        assert test_client.get("/api/v1/catalog").status_code == 200

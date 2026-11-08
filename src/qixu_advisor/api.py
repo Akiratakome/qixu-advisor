@@ -17,6 +17,10 @@
 7. 草稿的对外 id 为该候选初始修订行 id（稳定锚点），PATCH/actions 按
    (generation_id, candidate_id) 定位修订链。
 8. 生成任务的 run_id/case_id 由本层生成（web- 前缀十六进制），artifacts/runs 留档继续可用。
+9. storage.update_conversation 按字段 key 直接拼列名：settings/product_ids 会生成不存在的列
+   （no such column: settings）。API 层 PATCH 会话时把这两个字段映射为 storage 列名
+   （settings_json/product_ids_json）并统一 json.dumps 后单条 UPDATE（版本乐观锁语义一致），
+   无 JSON 字段时仍走 storage 更新。
 """
 
 from __future__ import annotations
@@ -24,17 +28,21 @@ from __future__ import annotations
 import json
 import sqlite3
 import uuid
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
 import starlette.exceptions as _starlette_exceptions
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, Response
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
 
-from . import conversations, preferences, storage
+from . import conversations, generation as generation_module, preferences, records, storage
 from .api_models import (
+    AnalyzeIn,
+    AnalyzeOut,
     CatalogItemOut,
     ConversationDetailOut,
     ConversationIn,
@@ -119,6 +127,11 @@ def _preference_out(row: dict[str, Any]) -> PreferenceOut:
         created_at=row.get("created_at"),
         updated_at=row.get("updated_at"),
     )
+
+
+def _now_iso() -> str:
+    """与 storage._now 相同的东八区毫秒时间戳，供本层直接写库的路径使用。"""
+    return datetime.now(timezone(timedelta(hours=8))).isoformat(timespec="milliseconds")
 
 
 def _find_message(conn: sqlite3.Connection, conversation_id: str, source: str, external_id: str) -> dict[str, Any] | None:
@@ -219,11 +232,15 @@ def _generation_out(
 # ---------- 应用装配 ----------
 
 
-def create_app(db_path: str | Path, *, root: Path = PROJECT_ROOT) -> FastAPI:
+def create_app(db_path: str | Path, *, root: Path = PROJECT_ROOT, static_dir: Path | None = None) -> FastAPI:
     """按 db_path 创建 FastAPI 应用；每请求短连接（yield 注入、显式关闭）。
 
     仅支持文件路径 SQLite（`:memory:` 会因每请求独立连接而丢库）。启动时执行迁移并把
     遗留 running 任务标为 interrupted；重启不自动重调模型。
+
+    static_dir 指向 S3 React 构建产物目录（web/dist）：目录含 index.html 时挂载静态文件，
+    并把非 /api 前缀的未匹配 GET 回退到 index.html（SPA）；未知 /api/* 仍是 JSON 404。
+    目录缺失或没有 index.html 时不挂载，行为与之前完全一致。
     """
     db_path = str(db_path)
     if db_path != ":memory:":
@@ -231,6 +248,13 @@ def create_app(db_path: str | Path, *, root: Path = PROJECT_ROOT) -> FastAPI:
     app = FastAPI(title="栖序 QIXU 顾问工作台 API", version="0.1.0")
     app.state.db_path = db_path
     app.state.root = Path(root)
+    static_index: Path | None = None
+    if static_dir is not None:
+        static_dir = Path(static_dir)
+        candidate_index = static_dir / "index.html"
+        if candidate_index.is_file():
+            static_index = candidate_index
+    app.state.static_index = static_index
 
     with storage.connect_db(db_path) as conn:
         storage.init_schema(conn)
@@ -281,13 +305,17 @@ def create_app(db_path: str | Path, *, root: Path = PROJECT_ROOT) -> FastAPI:
         return error_response(request, 422, "validation_error", "请求参数不合法", fields=fields)
 
     # 路由未匹配等场景抛出 starlette.exceptions.HTTPException；fastapi.exceptions.HTTPException
-    # 是其子类（部分版本为独立子类），因此同时注册两个键，保证两种 404/405/429/422 都走统一错误体。
+    # 是其子类（部分版本为独立子类），因此同时注册两个键，保证两种 404/405/429/422/502 都走统一错误体。
     @app.exception_handler(_starlette_exceptions.HTTPException)
     @app.exception_handler(HTTPException)
     async def http_exception_handler(request: Request, exc: HTTPException):
-        code = {404: "not_found", 405: "method_not_allowed", 409: "conflict", 422: "validation_error", 429: "busy"}.get(
-            exc.status_code, "error"
-        )
+        # SPA 回退：静态目录激活时，非 /api 前缀的未匹配 GET 一律返回 index.html；
+        # /api 前缀的 404 保持 JSON 错误体（前端路由深链刷新可恢复，接口错误可解析）。
+        if exc.status_code == 404 and app.state.static_index is not None:
+            if request.method == "GET" and not request.url.path.startswith("/api"):
+                return FileResponse(app.state.static_index)
+        code = {404: "not_found", 405: "method_not_allowed", 409: "conflict", 422: "validation_error", 429: "busy",
+                500: "internal", 502: "upstream_error"}.get(exc.status_code, "error")
         return error_response(request, exc.status_code, code, str(exc.detail))
 
     @app.exception_handler(Exception)
@@ -345,14 +373,46 @@ def create_app(db_path: str | Path, *, root: Path = PROJECT_ROOT) -> FastAPI:
 
     @app.patch("/api/v1/conversations/{conversation_id}", response_model=ConversationOut)
     def patch_conversation(conversation_id: str, body: ConversationPatch, conn: sqlite3.Connection = Depends(get_conn)):
-        fields: dict[str, Any] = {}
-        for key, value in body.model_dump(exclude={"expected_version"}).items():
-            if value is None:
-                continue
-            fields[key] = value
+        fields = {
+            key: value
+            for key, value in body.model_dump(exclude={"expected_version", "settings"}).items()
+            if value is not None
+        }
+        if body.settings is not None:
+            # 与 create_conversation 一致：排除 None（goal 未显式设置时不写 null），
+            # 其余非 None 项（含 length/tone 等默认值）随整份字典落盘。
+            fields["settings"] = body.settings.model_dump(exclude_none=True)
         if fields.get("customer_id"):
             storage.get_customer(conn, fields["customer_id"])
-        return _conversation_out(storage.update_conversation(conn, conversation_id, body.expected_version, **fields))
+        has_json_fields = "settings" in fields or "product_ids" in fields
+        if fields and not has_json_fields:
+            # 无 JSON 字段：字段名与列名一致，直接走 storage 更新。
+            return _conversation_out(storage.update_conversation(conn, conversation_id, body.expected_version, **fields))
+        # storage.update_conversation 按字段 key 直接拼列名，settings/product_ids 会生成不存在的列
+        # （no such column: settings）。本层把 body 字段映射为 storage 列名（settings_json/
+        # product_ids_json），统一 json.dumps 序列化后单条 UPDATE；其余字段按列名直传，
+        # 版本乐观锁与 storage 语义一致（不匹配 409、不存在 404）。
+        current = storage.get_conversation(conn, conversation_id)
+        if current["version"] != body.expected_version:
+            raise ConflictError(f"会话版本冲突：当前 {current['version']}，期望 {body.expected_version}")
+        assignments: list[str] = []
+        values: list[Any] = []
+        for key, value in fields.items():
+            if key == "settings":
+                assignments.append("settings_json = ?")
+                values.append(json.dumps(value, ensure_ascii=False))
+            elif key == "product_ids":
+                assignments.append("product_ids_json = ?")
+                values.append(json.dumps(value, ensure_ascii=False))
+            else:
+                assignments.append(f"{key} = ?")
+                values.append(value)
+        assignments.append("version = ?")
+        assignments.append("updated_at = ?")
+        values.extend([body.expected_version + 1, _now_iso(), conversation_id])
+        conn.execute(f"UPDATE conversations SET {', '.join(assignments)} WHERE id = ?", values)
+        conn.commit()
+        return _conversation_out(storage.get_conversation(conn, conversation_id))
 
     @app.post("/api/v1/conversations/{conversation_id}/messages", status_code=201, response_model=MessageOut)
     def post_message(conversation_id: str, body: MessageIn, conn: sqlite3.Connection = Depends(get_conn)):
@@ -392,6 +452,31 @@ def create_app(db_path: str | Path, *, root: Path = PROJECT_ROOT) -> FastAPI:
     def get_model_settings(request: Request):
         # config_status 只返回 configured/provider/model/base_url/missing，不含密钥。
         return config_status(root=request.app.state.root)
+
+    # ---------- 对话分析 ----------
+
+    @app.post("/api/v1/analyze", response_model=AnalyzeOut)
+    def analyze_conversation_endpoint(body: AnalyzeIn, request: Request):
+        # 同步一次调用；analyze_conversation 内部失败不重试。结构非法/模型失败 → 502，
+        # 本端配置问题（缺少提示文件/未配置密钥）→ 500；不回显栈与凭据。
+        try:
+            result = generation_module.analyze_conversation(
+                [turn.model_dump() for turn in body.conversation_history],
+                body.client_information,
+                root=request.app.state.root,
+            )
+        except ValueError as exc:
+            message = str(exc)
+            if "结构不合格" in message or "对话分析" in message:
+                raise HTTPException(status_code=502, detail=message) from exc
+            raise HTTPException(status_code=500, detail=message) from exc
+        request_id = getattr(request.state, "request_id", None) or uuid.uuid4().hex[:16]
+        return AnalyzeOut(
+            scenario=result.scenario,
+            current_need=result.current_need,
+            missing_questions=result.missing_questions,
+            request_id=request_id,
+        )
 
     # ---------- 生成与草稿 ----------
 
@@ -447,6 +532,14 @@ def create_app(db_path: str | Path, *, root: Path = PROJECT_ROOT) -> FastAPI:
             raise HTTPException(status_code=422, detail=f"会话快照不满足生成要求：{first.get('msg', '结构非法')}") from exc
         run_id = f"web-{generation['id'][:12]}"
         case_id = f"web-{generation['id'][:24]}"
+        try:
+            # 先创建固定运行清单（artifacts/runs/<run_id>/manifest.json）；generate 内部 begin_case
+            # 依赖该清单并做版本/参数快照校验。创建失败时不留 running 占位：标 interrupted 后上抛，
+            # 由统一错误处理转 500。
+            records.create_run([case_id], run_id=run_id, execution_mode="real", root=request.app.state.root)
+        except Exception:
+            storage.complete_generation(conn, generation["id"], "interrupted", run_id, case_id)
+            raise
         try:
             # 阻塞调用：同步执行生成；缺项/拒联系/未配置密钥由 generation.generate 内部短路，不调用模型。
             result = generate(generation_request, run_id, case_id, root=request.app.state.root)
@@ -540,5 +633,9 @@ def create_app(db_path: str | Path, *, root: Path = PROJECT_ROOT) -> FastAPI:
         if body.action == "confirm":
             return _preference_out(preferences.confirm(conn, preference_id))
         return _preference_out(preferences.revoke(conn, preference_id))
+
+    # 静态托管必须在所有 API 路由之后注册：/api 路由先匹配，未知 /api/* 由 404 处理器返回 JSON 错误体。
+    if static_index is not None:
+        app.mount("/", StaticFiles(directory=str(static_dir), html=True), name="web-dist")
 
     return app

@@ -167,6 +167,38 @@ class ConversationDetailOut(ConversationOut):
     messages: list[MessageOut] = Field(default_factory=list)
 
 
+# ---------- 对话分析 ----------
+
+
+class AnalyzeTurn(BaseModel):
+    """「分析并提问」的对话历史条目；角色限定为生成核心认可的角色。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    role: MessageRole
+    content: str = Field(min_length=1)
+
+
+class AnalyzeIn(BaseModel):
+    """分析请求：对话历史＋可选客户档案。服务端同步一次调用、失败不重试。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    conversation_history: list[AnalyzeTurn] = Field(default_factory=list)
+    client_information: dict[str, Any] = Field(default_factory=dict)
+
+
+class AnalyzeOut(BaseModel):
+    """分析结果（AnalysisResult 的 scenario/current_need/missing_questions）＋请求 ID。"""
+
+    model_config = ConfigDict(extra="ignore")
+
+    scenario: Scenario
+    current_need: str
+    missing_questions: list[str] = Field(default_factory=list)
+    request_id: str
+
+
 # ---------- 生成与草稿 ----------
 
 
