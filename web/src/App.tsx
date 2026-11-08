@@ -202,6 +202,22 @@ export default function App() {
     }
   }
 
+  async function postLines(target: ConversationDetail, lines: Array<{ role: string; content: string }>): Promise<ConversationDetail | null> {
+    try {
+      for (const line of lines) {
+        await api.conversations.postMessage(target.conversation_id, {
+          role: line.role,
+          content: line.content,
+          source: line.role === 'advisor' ? 'workbench' : 'manual',
+        })
+      }
+      return await loadDetail(target.conversation_id)
+    } catch (error) {
+      setBanner(errorMessage(error))
+      return null
+    }
+  }
+
   async function handleAddMessages() {
     if (!detail) {
       return
@@ -212,69 +228,109 @@ export default function App() {
     }
     setPosting(true)
     setBanner(null)
-    let loaded: ConversationDetail | null = null
-    try {
-      for (const line of lines) {
-        await api.conversations.postMessage(detail.conversation_id, {
-          role: line.role,
-          content: line.content,
-          source: line.role === 'advisor' ? 'workbench' : 'manual',
-        })
-      }
+    const loaded = await postLines(detail, lines)
+    if (loaded) {
       setComposer('')
-      loaded = await loadDetail(detail.conversation_id)
-      if (loaded) {
-        setDetail(loaded)
-      }
+      setDetail(loaded)
       setNotice('消息已写入会话。')
-    } catch (error) {
-      setBanner(errorMessage(error))
-    } finally {
-      setPosting(false)
     }
+    setPosting(false)
     if (loaded) {
       await analyzeConversation(loaded)
     }
   }
 
-  async function analyzeConversation(target: ConversationDetail, silentRetry = true) {
-    setAnalyzing(true)
-    setAnalysisError(null)
-    setBanner(null)
-    const customer = customers.find((item) => item.customer_id === target.customer_id)
-    const run = () =>
-      api.analyze({
-        conversation_history: target.messages.map((message) => ({
-          role: message.role,
-          content: message.content,
-        })),
-        client_information: customer ? (customer.profile as Record<string, unknown>) : {},
-      })
-    try {
-      let result: AnalyzeResult
-      if (silentRetry) {
-        try {
-          result = await run()
-        } catch {
-          // 自动分析首次失败：静默重试一次。
+  const runAnalysis = useCallback(
+    async (
+      history: Array<{ role: string; content: string }>,
+      customer: Customer | undefined,
+      silentRetry: boolean,
+    ) => {
+      setAnalyzing(true)
+      setAnalysisError(null)
+      setBanner(null)
+      const run = () =>
+        api.analyze({
+          conversation_history: history,
+          client_information: customer ? (customer.profile as Record<string, unknown>) : {},
+        })
+      try {
+        let result: AnalyzeResult
+        if (silentRetry) {
+          try {
+            result = await run()
+          } catch {
+            // 自动分析首次失败：静默重试一次。
+            result = await run()
+          }
+        } else {
           result = await run()
         }
-      } else {
-        result = await run()
+        setAnalysis(result)
+        setScenario(isScenario(result.scenario) ? result.scenario : SCENARIOS[0])
+        setNeedText(result.current_need)
+        setAnalysisError(null)
+      } catch (error) {
+        setAnalysisError(errorMessage(error))
+      } finally {
+        setAnalyzing(false)
       }
-      setAnalysis(result)
-      setScenario(isScenario(result.scenario) ? result.scenario : SCENARIOS[0])
-      setNeedText(result.current_need)
-      setAnalysisError(null)
-    } catch (error) {
-      setAnalysisError(errorMessage(error))
-    } finally {
-      setAnalyzing(false)
-    }
+    },
+    [],
+  )
+
+  async function analyzeConversation(target: ConversationDetail, silentRetry = true) {
+    const customer = customers.find((item) => item.customer_id === target.customer_id)
+    await runAnalysis(
+      target.messages.map((message) => ({ role: message.role, content: message.content })),
+      customer,
+      silentRetry,
+    )
   }
 
+  const analyzeDraft = useCallback(
+    async (composerText: string, silentRetry = true) => {
+      if (!detail) {
+        return
+      }
+      const draftLines = parseChatLines(composerText)
+      if (draftLines.length === 0) {
+        return
+      }
+      const customer = customers.find((item) => item.customer_id === detail.customer_id)
+      const history = [
+        ...detail.messages.map((message) => ({ role: message.role, content: message.content })),
+        ...draftLines.map((line) => ({ role: line.role, content: line.content })),
+      ]
+      await runAnalysis(history, customer, silentRetry)
+    },
+    [detail, customers, runAnalysis],
+  )
+
+  // 输入停止约 1.2 秒后自动理解：内容非空且与最后一条已添加消息不同才触发。
+  useEffect(() => {
+    const value = composer.trim()
+    if (!value || !detail) {
+      return
+    }
+    const lastMessage = detail.messages.length > 0 ? detail.messages[detail.messages.length - 1].content.trim() : ''
+    if (value === lastMessage) {
+      return
+    }
+    const timer = window.setTimeout(() => {
+      void analyzeDraft(value)
+    }, 1200)
+    return () => window.clearTimeout(timer)
+  }, [composer, detail, analyzeDraft])
+
   function handleRetryAnalysis() {
-    if (detail) {
+    if (!detail) {
+      return
+    }
+    const value = composer.trim()
+    if (value) {
+      void analyzeDraft(value, false)
+    } else {
       void analyzeConversation(detail, false)
     }
   }
@@ -294,20 +350,38 @@ export default function App() {
     setGenerating(true)
     setGenerationError(null)
     setBanner(null)
+    let current = detail
+    // 输入框有未添加的内容：先生成消息落库，再走生成流程。
+    const pendingText = composer.trim()
+    const lastMessage = current.messages.length > 0 ? current.messages[current.messages.length - 1].content.trim() : ''
+    if (pendingText && pendingText !== lastMessage) {
+      const lines = parseChatLines(pendingText)
+      if (lines.length > 0) {
+        const loaded = await postLines(current, lines)
+        if (!loaded) {
+          setGenerating(false)
+          return
+        }
+        current = loaded
+        setDetail(loaded)
+        setComposer('')
+        setNotice('输入内容已写入会话。')
+      }
+    }
     try {
-      const patched = await api.conversations.patch(detail.conversation_id, {
-        expected_version: detail.version,
+      const patched = await api.conversations.patch(current.conversation_id, {
+        expected_version: current.version,
         scenario: scenario || analysis.scenario,
         settings,
         current_need: needText.trim() || analysis.current_need,
       })
       const result = await api.conversations.createGeneration(
-        detail.conversation_id,
+        current.conversation_id,
         { expected_version: patched.version, settings },
         `v${patched.version}-${Date.now()}`,
       )
       setGeneration(result)
-      setDetail({ ...detail, version: patched.version, scenario: patched.scenario })
+      setDetail({ ...current, version: patched.version, scenario: patched.scenario })
       setDirtyDraftIds(new Set())
     } catch (error) {
       setGenerationError(errorMessage(error))
@@ -469,7 +543,6 @@ export default function App() {
               generationError={generationError}
               onGenerate={requestGenerate}
               generation={generation}
-              hasMessages={detail.messages.length > 0}
             />
             {hasDrafts && (
               <section className="panel drafts-section">

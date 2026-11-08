@@ -43,7 +43,6 @@ interface AnalysisPanelProps {
   generationError: string | null
   onGenerate: () => void
   generation: Generation | null
-  hasMessages: boolean
 }
 
 export default function AnalysisPanel({
@@ -59,7 +58,6 @@ export default function AnalysisPanel({
   generationError,
   onGenerate,
   generation,
-  hasMessages,
 }: AnalysisPanelProps) {
   return (
     <section className="panel analysis-panel">
@@ -79,10 +77,8 @@ export default function AnalysisPanel({
             ))}
           </select>
         </label>
-        {analyzing && <span className="muted">正在理解对话…</span>}
-        {!analysis && !analyzing && !analysisError && (
-          <span className="muted">{hasMessages ? '添加消息后自动分析' : '先添加对话消息'}</span>
-        )}
+        {analyzing && <span className="muted">正在理解…</span>}
+        {!analysis && !analyzing && !analysisError && <span className="muted">输入内容后自动理解</span>}
         <span className="spacer" />
         <button className="btn primary" type="button" disabled={generating || !analysis} onClick={onGenerate}>
           {generating ? '生成中…' : '生成三条候选'}
@@ -94,7 +90,7 @@ export default function AnalysisPanel({
         value={needText}
         disabled={!analysis}
         onChange={(event) => onNeedTextChange(event.target.value)}
-        placeholder="一句话需求，可修改"
+        placeholder="一句话说清这轮要做什么，可改"
       />
       {analysis && analysis.missing_questions.length > 0 && (
         <details className="questions-toggle">

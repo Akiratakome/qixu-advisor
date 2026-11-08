@@ -471,6 +471,10 @@ def analyze_conversation(conversation_history: list[dict[str, Any]], client_info
     if not analysis_path.exists():
         raise ValueError(f"缺少分析提示文件：{analysis_path.relative_to(Path(root)).as_posix()}，请先补充 prompts/analysis.txt")
     system = analysis_path.read_text(encoding="utf-8")
+    rules_path = Path(root) / "src" / "qixu_advisor" / "prompts" / "writing_rules.md"
+    if rules_path.exists():
+        # 分析产物（需求摘要与待确认问题）同样强制应用去 AI 味/人话规则；文件不存在则省略该段。
+        system += "\n\n【写作规则（同样约束需求摘要与待确认问题的措辞：像顾问本人说话，短句口语，禁书面腔/客服腔/套话）】\n\n" + rules_path.read_text(encoding="utf-8")
     user = json.dumps({"conversation_history": conversation_history, "client_information": client_information or {}}, ensure_ascii=False)
     messages = [{"role": "system", "content": system}, {"role": "user", "content": user}]
     config = config if config is not None else get_config(root)

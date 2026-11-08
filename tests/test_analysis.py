@@ -62,6 +62,46 @@ def test_client_information_none_becomes_empty_object(analysis_root: Path):
     assert result.missing_questions == []
 
 
+RULES_TEXT = "## 去 AI 味\n- 像顾问本人发微信：短句、口语。\n- 禁总起句：「关于这个问题」。\n"
+
+
+def test_analysis_system_includes_writing_rules(tmp_path: Path):
+    """分析提示组装：analysis.txt 全文 + 写作规则段（同样约束摘要与问题的措辞）。"""
+    prompt_dir = tmp_path / "src" / "qixu_advisor" / "prompts"
+    prompt_dir.mkdir(parents=True)
+    (prompt_dir / "analysis.txt").write_text(ANALYSIS_PROMPT, encoding="utf-8")
+    (prompt_dir / "writing_rules.md").write_text(RULES_TEXT, encoding="utf-8")
+    captured = []
+
+    def stub(messages, config):
+        captured.append(messages[0]["content"])
+        return analysis_stub(valid_payload())
+
+    result = analyze_conversation([], {}, root=tmp_path, model_call=stub, execution_mode="stub")
+    assert result.scenario == "价格异议"
+    system = captured[0]
+    assert ANALYSIS_PROMPT in system
+    assert "【写作规则（同样约束需求摘要与待确认问题的措辞" in system
+    assert "去 AI 味" in system
+    assert "禁总起句" in system
+    assert system.index(ANALYSIS_PROMPT) < system.index("【写作规则")
+    assert len(captured) == 1
+
+
+def test_analysis_without_writing_rules_omits_segment(analysis_root: Path):
+    captured = []
+
+    def stub(messages, config):
+        captured.append(messages[0]["content"])
+        return analysis_stub(valid_payload())
+
+    result = analyze_conversation([], {}, root=analysis_root, model_call=stub, execution_mode="stub")
+    assert result.scenario == "价格异议"
+    system = captured[0]
+    assert system == ANALYSIS_PROMPT
+    assert "写作规则" not in system
+
+
 def test_invalid_json_raises_without_retry(analysis_root: Path):
     calls = []
 
