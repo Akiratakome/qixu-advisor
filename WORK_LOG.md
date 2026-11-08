@@ -246,3 +246,9 @@
 - qixu-api：GET/PUT /settings/model（api_key_set/source，永不回显密钥；422 校验）；生成与分析路径按运行时配置组装 ModelConfig 并以 config= 传入；create_run 后把 manifest.model_config 对齐实际配置（桥接 core 的 records 权限边界）。
 - qixu-ui（React）：侧栏「模型配置」表单（base_url/model/api_key 密码框/温度，保存 PUT，状态展示，密钥本地保存说明）；DraftCard 改为就地可编辑 textarea，复制始终取当前编辑值（未保存可复制、留证实际 copied_text），保存修改 PATCH 带 expected_revision，切换会话未保存提示＋beforeunload 拦截。
 - lead 集成：201 项测试全绿；E2E 验证——配置表单渲染、PUT 生效（source/env 回退正确、密钥不回显）、生成后三张候选卡原地编辑成功（文本框追加「（改）」）、复制按钮在位；截图 react-workbench-v2.png／react-workbench-inline-edit.png 入交付包。冻结 formal-v21；提交 3215ba8。formal-v8 C 表不变（提示未改）。
+
+## 2026-11-08 20:00–20:45 · 界面自审与单屏一体化
+
+- 用户要求：去掉一切测试/开发者内容只留用户内容；客户框、需求理解、生成并入同一屏且不用滚动；需求理解不应由人手动点击（自动分析，思考结果可改）；点生成直接出三条。
+- qixu-ui 两轮：①去痕（机器原稿/证据链/基准修订/run_id/technical_failure 等逐项清零，错误话术统一友好映射，保留「不会发送微信」「资料均为虚构」等用户向提示）；自动分析（删「分析并提问」按钮，添加消息后自动触发、失败静默重试一次、思考结果可改）；三条候选卡同屏三列。②压缩达标：品牌+客户行单行 37px、消息流 18vh、需求卡 ≤110px（待确认问题折叠）、候选卡 ≤210px 三列；Playwright 实测空会话/有消息/完整主流程三种布局 scrollHeight 均 768、零溢出。
+- lead 真实 API E2E 复验：自动分析触发、生成后三卡同屏、overflow=0；截图 react-workbench-final.png／react-workbench-onescreen.png 入交付包。提交 ddea2f7。
