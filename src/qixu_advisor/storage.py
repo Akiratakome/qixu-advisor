@@ -35,6 +35,25 @@ def _now() -> str:
     return datetime.now(timezone(timedelta(hours=8))).isoformat(timespec="milliseconds")
 
 
+RUNTIME_SETTING_KEYS = {"provider", "base_url", "model", "api_key", "temperature"}
+
+
+def get_setting(conn: sqlite3.Connection, key: str) -> str | None:
+    if key not in RUNTIME_SETTING_KEYS:
+        raise ValueError(f"运行时设置键不在白名单：{key}（允许 {sorted(RUNTIME_SETTING_KEYS)}）")
+    row = conn.execute("SELECT value FROM runtime_settings WHERE key = ?", (key,)).fetchone()
+    return None if row is None else row["value"]
+
+
+def set_setting(conn: sqlite3.Connection, key: str, value: str) -> None:
+    if key not in RUNTIME_SETTING_KEYS:
+        raise ValueError(f"运行时设置键不在白名单：{key}（允许 {sorted(RUNTIME_SETTING_KEYS)}）")
+    conn.execute("INSERT INTO runtime_settings (key, value, updated_at) VALUES (?, ?, ?) "
+                 "ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at",
+                 (key, value, _now()))
+    conn.commit()
+
+
 def runtime_dir() -> Path:
     return Path(os.environ.get("QIXU_RUNTIME_DIR") or PROJECT_ROOT / "runtime")
 

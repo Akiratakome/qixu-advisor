@@ -52,9 +52,25 @@ def test_connect_db_allows_sequential_cross_thread_access(tmp_path: Path):
 
 def test_init_schema_creates_tables_and_meta(conn):
     names = {row["name"] for row in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
-    assert {"customers", "conversations", "messages", "preferences", "generations", "draft_revisions", "draft_actions", "meta"} <= names
+    assert {"customers", "conversations", "messages", "preferences", "generations", "draft_revisions", "draft_actions", "meta", "runtime_settings"} <= names
     row = conn.execute("SELECT value FROM meta WHERE key = 'schema_version'").fetchone()
-    assert row is not None and row["value"] == "1"
+    assert row is not None and row["value"] == "2"
+
+
+def test_runtime_settings_get_set_and_whitelist(conn):
+    assert storage.get_setting(conn, "model") is None
+    storage.set_setting(conn, "model", "deepseek-flash")
+    assert storage.get_setting(conn, "model") == "deepseek-flash"
+    storage.set_setting(conn, "model", "custom-model")
+    assert storage.get_setting(conn, "model") == "custom-model"
+    storage.set_setting(conn, "api_key", "runtime-secret")
+    assert storage.get_setting(conn, "api_key") == "runtime-secret"
+    storage.set_setting(conn, "temperature", "0.3")
+    assert storage.get_setting(conn, "temperature") == "0.3"
+    with pytest.raises(ValueError, match="白名单"):
+        storage.set_setting(conn, "not_a_key", "x")
+    with pytest.raises(ValueError, match="白名单"):
+        storage.get_setting(conn, "not_a_key")
 
 
 def test_customer_crud_version_conflict_and_missing(conn):

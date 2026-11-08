@@ -10,22 +10,27 @@ interface DraftCardProps {
   index: number
   onDraftUpdated: (updated: Draft) => void
   onNotice: (message: string) => void
+  onDirtyChange: (draftId: number, dirty: boolean) => void
 }
 
-export default function DraftCard({ draft, index, onDraftUpdated, onNotice }: DraftCardProps) {
-  const [editText, setEditText] = useState(draft.text)
-  const [editing, setEditing] = useState(false)
+export default function DraftCard({ draft, index, onDraftUpdated, onNotice, onDirtyChange }: DraftCardProps) {
+  const [text, setText] = useState(draft.text)
   const [saving, setSaving] = useState(false)
-  const [editError, setEditError] = useState<string | null>(null)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [copyState, setCopyState] = useState<CopyState>('idle')
   const [acting, setActing] = useState(false)
 
-  const currentText = editText !== draft.text ? editText : draft.text
+  const dirty = text !== draft.text
+
+  function handleTextChange(value: string) {
+    setText(value)
+    onDirtyChange(draft.draft_id, value !== draft.text)
+  }
 
   async function handleCopy() {
-    // 复制读取点击当下的正文（含未保存修改）；成功后才提示，不先等后端保存。
+    // 复制始终读取点击当下的编辑值（含未保存修改）；成功后才提示，不先等后端保存。
     try {
-      await navigator.clipboard.writeText(currentText)
+      await navigator.clipboard.writeText(text)
       setCopyState('copied')
     } catch {
       setCopyState('failed')
@@ -33,7 +38,7 @@ export default function DraftCard({ draft, index, onDraftUpdated, onNotice }: Dr
     try {
       await api.drafts.action(draft.draft_id, {
         action: 'copied',
-        copied_text: currentText,
+        copied_text: text,
         base_revision: draft.revision,
       })
     } catch {
@@ -41,23 +46,23 @@ export default function DraftCard({ draft, index, onDraftUpdated, onNotice }: Dr
     }
   }
 
-  async function handleSaveEdit() {
-    if (!editText.trim()) {
-      setEditError('编辑稿不能为空。')
+  async function handleSave() {
+    if (!text.trim()) {
+      setSaveError('修改不能为空。')
       return
     }
     setSaving(true)
-    setEditError(null)
+    setSaveError(null)
     try {
       const updated = await api.drafts.patch(draft.draft_id, {
-        text: editText.trim(),
+        text: text.trim(),
         expected_revision: draft.revision,
       })
       onDraftUpdated(updated)
-      setEditing(false)
-      onNotice('编辑稿已保存；机器原稿保留在证据链中。')
+      onDirtyChange(draft.draft_id, false)
+      onNotice('修改已保存；机器原稿保留在证据链中，基准修订已更新。')
     } catch (error) {
-      setEditError(errorMessage(error))
+      setSaveError(errorMessage(error))
     } finally {
       setSaving(false)
     }
@@ -80,43 +85,32 @@ export default function DraftCard({ draft, index, onDraftUpdated, onNotice }: Dr
       <div className="draft-card-head">
         <span className="draft-no">候选 {index}</span>
         <span className="draft-meta">
-          一条完整微信消息{editing ? ' · 有未保存修改' : ''} · 保存与复制均不会发送
+          直接编辑正文 · 复制读取当下修改{dirty ? ' · 有未保存修改' : ''} · 保存与复制均不会发送
         </span>
       </div>
-      <div className="draft-body">{currentText}</div>
+      <textarea
+        className="draft-editor"
+        value={text}
+        onChange={(event) => handleTextChange(event.target.value)}
+        rows={6}
+      />
       {copyState === 'failed' && <div className="alert error">自动复制失败，请手动选中正文复制。</div>}
       {copyState === 'recording-failed' && <div className="alert error">复制成功，但留证失败，请重试。</div>}
+      {saveError && <div className="alert error">{saveError}</div>}
       <div className="draft-actions">
-        <button className="btn copy" type="button" onClick={handleCopy}>
+        <button className="btn copy" type="button" onClick={() => void handleCopy()}>
           复制{copyState === 'copied' ? ' · 已复制' : ''}
         </button>
-        <button className="btn ghost" type="button" onClick={() => setEditing((value) => !value)}>
-          {editing ? '收起编辑' : '编辑'}
+        <button className="btn primary" type="button" disabled={saving || !dirty} onClick={() => void handleSave()}>
+          {saving ? '保存中…' : '保存修改'}
         </button>
-        <button className="btn ghost" type="button" disabled={acting} onClick={() => handleAction('selected')}>
+        <button className="btn ghost" type="button" disabled={acting} onClick={() => void handleAction('selected')}>
           选用
         </button>
-        <button className="btn ghost danger" type="button" disabled={acting} onClick={() => handleAction('discarded')}>
+        <button className="btn ghost danger" type="button" disabled={acting} onClick={() => void handleAction('discarded')}>
           弃用
         </button>
       </div>
-      {editing && (
-        <div className="draft-edit">
-          <textarea
-            className="draft-editor"
-            value={editText}
-            onChange={(event) => setEditText(event.target.value)}
-            rows={5}
-          />
-          <div className="draft-edit-footer">
-            <button className="btn primary" type="button" disabled={saving} onClick={handleSaveEdit}>
-              {saving ? '保存中…' : '编辑并保存'}
-            </button>
-            <span className="muted">保存后追加一条修订；机器原稿保持不变。</span>
-          </div>
-          {editError && <div className="alert error">{editError}</div>}
-        </div>
-      )}
     </article>
   )
 }

@@ -59,10 +59,36 @@ export default function App() {
   const [generationError, setGenerationError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [banner, setBanner] = useState<string | null>(null)
+  const [dirtyDraftIds, setDirtyDraftIds] = useState<Set<number>>(new Set())
+  const [pendingSelectId, setPendingSelectId] = useState<string | null>(null)
 
   useEffect(() => {
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings))
   }, [settings])
+
+  // 刷新前拦截：有未保存修改时给出浏览器原生提示（不覆盖已保存修订）。
+  useEffect(() => {
+    function handleBeforeUnload(event: BeforeUnloadEvent) {
+      if (dirtyDraftIds.size > 0) {
+        event.preventDefault()
+        event.returnValue = ''
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [dirtyDraftIds])
+
+  const handleDraftDirty = useCallback((draftId: number, dirty: boolean) => {
+    setDirtyDraftIds((current) => {
+      const next = new Set(current)
+      if (dirty) {
+        next.add(draftId)
+      } else {
+        next.delete(draftId)
+      }
+      return next
+    })
+  }, [])
 
   useEffect(() => {
     void (async () => {
@@ -115,8 +141,19 @@ export default function App() {
 
   function handleSelectConversation(id: string) {
     if (id === selectedId) {
+      setSidebarOpen(false)
       return
     }
+    if (dirtyDraftIds.size > 0) {
+      // 有未保存的候选修改：先提示，不静默丢失本地编辑（已保存修订不受影响）。
+      setSidebarOpen(false)
+      setPendingSelectId(id)
+      return
+    }
+    switchConversation(id)
+  }
+
+  function switchConversation(id: string) {
     setSelectedId(id)
     setAnalysis(null)
     setScenario('')
@@ -125,6 +162,9 @@ export default function App() {
     setGenerationError(null)
     setComposer('')
     setNotice(null)
+    setPendingSelectId(null)
+    setDirtyDraftIds(new Set())
+    setSidebarOpen(false)
   }
 
   async function refreshDetail() {
@@ -227,12 +267,21 @@ export default function App() {
       )
       setGeneration(result)
       setDetail({ ...detail, version: patched.version, scenario: patched.scenario })
+      setDirtyDraftIds(new Set())
     } catch (error) {
       setGenerationError(errorMessage(error))
     } finally {
       setGenerating(false)
     }
   }
+
+  const refreshModelStatus = useCallback(async () => {
+    try {
+      setModel(await api.settings.model())
+    } catch (error) {
+      setBanner(errorMessage(error))
+    }
+  }, [])
 
   function handleDraftUpdated(updated: Draft) {
     setGeneration((current) => {
@@ -273,6 +322,7 @@ export default function App() {
         settings={settings}
         onSettingsChange={setSettings}
         model={model}
+        onModelChanged={() => void refreshModelStatus()}
         customers={customers}
         prefCustomerId={prefCustomerId}
         onPrefCustomerChange={setPrefCustomerId}
@@ -295,6 +345,19 @@ export default function App() {
           </div>
         </header>
         {banner && <div className="alert error">{banner}</div>}
+        {pendingSelectId && (
+          <div className="alert warning unsaved-guard">
+            <span>当前候选卡有未保存的修改。切换会话将丢失这些本地修改；已保存的修订不受影响。</span>
+            <div className="unsaved-guard-actions">
+              <button className="btn mini danger" type="button" onClick={() => switchConversation(pendingSelectId)}>
+                放弃修改并切换
+              </button>
+              <button className="btn mini" type="button" onClick={() => setPendingSelectId(null)}>
+                继续编辑
+              </button>
+            </div>
+          </div>
+        )}
         {!detail ? (
           <div className="empty-state">
             {conversations === null ? (
@@ -357,6 +420,7 @@ export default function App() {
                     index={index + 1}
                     onDraftUpdated={handleDraftUpdated}
                     onNotice={setNotice}
+                    onDirtyChange={handleDraftDirty}
                   />
                 ))}
               </section>

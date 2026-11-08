@@ -21,6 +21,11 @@
    （no such column: settings）。API 层 PATCH 会话时把这两个字段映射为 storage 列名
    （settings_json/product_ids_json）并统一 json.dumps 后单条 UPDATE（版本乐观锁语义一致），
    无 JSON 字段时仍走 storage 更新。
+10. 运行时模型配置：storage.get_settings/set_setting 读写 runtime_settings 表（core 并行提供），
+    本层组装 ModelConfig——运行时 api_key 非空则 runtime 优先（缺失字段回退 .env），否则整体
+    回退 .env；generate/analyze_conversation 以 config= 接收（core 并行扩展签名）。
+    注意：records.create_run 的 manifest.model_config 仍取自 .env；若 core 未同步让 create_run
+    接受运行时配置，运行时配置与 .env 不一致时 begin_case 的模型参数快照校验会 500。
 """
 
 from __future__ import annotations
@@ -37,7 +42,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, Res
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import ValidationError
+from pydantic import SecretStr, ValidationError
 
 from . import conversations, generation as generation_module, preferences, records, storage
 from .api_models import (
@@ -60,13 +65,14 @@ from .api_models import (
     MessageIn,
     MessageOut,
     ModelSettingsOut,
+    ModelSettingsUpdate,
     PreferenceIn,
     PreferenceOut,
     PreferencePatch,
 )
 from .data import PROJECT_ROOT, catalog_records, load_catalog
 from .generation import generate
-from .model import config_status
+from .model import ModelConfig, get_config as env_get_config, public_config
 from .models import GenerationRequest
 from .storage import ConflictError, NotFoundError, StorageError
 
@@ -132,6 +138,86 @@ def _preference_out(row: dict[str, Any]) -> PreferenceOut:
 def _now_iso() -> str:
     """与 storage._now 相同的东八区毫秒时间戳，供本层直接写库的路径使用。"""
     return datetime.now(timezone(timedelta(hours=8))).isoformat(timespec="milliseconds")
+
+
+def _runtime_settings(conn: sqlite3.Connection) -> dict[str, str]:
+    """runtime_settings 表内容（按 storage 白名单逐键读取）；存储接口不可用时视为未配置。"""
+    keys = getattr(storage, "RUNTIME_SETTING_KEYS", {"provider", "base_url", "model", "api_key", "temperature"})
+    settings: dict[str, str] = {}
+    try:
+        for key in keys:
+            value = storage.get_setting(conn, key)
+            if value is not None:
+                settings[key] = value
+    except (AttributeError, sqlite3.Error):
+        return {}
+    return settings
+
+
+def _effective_model_config(conn: sqlite3.Connection, root: Path) -> tuple[ModelConfig, str]:
+    """请求时的有效模型配置：runtime_settings 含非空 api_key 则采用运行时配置
+    （缺失字段逐个回退 .env），否则整体回退 .env 配置。返回 (config, source)。"""
+    runtime = _runtime_settings(conn)
+    try:
+        base = env_get_config(root)
+    except (ValueError, TypeError):
+        base = ModelConfig()
+    api_key = (runtime.get("api_key") or "").strip()
+    if not api_key:
+        return base, "env"
+    temperature = base.temperature
+    if "temperature" in runtime:
+        try:
+            candidate = float(runtime["temperature"])
+        except (TypeError, ValueError):
+            candidate = None
+        if candidate is not None and 0 <= candidate <= 2:
+            temperature = candidate
+    effective = ModelConfig(
+        provider=(runtime.get("provider") or "").strip() or base.provider,
+        base_url=(runtime.get("base_url") or "").strip().rstrip("/") or base.base_url,
+        model=(runtime.get("model") or "").strip() or base.model,
+        api_key=SecretStr(api_key),
+        temperature=temperature,
+    )
+    return effective, "runtime"
+
+
+def _align_manifest_model_config(run_id: str, config: ModelConfig, root: Path) -> None:
+    """records.create_run 只把 .env 配置写进 manifest.model_config；本次生成实际使用运行时配置时，
+    begin_case 的「模型参数在运行创建后不变」守卫会因二者不一致而 500。
+    这里把清单的模型参数快照对齐为本次实际使用的公开配置（public_config 不含密钥）。
+    替身路径未真实建运行目录时静默跳过。"""
+    manifest_path = records.run_directory(run_id, root=root) / "manifest.json"
+    if not manifest_path.exists():
+        return
+    manifest = records.read_json(manifest_path)
+    manifest["model_config"] = public_config(config)
+    records.write_json(manifest_path, manifest, overwrite=True)
+
+
+def _model_status(conn: sqlite3.Connection, root: Path) -> ModelSettingsOut:
+    """模型配置状态：只返回状态与公开参数，绝不返回密钥本身。"""
+    config, source = _effective_model_config(conn, root)
+    api_key_set = bool(config.api_key.get_secret_value().strip())
+    if api_key_set:
+        missing: list[str] = []
+    else:
+        try:
+            env_get_config(root)
+        except (ValueError, TypeError):
+            missing = ["模型参数格式无效，请检查 .env"]
+        else:
+            missing = ["DEEPSEEK_API_KEY"]
+    return ModelSettingsOut(
+        configured=api_key_set,
+        provider=config.provider,
+        model=config.model,
+        base_url=config.base_url,
+        missing=missing,
+        api_key_set=api_key_set,
+        source=source,
+    )
 
 
 def _find_message(conn: sqlite3.Connection, conversation_id: str, source: str, external_id: str) -> dict[str, Any] | None:
@@ -449,21 +535,31 @@ def create_app(db_path: str | Path, *, root: Path = PROJECT_ROOT, static_dir: Pa
         return [CatalogItemOut(**{key: item.get(key) for key in keys}) for item in items]
 
     @app.get("/api/v1/settings/model", response_model=ModelSettingsOut)
-    def get_model_settings(request: Request):
-        # config_status 只返回 configured/provider/model/base_url/missing，不含密钥。
-        return config_status(root=request.app.state.root)
+    def get_model_settings(request: Request, conn: sqlite3.Connection = Depends(get_conn)):
+        # 运行时配置状态（runtime_settings 优先、.env 回退）；绝不返回密钥。
+        return _model_status(conn, request.app.state.root)
+
+    @app.put("/api/v1/settings/model", response_model=ModelSettingsOut)
+    def put_model_settings(body: ModelSettingsUpdate, request: Request, conn: sqlite3.Connection = Depends(get_conn)):
+        # 字段白名单由 extra=forbid 保证；URL/温度等校验由模型完成（422 带 fields）。
+        # api_key 允许空串以清除；统一以字符串落库，密钥不进入任何响应。
+        for key, value in body.model_dump(exclude_none=True).items():
+            storage.set_setting(conn, key, "" if value is None else str(value))
+        return _model_status(conn, request.app.state.root)
 
     # ---------- 对话分析 ----------
 
     @app.post("/api/v1/analyze", response_model=AnalyzeOut)
-    def analyze_conversation_endpoint(body: AnalyzeIn, request: Request):
+    def analyze_conversation_endpoint(body: AnalyzeIn, request: Request, conn: sqlite3.Connection = Depends(get_conn)):
         # 同步一次调用；analyze_conversation 内部失败不重试。结构非法/模型失败 → 502，
         # 本端配置问题（缺少提示文件/未配置密钥）→ 500；不回显栈与凭据。
         try:
+            config, _source = _effective_model_config(conn, request.app.state.root)
             result = generation_module.analyze_conversation(
                 [turn.model_dump() for turn in body.conversation_history],
                 body.client_information,
                 root=request.app.state.root,
+                config=config,
             )
         except ValueError as exc:
             message = str(exc)
@@ -532,17 +628,20 @@ def create_app(db_path: str | Path, *, root: Path = PROJECT_ROOT, static_dir: Pa
             raise HTTPException(status_code=422, detail=f"会话快照不满足生成要求：{first.get('msg', '结构非法')}") from exc
         run_id = f"web-{generation['id'][:12]}"
         case_id = f"web-{generation['id'][:24]}"
+        # 有效模型配置：运行时设置优先（api_key 非空），否则回退 .env。
+        config, _source = _effective_model_config(conn, request.app.state.root)
         try:
             # 先创建固定运行清单（artifacts/runs/<run_id>/manifest.json）；generate 内部 begin_case
             # 依赖该清单并做版本/参数快照校验。创建失败时不留 running 占位：标 interrupted 后上抛，
             # 由统一错误处理转 500。
             records.create_run([case_id], run_id=run_id, execution_mode="real", root=request.app.state.root)
+            _align_manifest_model_config(run_id, config, request.app.state.root)
         except Exception:
             storage.complete_generation(conn, generation["id"], "interrupted", run_id, case_id)
             raise
         try:
             # 阻塞调用：同步执行生成；缺项/拒联系/未配置密钥由 generation.generate 内部短路，不调用模型。
-            result = generate(generation_request, run_id, case_id, root=request.app.state.root)
+            result = generate(generation_request, run_id, case_id, root=request.app.state.root, config=config)
         except Exception:
             storage.complete_generation(conn, generation["id"], "interrupted", run_id, case_id)
             raise

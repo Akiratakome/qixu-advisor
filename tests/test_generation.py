@@ -114,3 +114,83 @@ def test_observed_402_has_actionable_message_and_no_retry():
     assert caught.value.details["http_status"] == 402
     assert "test-only-secret" not in str(caught.value)
     assert client.post.call_count == 1
+
+
+def test_runtime_config_override_priority(isolated_root: Path, monkeypatch):
+    """运行时设置（界面自配）逐键优先于 .env；空字符串视为未设置回退。"""
+    from qixu_advisor.model import config_status, get_config
+
+    (isolated_root / ".env").write_text("QIXU_MODEL=env-model\nQIXU_BASE_URL=https://env.example.com\n", encoding="utf-8")
+    monkeypatch.delenv("QIXU_MODEL", raising=False)
+    monkeypatch.delenv("QIXU_BASE_URL", raising=False)
+    config = get_config(isolated_root, runtime={"model": "runtime-model", "base_url": "https://runtime.example.com/", "api_key": "runtime-key"})
+    assert config.model == "runtime-model"
+    assert config.base_url == "https://runtime.example.com"
+    assert config.api_key.get_secret_value() == "runtime-key"
+    # 空字符串回退到 .env。
+    fallback = get_config(isolated_root, runtime={"model": "", "base_url": ""})
+    assert fallback.model == "env-model"
+    assert fallback.base_url == "https://env.example.com"
+    status = config_status(isolated_root, runtime={"api_key": "runtime-key"})
+    assert status["configured"] is True and status["model"] == "env-model"
+
+
+def test_generate_uses_explicit_config_and_skips_env(isolated_root: Path, monkeypatch):
+    """config 显式传入时跳过内部 get_config：无效 .env 不阻碍生成；替身收到运行时配置。"""
+    from qixu_advisor import records as records_module
+
+    (isolated_root / ".env").write_text("QIXU_TEMPERATURE=not-a-float\n", encoding="utf-8")
+    supplied = ModelConfig(provider="deepseek", model="runtime-model", base_url="https://runtime.example.com", api_key=SecretStr("runtime-key"))
+    # 运行清单（records.create_run）须记录同一实际配置，否则 begin_case 的"运行内参数不变"守卫会拦截；
+    # records.py 不在本次改动用域，测试中把 records 引用的 get_config 对齐为实际配置。
+    monkeypatch.setattr(records_module, "get_config", lambda root: supplied)
+    received = []
+
+    def stub(messages, config):
+        received.append(config)
+        return stub_response()
+
+    run = create_run(["CASE-1"], root=isolated_root, execution_mode="stub")
+    result = generate(GenerationRequest(scenario="生日与节庆", occasion="生日"), run, "CASE-1", root=isolated_root,
+        model_call=stub, execution_mode="stub", config=supplied)
+    assert result.status == "success"
+    assert len(received) == 1
+    assert received[0].model == "runtime-model"
+    assert received[0].base_url == "https://runtime.example.com"
+    assert result.provenance["model_config"]["model"] == "runtime-model"
+    assert result.provenance["model_config"]["base_url"] == "https://runtime.example.com"
+
+
+def test_generate_invalid_env_without_explicit_config_fails(isolated_root: Path, monkeypatch):
+    """对照组：不传 config 时无效 .env 触发显式配置失败，不进模型调用。"""
+    from qixu_advisor import records as records_module
+
+    (isolated_root / ".env").write_text("QIXU_TEMPERATURE=not-a-float\n", encoding="utf-8")
+    # 失败路径的兜底配置是 ModelConfig()，让 manifest 快照与之一致，守卫不掩盖真正的配置失败。
+    monkeypatch.setattr(records_module, "get_config", lambda root: ModelConfig())
+    caller = MagicMock(side_effect=AssertionError("must not call model"))
+    run = create_run(["CASE-1"], root=isolated_root, execution_mode="stub")
+    result = generate(GenerationRequest(scenario="生日与节庆", occasion="生日"), run, "CASE-1", root=isolated_root,
+        model_call=caller, execution_mode="stub")
+    assert result.status == "technical_failure"
+    assert "配置" in result.error
+    caller.assert_not_called()
+
+
+def test_analyze_conversation_uses_explicit_config(isolated_root: Path):
+    from qixu_advisor.generation import analyze_conversation
+
+    prompt_dir = isolated_root / "src" / "qixu_advisor" / "prompts"
+    if not (prompt_dir / "analysis.txt").exists():
+        (prompt_dir / "analysis.txt").write_text("你是对话分析助手。仅返回 JSON。", encoding="utf-8")
+    supplied = ModelConfig(provider="deepseek", model="runtime-analysis-model", base_url="https://runtime.example.com", api_key=SecretStr("runtime-key"))
+    received = []
+
+    def stub(messages, config):
+        received.append(config)
+        return {"raw_text": json.dumps({"scenario": "价格异议", "current_need": "觉得贵"}, ensure_ascii=False), "model": "offline-analysis-stub", "usage": {}, "elapsed_seconds": 0, "finish_reason": "stop"}
+
+    result = analyze_conversation([{"role": "client", "content": "有点贵。"}], {}, root=isolated_root, model_call=stub, execution_mode="stub", config=supplied)
+    assert result.scenario == "价格异议"
+    assert len(received) == 1
+    assert received[0].model == "runtime-analysis-model"

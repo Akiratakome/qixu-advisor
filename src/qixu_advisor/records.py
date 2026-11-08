@@ -61,7 +61,9 @@ def case_directory(run_id: str, case_id: str, *, root: Path = PROJECT_ROOT) -> P
     return run_directory(run_id, root=root) / "cases" / valid_id(case_id)
 
 
-def create_run(case_ids: list[str], *, root: Path = PROJECT_ROOT, run_id: str | None = None, execution_mode: str = "real", parent_run_id: str | None = None) -> str:
+def create_run(case_ids: list[str], *, root: Path = PROJECT_ROOT, run_id: str | None = None, execution_mode: str = "real", parent_run_id: str | None = None, config: ModelConfig | None = None) -> str:
+    """创建固定运行清单。config 传入（如界面自配的运行时模型设置）时 manifest 记录该实际配置，
+    None 保持现有 get_config(root) 行为；无论哪种来源，凭据都经 public_config 排除，不进 manifest。"""
     if execution_mode not in {"real", "stub"}:
         raise ValueError("execution_mode 须为 real 或 stub")
     if len(case_ids) != len(set(case_ids)) or not case_ids:
@@ -75,10 +77,13 @@ def create_run(case_ids: list[str], *, root: Path = PROJECT_ROOT, run_id: str | 
     run_id = run_id or datetime.now(timezone.utc).strftime("run-%Y%m%dT%H%M%S-") + uuid.uuid4().hex[:8]
     path = run_directory(run_id, root=root)
     path.mkdir(parents=True, exist_ok=False)
-    try:
-        configuration = public_config(get_config(root))
-    except (ValueError, TypeError):
-        configuration = {"configuration_error": "模型参数格式无效"}
+    if config is not None:
+        configuration = public_config(config)
+    else:
+        try:
+            configuration = public_config(get_config(root))
+        except (ValueError, TypeError):
+            configuration = {"configuration_error": "模型参数格式无效"}
     write_json(path / "manifest.json", {"schema_version": "1.0", "run_id": run_id, "created_at": timestamp(), "execution_mode": execution_mode, "parent_run_id": parent_run_id, "case_ids": case_ids, "model_config": configuration, "versions": source_versions(root), "first_attempt_policy": "每个案例只调用一次；再次尝试须创建关联的新运行", "quality_status": "not_human_evaluated"})
     return run_id
 

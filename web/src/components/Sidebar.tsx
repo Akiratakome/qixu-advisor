@@ -1,4 +1,5 @@
 import type { Conversation, Customer, ModelSettings, WritingSettings } from '../api'
+import ModelConfig from './ModelConfig'
 import PreferencesPanel from './PreferencesPanel'
 
 const LANGUAGE_OPTIONS: Array<{ label: string; value: WritingSettings['output_language'] }> = [
@@ -44,6 +45,7 @@ interface SidebarProps {
   settings: WritingSettings
   onSettingsChange: (settings: WritingSettings) => void
   model: ModelSettings | null
+  onModelChanged: () => void
   customers: Customer[]
   prefCustomerId: string | null
   onPrefCustomerChange: (id: string | null) => void
@@ -60,6 +62,7 @@ export default function Sidebar({
   settings,
   onSettingsChange,
   model,
+  onModelChanged,
   customers,
   prefCustomerId,
   onPrefCustomerChange,
@@ -168,17 +171,7 @@ export default function Sidebar({
 
         <PreferencesPanel customers={customers} customerId={prefCustomerId} onCustomerChange={onPrefCustomerChange} />
 
-        <section className="sidebar-section">
-          <h3>模型与资料状态</h3>
-          {model === null ? (
-            <p className="muted">状态加载中…</p>
-          ) : model.configured ? (
-            <p className="muted">模型已配置：{model.model ?? '未知型号'} · {model.base_url ?? ''}</p>
-          ) : (
-            <div className="alert warning">模型尚未配置：{model.missing.join('、')}（密钥仅保存在服务端）</div>
-          )}
-          <p className="muted">品牌、客户与业务资料均为虚构。</p>
-        </section>
+        <ModelConfig key={`${model?.base_url ?? ''}|${model?.model ?? ''}`} model={model} onChanged={onModelChanged} />
       </aside>
     </>
   )

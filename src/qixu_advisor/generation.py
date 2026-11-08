@@ -378,8 +378,11 @@ def _apply_de_ai_gate(candidates: list[Candidate], output_language: str, convers
     return cleaned_candidates, {"gate": "applied", "per_candidate": per_candidate}
 
 
-def generate(request: GenerationRequest | dict[str, Any], run_id: str, case_id: str, *, root: Path = PROJECT_ROOT, model_call: Callable[[list[dict[str, str]], ModelConfig], dict[str, Any]] | None = None, execution_mode: str = "real") -> GenerationResult:
-    """一次请求只调用一次模型，先保存输入和原始返回，再检验结构。"""
+def generate(request: GenerationRequest | dict[str, Any], run_id: str, case_id: str, *, root: Path = PROJECT_ROOT, model_call: Callable[[list[dict[str, str]], ModelConfig], dict[str, Any]] | None = None, execution_mode: str = "real", config: ModelConfig | None = None) -> GenerationResult:
+    """一次请求只调用一次模型，先保存输入和原始返回，再检验结构。
+
+    config 显式传入（如界面自配的运行时设置）时直接使用，跳过内部 get_config；默认 None 保持现有行为。
+    """
     valid_id(run_id)
     valid_id(case_id)
     request = GenerationRequest.model_validate(request)
@@ -394,7 +397,7 @@ def generate(request: GenerationRequest | dict[str, Any], run_id: str, case_id: 
     try:
         facts = load_facts(request, root=root)
         messages = build_messages(request, facts, root=root)
-        config = get_config(root)
+        config = config if config is not None else get_config(root)
     except (OSError, ValueError, TypeError, KeyError) as exc:
         setup_error = f"本地资料、提示或配置读取失败（{type(exc).__name__}），请检查文件与参数"
         config = ModelConfig()
@@ -455,8 +458,11 @@ def generate(request: GenerationRequest | dict[str, Any], run_id: str, case_id: 
     return finish("success", candidates=candidates, warnings=check_explicit_facts(candidates, facts, request), de_ai_report=de_ai_report)
 
 
-def analyze_conversation(conversation_history: list[dict[str, Any]], client_information: dict[str, Any] | None, *, root: Path = PROJECT_ROOT, model_call: Callable[[list[dict[str, str]], ModelConfig], dict[str, Any]] | None = None, execution_mode: str = "real") -> AnalysisResult:
-    """「分析并提问」交互：一次调用、严格解析；失败不重试，交互步骤不入 runs 留档，错误信息不含凭据。"""
+def analyze_conversation(conversation_history: list[dict[str, Any]], client_information: dict[str, Any] | None, *, root: Path = PROJECT_ROOT, model_call: Callable[[list[dict[str, str]], ModelConfig], dict[str, Any]] | None = None, execution_mode: str = "real", config: ModelConfig | None = None) -> AnalysisResult:
+    """「分析并提问」交互：一次调用、严格解析；失败不重试，交互步骤不入 runs 留档，错误信息不含凭据。
+
+    config 显式传入（如界面自配的运行时设置）时直接使用，跳过内部 get_config；默认 None 保持现有行为。
+    """
     if model_call is not None and execution_mode != "stub":
         raise ValueError("注入测试替身必须显式标记 execution_mode='stub'")
     if execution_mode == "stub" and model_call is None:
@@ -467,7 +473,7 @@ def analyze_conversation(conversation_history: list[dict[str, Any]], client_info
     system = analysis_path.read_text(encoding="utf-8")
     user = json.dumps({"conversation_history": conversation_history, "client_information": client_information or {}}, ensure_ascii=False)
     messages = [{"role": "system", "content": system}, {"role": "user", "content": user}]
-    config = get_config(root)
+    config = config if config is not None else get_config(root)
     if execution_mode == "real" and not config.api_key.get_secret_value().strip():
         raise ValueError("未配置 DEEPSEEK_API_KEY；未发起真实模型请求")
     caller = model_call or call_model

@@ -11,9 +11,13 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from qixu_advisor import api, generation as generation_module, storage
+from qixu_advisor import api, generation as generation_module, records as records_module, storage
 from qixu_advisor.api import create_app
 from qixu_advisor.models import AnalysisResult, Candidate, GenerationResult
+
+# 模块导入时捕获真实 create_run：autouse 替身会在测试期间替换同名模块属性，
+# 需要走真实建运行路径的用例用它恢复（否则自引用取到的仍是替身）。
+_REAL_CREATE_RUN = records_module.create_run
 
 
 @pytest.fixture
@@ -67,14 +71,16 @@ def blocked_result(request=None, run_id="stub-run", case_id="stub-case") -> Gene
 
 
 class FakeGenerator:
-    """显式替身：按调用签名 (request, run_id, case_id, *, root) 记录调用并返回预设结果；零真实模型调用。"""
+    """显式替身：按调用签名 (request, run_id, case_id, *, root, config) 记录调用并返回预设结果；零真实模型调用。"""
 
     def __init__(self, result=None):
         self.result = result
         self.calls: list[tuple] = []
+        self.kwargs_list: list[dict] = []
 
     def __call__(self, request, run_id, case_id, *, root=None, **kwargs):
         self.calls.append((request, run_id, case_id))
+        self.kwargs_list.append(dict(kwargs))
         result = self.result(request, run_id, case_id) if callable(self.result) else self.result
         if isinstance(result, BaseException):
             raise result
@@ -505,9 +511,135 @@ def test_settings_model_has_no_secret(client):
     assert response.status_code == 200, response.text
     payload = response.json()
     assert "configured" in payload
-    assert {"configured", "provider", "model", "base_url", "missing"} >= set(payload)
+    assert {"configured", "provider", "model", "base_url", "missing"} <= set(payload)
     text = response.text
-    assert "api_key" not in text and "secret" not in text.lower()
+    # 状态字段名 api_key_set 允许出现；绝不返回密钥值或完整密钥字段。
+    assert '"api_key":' not in text and "secret" not in text.lower() and "sk-" not in text.lower()
+
+
+# ---------- 运行时模型配置 ----------
+
+
+def test_put_then_get_model_settings_runtime(client):
+    put = client.put(
+        "/api/v1/settings/model",
+        json={
+            "provider": "deepseek",
+            "base_url": "https://api.example.com",
+            "model": "custom-model",
+            "api_key": "sk-test-123",
+            "temperature": 0.5,
+        },
+    )
+    assert put.status_code == 200, put.text
+    payload = put.json()
+    assert payload["source"] == "runtime"
+    assert payload["api_key_set"] is True
+    assert payload["configured"] is True
+    assert payload["model"] == "custom-model"
+    assert payload["base_url"] == "https://api.example.com"
+    assert payload["provider"] == "deepseek"
+    assert payload["missing"] == []
+    assert "sk-test-123" not in put.text
+
+    fetched = client.get("/api/v1/settings/model")
+    assert fetched.status_code == 200, fetched.text
+    assert fetched.json() == payload
+    assert "sk-test-123" not in fetched.text
+
+
+def test_put_model_settings_validation_422(client):
+    bad_url = client.put("/api/v1/settings/model", json={"base_url": "not-a-url"})
+    assert bad_url.status_code == 422
+    assert bad_url.json()["error"]["code"] == "validation_error"
+    assert "base_url" in bad_url.json()["error"]["fields"]
+
+    bad_temperature = client.put("/api/v1/settings/model", json={"temperature": 3.5})
+    assert bad_temperature.status_code == 422
+    assert "temperature" in bad_temperature.json()["error"]["fields"]
+
+    unknown_field = client.put("/api/v1/settings/model", json={"secret_extra": "x"})
+    assert unknown_field.status_code == 422
+
+
+def test_generation_uses_runtime_config(client, monkeypatch):
+    fake = FakeGenerator(result=success_result)
+    monkeypatch.setattr(api, "generate", fake)
+    put = client.put(
+        "/api/v1/settings/model",
+        json={
+            "base_url": "https://runtime.example.com",
+            "model": "runtime-model",
+            "api_key": "sk-runtime-1",
+            "temperature": 0.3,
+        },
+    )
+    assert put.status_code == 200, put.text
+    assert put.json()["source"] == "runtime"
+
+    conversation = make_conversation(client)
+    response = client.post(
+        f"/api/v1/conversations/{conversation['conversation_id']}/generations",
+        json={"expected_version": 1},
+        headers={"Idempotency-Key": "key-1"},
+    )
+    assert response.status_code == 200, response.text
+    assert len(fake.calls) == 1
+    config = fake.kwargs_list[0]["config"]
+    assert config.model == "runtime-model"
+    assert config.base_url == "https://runtime.example.com"
+    assert config.api_key.get_secret_value() == "sk-runtime-1"
+    assert config.temperature == 0.3
+
+
+def test_clear_api_key_falls_back_to_env(client, monkeypatch):
+    monkeypatch.setenv("QIXU_MODEL", "env-test-model")
+    put_runtime = client.put("/api/v1/settings/model", json={"model": "runtime-model", "api_key": "sk-runtime-1"})
+    assert put_runtime.status_code == 200, put_runtime.text
+    assert put_runtime.json()["source"] == "runtime"
+
+    cleared = client.put("/api/v1/settings/model", json={"api_key": ""})
+    assert cleared.status_code == 200, cleared.text
+    payload = cleared.json()
+    assert payload["source"] == "env"
+    assert payload["model"] == "env-test-model"
+    assert "sk-runtime-1" not in cleared.text
+
+    fetched = client.get("/api/v1/settings/model")
+    assert fetched.json()["source"] == "env"
+    assert fetched.json()["model"] == "env-test-model"
+
+
+def test_generation_runtime_config_aligned_in_manifest(tmp_path, monkeypatch):
+    """运行时配置下真实 create_run 建清单后，manifest.model_config 必须对齐本次实际配置，
+    否则 begin_case 的「模型参数在运行创建后不变」守卫会 500。"""
+    fake = FakeGenerator(result=success_result)
+    monkeypatch.setattr(api, "generate", fake)
+    monkeypatch.setattr(api.records, "create_run", _REAL_CREATE_RUN)  # 覆盖 autouse 替身，走真实建运行
+    root = tmp_path / "root"
+    (root / "src" / "qixu_advisor" / "prompts").mkdir(parents=True)
+    (root / "data" / "fictional").mkdir(parents=True)
+    application = create_app(root / "api.sqlite3", root=root)
+    with TestClient(application, raise_server_exceptions=False) as client:
+        put = client.put(
+            "/api/v1/settings/model",
+            json={"model": "runtime-model", "base_url": "https://runtime.example.com", "api_key": "sk-runtime-1"},
+        )
+        assert put.status_code == 200, put.text
+        conversation = make_conversation(client)
+        response = client.post(
+            f"/api/v1/conversations/{conversation['conversation_id']}/generations",
+            json={"expected_version": 1},
+            headers={"Idempotency-Key": "key-1"},
+        )
+        assert response.status_code == 200, response.text
+        run_id = response.json()["run_id"]
+        manifest = json.loads((root / "artifacts" / "runs" / run_id / "manifest.json").read_text(encoding="utf-8"))
+        assert manifest["model_config"]["model"] == "runtime-model"
+        assert manifest["model_config"]["base_url"] == "https://runtime.example.com"
+        assert "api_key" not in json.dumps(manifest["model_config"])
+        assert fake.kwargs_list[0]["config"].model == "runtime-model"
+        assert fake.kwargs_list[0]["config"].api_key.get_secret_value() == "sk-runtime-1"
 
 
 def test_error_envelope_shape_and_request_id(client):

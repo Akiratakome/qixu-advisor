@@ -76,6 +76,16 @@ export interface ModelSettings {
   model: string | null
   base_url: string | null
   missing: string[]
+  // PUT 落地后由服务端补充：密钥是否已设置与配置来源。
+  api_key_set?: boolean
+  source?: string | null
+}
+
+export interface ModelSettingsIn {
+  base_url?: string
+  model?: string
+  api_key?: string
+  temperature?: number
 }
 
 export interface Draft {
@@ -313,6 +323,8 @@ export const api = {
   },
   settings: {
     model: () => request<ModelSettings>('/settings/model'),
+    putModel: (body: ModelSettingsIn) =>
+      request<ModelSettings>('/settings/model', { method: 'PUT', body }),
   },
 }
 

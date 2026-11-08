@@ -413,10 +413,8 @@ input[type='text']:focus {
   letter-spacing: 0.04em;
 }
 
-.draft-body {
-  white-space: pre-wrap;
-  line-height: 1.95;
-  margin-bottom: 10px;
+.draft-card .draft-editor {
+  margin-bottom: 4px;
 }
 
 .draft-actions {
@@ -425,18 +423,6 @@ input[type='text']:focus {
   flex-wrap: wrap;
   border-top: 1px solid var(--qixu-line);
   padding-top: 10px;
-}
-
-.draft-edit {
-  margin-top: 12px;
-}
-
-.draft-edit-footer {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 8px;
-  flex-wrap: wrap;
 }
 
 /* ---------- 表单与提示 ---------- */
@@ -455,7 +441,9 @@ input[type='text']:focus {
 }
 
 select,
-input[type='text'] {
+input[type='text'],
+input[type='password'],
+input[type='number'] {
   width: 100%;
   border: 1px solid var(--qixu-line);
   border-radius: 8px;
@@ -464,6 +452,35 @@ input[type='text'] {
   font: inherit;
   font-size: 0.9rem;
   padding: 6px 10px;
+}
+
+select:focus,
+input[type='text']:focus,
+input[type='password']:focus,
+input[type='number']:focus {
+  outline: none;
+  border-color: var(--qixu-gold);
+}
+
+.unsaved-guard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.unsaved-guard-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.model-status {
+  margin-top: 10px;
+}
+
+.model-status p {
+  margin: 2px 0;
 }
 
 .field-inline {

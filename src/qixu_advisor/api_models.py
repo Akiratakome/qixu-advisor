@@ -7,8 +7,9 @@
 from __future__ import annotations
 
 from typing import Any, Literal
+from urllib.parse import urlparse
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from .models import Scenario
 
@@ -348,7 +349,8 @@ class CatalogItemOut(BaseModel):
 
 
 class ModelSettingsOut(BaseModel):
-    """模型与资料状态（model.config_status）：绝不包含密钥。"""
+    """模型配置状态：运行时设置优先（source=runtime），无运行时 api_key 时回退 .env（source=env）。
+    只返回状态与公开参数，绝不返回密钥本身。"""
 
     model_config = ConfigDict(extra="ignore")
 
@@ -357,6 +359,31 @@ class ModelSettingsOut(BaseModel):
     model: str | None = None
     base_url: str | None = None
     missing: list[str] = Field(default_factory=list)
+    api_key_set: bool = False
+    source: Literal["runtime", "env"] = "env"
+
+
+class ModelSettingsUpdate(BaseModel):
+    """PUT 更新运行时模型设置：字段白名单（extra=forbid）；api_key 允许置空以清除。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    provider: str | None = Field(default=None, min_length=1)
+    base_url: str | None = None
+    model: str | None = Field(default=None, min_length=1)
+    api_key: str | None = None
+    temperature: float | None = Field(default=None, ge=0, le=2)
+
+    @field_validator("base_url")
+    @classmethod
+    def check_base_url(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        cleaned = value.strip()
+        parsed = urlparse(cleaned)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise ValueError("base_url 必须是 http(s) URL")
+        return cleaned
 
 
 # ---------- 错误 ----------

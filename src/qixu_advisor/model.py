@@ -34,19 +34,24 @@ class ModelCallError(RuntimeError):
         self.details = details or {}
 
 
-def get_config(root: Path = PROJECT_ROOT) -> ModelConfig:
+def get_config(root: Path = PROJECT_ROOT, runtime: dict | None = None) -> ModelConfig:
+    """组装模型配置：runtime（界面自配）逐键优先于环境变量与 .env；runtime 值为空字符串视为未设置回退。"""
     local = dotenv_values(Path(root) / ".env")
+    runtime = {key: value for key, value in (runtime or {}).items() if value != ""}
 
-    def value(name: str, default: str) -> str:
+    def value(name: str, default: str, runtime_key: str) -> str:
+        if runtime.get(runtime_key):
+            return runtime[runtime_key]
         return os.environ.get(name) or local.get(name) or default
 
     return ModelConfig(
-        api_key=SecretStr(value("DEEPSEEK_API_KEY", "")),
-        model=value("QIXU_MODEL", "deepseek-flash"),
-        base_url=value("QIXU_BASE_URL", "https://api.deepseek.com").rstrip("/"),
-        temperature=float(value("QIXU_TEMPERATURE", "0.7")),
-        max_tokens=int(value("QIXU_MAX_TOKENS", "1800")),
-        timeout_seconds=float(value("QIXU_TIMEOUT_SECONDS", "90")),
+        provider=value("QIXU_PROVIDER", "deepseek", "provider"),
+        api_key=SecretStr(value("DEEPSEEK_API_KEY", "", "api_key")),
+        model=value("QIXU_MODEL", "deepseek-flash", "model"),
+        base_url=value("QIXU_BASE_URL", "https://api.deepseek.com", "base_url").rstrip("/"),
+        temperature=float(value("QIXU_TEMPERATURE", "0.7", "temperature")),
+        max_tokens=int(value("QIXU_MAX_TOKENS", "1800", "max_tokens")),
+        timeout_seconds=float(value("QIXU_TIMEOUT_SECONDS", "90", "timeout_seconds")),
     )
 
 
@@ -55,9 +60,9 @@ def public_config(config: ModelConfig) -> dict[str, Any]:
     return config.model_dump(exclude={"api_key"})
 
 
-def config_status(root: Path = PROJECT_ROOT) -> dict[str, Any]:
+def config_status(root: Path = PROJECT_ROOT, runtime: dict | None = None) -> dict[str, Any]:
     try:
-        config = get_config(root)
+        config = get_config(root, runtime=runtime)
     except (ValueError, TypeError):
         return {"configured": False, "provider": "deepseek", "model": None, "base_url": None, "missing": ["模型参数格式无效，请检查 .env"]}
     missing = [] if config.api_key.get_secret_value().strip() else ["DEEPSEEK_API_KEY"]
