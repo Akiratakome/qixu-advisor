@@ -41,8 +41,8 @@ def stub_create_run(monkeypatch):
     """所有用例默认替身 records.create_run，避免测试写入真实 artifacts/runs。"""
     calls: list[dict] = []
 
-    def fake_create_run(case_ids, *, root=None, run_id=None, execution_mode="real", parent_run_id=None):
-        calls.append({"case_ids": list(case_ids), "run_id": run_id, "execution_mode": execution_mode, "root": root})
+    def fake_create_run(case_ids, *, root=None, run_id=None, execution_mode="real", parent_run_id=None, config=None):
+        calls.append({"case_ids": list(case_ids), "run_id": run_id, "execution_mode": execution_mode, "root": root, "config": config})
         return run_id or "stub-run"
 
     monkeypatch.setattr(api.records, "create_run", fake_create_run)
@@ -155,6 +155,45 @@ def test_patch_conversation_updates_settings_and_product_ids(client):
     assert conflict.json()["error"]["code"] == "conflict"
 
 
+def test_patch_conversation_settings_recipient_roundtrip(client):
+    """WritingSettings.recipient（临时收礼人）可写可读：PATCH 落库、GET 读回。"""
+    conversation = make_conversation(client)
+    url = f"/api/v1/conversations/{conversation['conversation_id']}"
+
+    patched = client.patch(url, json={"expected_version": 1, "settings": {"recipient": "妹妹"}})
+    assert patched.status_code == 200, patched.text
+    assert patched.json()["settings"]["recipient"] == "妹妹"
+
+    fetched = client.get(url)
+    assert fetched.status_code == 200
+    assert fetched.json()["settings"]["recipient"] == "妹妹"
+
+    created = client.post("/api/v1/conversations", json={"scenario": "产品推荐", "settings": {"recipient": "朋友"}})
+    assert created.status_code == 201, created.text
+    assert created.json()["settings"]["recipient"] == "朋友"
+
+
+def test_generation_snapshot_includes_recipient(client, monkeypatch):
+    """生成快照的 client_information.recipient 来自会话 settings.recipient。"""
+    fake = FakeGenerator(result=success_result)
+    monkeypatch.setattr(api, "generate", fake)
+    conversation = make_conversation(client)
+    url = f"/api/v1/conversations/{conversation['conversation_id']}"
+
+    patched = client.patch(url, json={"expected_version": 1, "settings": {"recipient": "送给妹妹"}})
+    assert patched.status_code == 200, patched.text
+
+    response = client.post(
+        f"{url}/generations",
+        json={"expected_version": 2},
+        headers={"Idempotency-Key": "key-1"},
+    )
+    assert response.status_code == 200, response.text
+    assert len(fake.calls) == 1
+    request = fake.calls[0][0]
+    assert request.client_information.get("recipient") == "送给妹妹"
+
+
 def test_message_external_key_dedupe(client):
     conversation = make_conversation(client, scenario="价格异议")
     url = f"/api/v1/conversations/{conversation['conversation_id']}/messages"
@@ -203,13 +242,15 @@ def test_generation_idempotency_same_key_same_content(client, monkeypatch, stub_
 
     assert len(fake.calls) == 1
     # create_run 在 generate 之前被调用一次（重放与 409 不重复创建运行）：
-    # 参数含 run_id/case_id 且 execution_mode=real。
+    # 参数含 run_id/case_id 且 execution_mode=real，config 与传入 generate 的一致。
     assert len(stub_create_run) == 1
     create_run_call = stub_create_run[0]
     assert create_run_call["execution_mode"] == "real"
     assert create_run_call["run_id"] == payload["run_id"]
     assert create_run_call["run_id"].startswith("web-")
     assert create_run_call["case_ids"] == [payload["case_id"]]
+    assert create_run_call["config"] is not None
+    assert create_run_call["config"].model == fake.kwargs_list[0]["config"].model
 
 
 def test_generation_new_key_creates_new_task(client, monkeypatch):
@@ -304,7 +345,7 @@ def test_generation_create_run_failure_marks_interrupted(client, monkeypatch, db
     fake = FakeGenerator(result=success_result)
     monkeypatch.setattr(api, "generate", fake)
 
-    def failing_create_run(case_ids, *, root=None, run_id=None, execution_mode="real", parent_run_id=None):
+    def failing_create_run(case_ids, *, root=None, run_id=None, execution_mode="real", parent_run_id=None, config=None):
         raise OSError("运行目录不可写")
 
     monkeypatch.setattr(api.records, "create_run", failing_create_run)

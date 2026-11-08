@@ -191,19 +191,24 @@ def update_conversation(conn: sqlite3.Connection, conversation_id: str, expected
         raise NotFoundError(f"会话不存在：{conversation_id}")
     if row["version"] != expected_version:
         raise ConflictError(f"会话版本冲突：当前 {row['version']}，期望 {expected_version}")
-    allowed = {"customer_id", "scenario", "settings", "current_need", "budget_cny", "occasion", "event_id", "product_ids", "status"}
+    if not fields:
+        raise ValueError("至少提供一个会话字段")
+    allowed = {"scenario", "current_need", "budget_cny", "occasion", "event_id", "status", "customer_id", "settings_json", "product_ids_json"}
     unknown = set(fields) - allowed
     if unknown:
         raise ValueError(f"未知会话字段：{sorted(unknown)}")
     assignments = []
     values: list[Any] = []
     for key, value in fields.items():
-        if key == "settings":
-            value = json.dumps(value or {}, ensure_ascii=False)
-        elif key == "product_ids":
-            value = json.dumps(value or [], ensure_ascii=False)
+        if key in {"settings_json", "product_ids_json"}:
+            if value is None:
+                continue
+            if not isinstance(value, str):
+                value = json.dumps(value, ensure_ascii=False)
         assignments.append(f"{key} = ?")
         values.append(value)
+    if not assignments:
+        raise ValueError("至少提供一个会话字段")
     values.extend([expected_version + 1, _now(), conversation_id])
     conn.execute(f"UPDATE conversations SET {', '.join(assignments)}, version = ?, updated_at = ? WHERE id = ?", values)
     conn.commit()

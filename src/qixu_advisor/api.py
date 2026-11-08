@@ -21,11 +21,10 @@
    （no such column: settings）。API 层 PATCH 会话时把这两个字段映射为 storage 列名
    （settings_json/product_ids_json）并统一 json.dumps 后单条 UPDATE（版本乐观锁语义一致），
    无 JSON 字段时仍走 storage 更新。
-10. 运行时模型配置：storage.get_settings/set_setting 读写 runtime_settings 表（core 并行提供），
-    本层组装 ModelConfig——运行时 api_key 非空则 runtime 优先（缺失字段回退 .env），否则整体
-    回退 .env；generate/analyze_conversation 以 config= 接收（core 并行扩展签名）。
-    注意：records.create_run 的 manifest.model_config 仍取自 .env；若 core 未同步让 create_run
-    接受运行时配置，运行时配置与 .env 不一致时 begin_case 的模型参数快照校验会 500。
+10. 运行时模型配置：storage.get_setting/set_setting 读写 runtime_settings 表，本层组装
+    ModelConfig——运行时 api_key 非空则 runtime 优先（缺失字段回退 .env），否则整体回退
+    .env；records.create_run(config=...) 把本次实际配置写入 manifest（凭据经 public_config
+    排除），generate/analyze_conversation 以 config= 接收，begin_case 的模型参数快照守卫一致放行。
 """
 
 from __future__ import annotations
@@ -72,7 +71,7 @@ from .api_models import (
 )
 from .data import PROJECT_ROOT, catalog_records, load_catalog
 from .generation import generate
-from .model import ModelConfig, get_config as env_get_config, public_config
+from .model import ModelConfig, get_config as env_get_config
 from .models import GenerationRequest
 from .storage import ConflictError, NotFoundError, StorageError
 
@@ -181,19 +180,6 @@ def _effective_model_config(conn: sqlite3.Connection, root: Path) -> tuple[Model
         temperature=temperature,
     )
     return effective, "runtime"
-
-
-def _align_manifest_model_config(run_id: str, config: ModelConfig, root: Path) -> None:
-    """records.create_run 只把 .env 配置写进 manifest.model_config；本次生成实际使用运行时配置时，
-    begin_case 的「模型参数在运行创建后不变」守卫会因二者不一致而 500。
-    这里把清单的模型参数快照对齐为本次实际使用的公开配置（public_config 不含密钥）。
-    替身路径未真实建运行目录时静默跳过。"""
-    manifest_path = records.run_directory(run_id, root=root) / "manifest.json"
-    if not manifest_path.exists():
-        return
-    manifest = records.read_json(manifest_path)
-    manifest["model_config"] = public_config(config)
-    records.write_json(manifest_path, manifest, overwrite=True)
 
 
 def _model_status(conn: sqlite3.Connection, root: Path) -> ModelSettingsOut:
@@ -631,11 +617,10 @@ def create_app(db_path: str | Path, *, root: Path = PROJECT_ROOT, static_dir: Pa
         # 有效模型配置：运行时设置优先（api_key 非空），否则回退 .env。
         config, _source = _effective_model_config(conn, request.app.state.root)
         try:
-            # 先创建固定运行清单（artifacts/runs/<run_id>/manifest.json）；generate 内部 begin_case
-            # 依赖该清单并做版本/参数快照校验。创建失败时不留 running 占位：标 interrupted 后上抛，
-            # 由统一错误处理转 500。
-            records.create_run([case_id], run_id=run_id, execution_mode="real", root=request.app.state.root)
-            _align_manifest_model_config(run_id, config, request.app.state.root)
+            # 先创建固定运行清单（artifacts/runs/<run_id>/manifest.json）；config= 传入本次实际
+            # 有效配置（凭据经 public_config 排除），generate 内部 begin_case 依赖该清单并做
+            # 版本/参数快照校验。创建失败时不留 running 占位：标 interrupted 后上抛，由统一错误处理转 500。
+            records.create_run([case_id], run_id=run_id, execution_mode="real", root=request.app.state.root, config=config)
         except Exception:
             storage.complete_generation(conn, generation["id"], "interrupted", run_id, case_id)
             raise

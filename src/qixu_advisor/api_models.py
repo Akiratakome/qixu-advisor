@@ -22,7 +22,10 @@ DraftActionKind = Literal["selected", "copied", "discarded"]
 
 
 class WritingSettings(BaseModel):
-    """写作设置：默认值与 models.GenerationRequest 一致；None 表示沿用会话/场景默认。"""
+    """写作设置：默认值与 models.GenerationRequest 一致；None 表示沿用会话/场景默认。
+
+    recipient 为本次临时收礼人（独立于购买者档案），进入会话 settings 与生成快照的
+    client_information.recipient；不作为购买者长期偏好。"""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -30,6 +33,7 @@ class WritingSettings(BaseModel):
     tone: Tone = "natural"
     length: Length = "standard"
     goal: Goal | None = None
+    recipient: str | None = None
 
 
 # ---------- 客户 ----------

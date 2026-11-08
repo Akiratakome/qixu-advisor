@@ -112,6 +112,35 @@ def test_conversation_crud_version_and_field_validation(conn):
     assert storage.list_conversations(conn, customer_id="C404") == []
 
 
+def test_update_conversation_raw_json_columns_and_empty_fields(conn):
+    storage.create_conversation(conn, "CONV-1", scenario="产品推荐", current_need="旧需求")
+    # settings_json 传 dict 落库后可读回 dict；product_ids_json 列表往返。
+    updated = storage.update_conversation(conn, "CONV-1", expected_version=1,
+        settings_json={"output_language": "en", "recipient": {"relationship": "妹妹"}},
+        product_ids_json=["QINGLAN-50", "YUBAI-50"])
+    assert updated["version"] == 2
+    assert updated["settings"] == {"output_language": "en", "recipient": {"relationship": "妹妹"}}
+    assert updated["product_ids"] == ["QINGLAN-50", "YUBAI-50"]
+    # settings_json 传字符串原样落库。
+    updated2 = storage.update_conversation(conn, "CONV-1", expected_version=2, settings_json='{"output_language": "zh-CN"}')
+    assert updated2["settings"] == {"output_language": "zh-CN"}
+    # 传 None 跳过：字段保持原值，其余字段正常更新。
+    updated3 = storage.update_conversation(conn, "CONV-1", expected_version=3, settings_json=None, product_ids_json=None, status="paused")
+    assert updated3["settings"] == {"output_language": "zh-CN"}
+    assert updated3["product_ids"] == ["QINGLAN-50", "YUBAI-50"]
+    assert updated3["status"] == "paused"
+    # 空字段集合与全 None 跳过均报 ValueError。
+    with pytest.raises(ValueError, match="至少提供"):
+        storage.update_conversation(conn, "CONV-1", expected_version=4)
+    with pytest.raises(ValueError, match="至少提供"):
+        storage.update_conversation(conn, "CONV-1", expected_version=4, settings_json=None)
+    # 未知字段与版本冲突语义保持。
+    with pytest.raises(ValueError, match="未知会话字段"):
+        storage.update_conversation(conn, "CONV-1", expected_version=4, not_a_field="x")
+    with pytest.raises(ConflictError):
+        storage.update_conversation(conn, "CONV-1", expected_version=3, current_need="旧版本写入")
+
+
 def test_add_message_bumps_version_dedupes_external_and_lists(conn):
     storage.create_conversation(conn, "CONV-1", scenario="价格异议", current_need="觉得贵")
     with pytest.raises(ConflictError):
