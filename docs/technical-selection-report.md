@@ -33,7 +33,7 @@ PDF 是业务与交付依据；requirement.txt 是岗位背景，不要求为展
 
 | 部分 | 下一版选择及理由 | 对比与替代条件／一手依据 |
 | --- | --- | --- |
-| 顾问界面 | React + TypeScript + Vite、普通 CSS；管理三稿编辑、会话与手机布局 | Streamlit 可以托管，迁移原因是交互需求。首期无 SEO／SSR，不引入 Next.js；先用 React 状态和 fetch。Vite 不代替类型检查，构建须含 `tsc`。[React](https://react.dev/learn/build-a-react-app-from-scratch)、[Vite](https://vite.dev/guide/features.html#typescript) |
+| 顾问界面 | React + TypeScript + Vite、普通 CSS；管理三稿编辑、会话与手机布局 | **已实现（2026-11-08，web/）**；Streamlit 保留为管理／评价入口；首期无 SEO／SSR，构建含 `tsc`。[React](https://react.dev/learn/build-a-react-app-from-scratch)、[Vite](https://vite.dev/guide/features.html#typescript) |
 | 服务入口 | FastAPI／Uvicorn 薄层，Pydantic 请求／响应；复用 Python 3.12 核心 | 现有 generate/httpx 同步，先用同步 `def` 路由；在 `async def` 直接调用普通同步函数不会自动转线程池。不重写生成器。[FastAPI 并发](https://fastapi.tiangolo.com/async/)、[请求模型](https://fastapi.tiangolo.com/tutorial/body/) |
 | 会话存储 | 标准 `sqlite3`，单实例持久磁盘、短事务、显式 SQL | 表少，暂不加 SQLAlchemy；实际多实例并行写或持续锁冲突再评估 PostgreSQL，不能承诺只换连接地址。[Python sqlite3](https://docs.python.org/3.12/library/sqlite3.html)、[SQLite 适用范围](https://www.sqlite.org/whentouse.html) |
 | 模型与结构 | 保留 httpx + 一家 DeepSeek；当前 deepseek-flash、关闭思考、JSON 输出 | 官方支持该型号与参数；仍检查空白、截断和业务结构。默认参数沿用现配置，语气由规则控制，不把温度当文风设置。[Chat Completions](https://api-docs.deepseek.com/api/create-chat-completion/)、[JSON Output](https://api-docs.deepseek.com/guides/json_mode/) |
@@ -156,7 +156,7 @@ HTTP 200 仅表示已有记录，前端仍须判断业务 status；422 字段错
 | S0 当前方案 | 选型、两份报告、接口／目录、自查与 PDF 映射 | 文档一致、可交接后汇报；本轮止于 S0，不因文档存在自动进入 S1 |
 | S1 用户明确实施后：事实与写作 | 先历史身份／规格范围／预算误报，再写作包；增加语言等设置 | models/data/generation/prompts；离线后六开发例真实对照，事实与写作改动分开记录 | **已完成（2026-11-07）**：规则包与设置已实现，diagnostic-s1 六例成功，formal-v2 50/50 成功导出八列 C；告警器 9 条误报经修复后 50 例重放零告警，新冻结 formal-v3 |
 | S2 合同稳定后：会话与 API | SQLite 迁移、客户／消息／临时需求、偏好、生成／草稿接口 | storage/conversations/preferences/api；恢复、人物隔离、冲突、一请求一调用 | **已完成（2026-11-08）**：storage/conversations/preferences/api+api_models/migrations 落地，FastAPI 16 类端点与工作台会话/偏好接入，180 项测试全绿；generations.status 单列兼任任务/业务状态等 8 项实现取舍已记录，React 工作台仍待 S3 |
-| S3 API 可检查后：工作台设计与工程 | 先桌面／手机流程草图并入产品报告，确认层级再 React 实现 | web/；原位编辑复制、保存状态、重开会话、手机布局；视觉在设计时确定 |
+| S3 API 可检查后：工作台设计与工程 | 先桌面／手机流程草图并入产品报告，确认层级再 React 实现 | web/；原位编辑复制、保存状态、重开会话、手机布局；视觉在设计时确定 | **已完成（2026-11-08）**：React＋TS＋Vite 工作台（会话/分析/生成/候选卡/复制留证/偏好/设置，响应式奢华风格），FastAPI 托管静态＋SPA 回退（scripts/serve_api.py）；端到端真实流程验证通过；Streamlit 保留为管理/评价入口 |
 | S4 小规模检查后：质量与交付 | 六场景多轮、24 语言组；冻结后 50 例回归及约定人评；打包／检查脚本先支持新 submission_id、区分只读与写报告 | 新 runs/evaluations/submissions；首轮重试分开，旧包冻结；两份历史脚本均会改初版包，不直接重跑 |
 | S5 工作台稳定后：部署／渠道 | 先单实例部署，官方权限与测试账号具备后接一种入站源 | 消息合同复用、自动草稿由顾问选用，不包含自动发送 |
 

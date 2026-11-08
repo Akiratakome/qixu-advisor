@@ -20,10 +20,14 @@ Python + Streamlit 本地应用，覆盖生日节庆、产品推荐、购后关�
 
 ```powershell
 ./scripts/bootstrap.ps1
+# 默认工作台（React，端口 8000）：FastAPI + SQLite + 静态前端
+./.venv/Scripts/python.exe -m uvicorn scripts.serve_api:app --host 127.0.0.1 --port 8000
+# 管理/评价入口（Streamlit，端口 8501，保留）
 ./.venv/Scripts/python.exe -m streamlit run src/qixu_advisor/app.py --server.address 127.0.0.1 --browser.gatherUsageStats false
+# 前端开发（web/，代理 /api → 8000）：cd web; npm install; npm run dev
 ```
 
-打开终端显示的本地地址，通常为 <http://127.0.0.1:8501>。首次安装需联网下载 Python 3.12 和 `uv.lock` 中锁定的依赖，要求已有 `uv`。项目环境用 Python 标准 venv 启动器，兼容本机对 uv 启动器的应用控制限制；不修改系统策略。
+打开 <http://127.0.0.1:8000>（React 工作台）与 <http://127.0.0.1:8501>（Streamlit 管理/评价）。首次安装需联网下载 Python 3.12 和 `uv.lock` 中锁定的依赖，要求已有 `uv`；前端构建需 Node/npm（`cd web; npm ci; npm run build`，产物 web/dist 不入库，由 scripts/serve_api.py 托管）。项目环境用 Python 标准 venv 启动器，兼容本机对 uv 启动器的应用控制限制；不修改系统策略。
 
 首次配置时复制 `.env.example` 为 `.env`，在本地填写 `DEEPSEEK_API_KEY`。默认模型 `deepseek-flash`，接口 `https://api.deepseek.com`，关闭思考，JSON 输出，温度 0.7，最多 1800 输出 token。环境变量优先于 `.env`。密钥不进入 Git、提示、日志、运行清单或提交包。
 

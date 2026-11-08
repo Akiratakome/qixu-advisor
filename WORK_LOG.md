@@ -232,3 +232,9 @@
 - 用户指示：继续完善并尝试 React，先保存基线可回退。已建回滚点：标签 `pre-s3-react-20261108` → 4ec61b9，备份 `artifacts/backups/pre-s3-react-20261108/`（working-tree-HEAD.zip 与 qixu-history.bundle，SHA-256 记录）。
 - 方案：React＋TS＋Vite（web/，普通 CSS、api.ts typed 客户端、会话/分析/生成/候选卡/复制留证/偏好/设置，奢华风格响应式）；后端由现有 FastAPI 承载——qixu-api 新增 POST /api/v1/analyze 与 web/dist 静态托管＋SPA 回退（dist 不存在则不挂载）；qixu-ui 实现前端；lead 集成构建、E2E 验证。Streamlit 工作台保留不删。
 - qixu-api 已交付：/analyze（错误映射 422/500/502、统一错误体）与静态托管＋SPA 回退；test_api 26/26，全量 185 passed。
+
+## 2026-11-08 15:45–16:20 · S3 React 工作台落地与联调
+
+- qixu-ui 交付 web/（React 19＋TS＋Vite：api.ts typed 客户端、Sidebar/PreferencesPanel/MessageStream/Composer/AnalysisPanel/DraftCard、象牙白/墨色/香槟金响应式样式；npm run build 与 lint 通过，dist 不入库）；lead 增 scripts/serve_api.py（uvicorn 生产入口，静态托管 web/dist）。
+- 联调修复三处真实缺陷（均为生产 uvicorn 线程池/联调暴露，测试未覆盖）：① sqlite3 跨线程顺序访问被拒——connect_db 加 check_same_thread=False（每请求独占连接、不并发，186 项测试）；② PATCH /conversations 的 settings/product_ids 未映射 settings_json/product_ids_json 列——API 层映射并统一序列化（187 项）；③ POST /generations 未先 records.create_run 导致 manifest 缺失——补建运行、失败回滚占位为 interrupted（188 项）。
+- React 端到端真实流程通过：消息落库→分析→生成→三张候选卡＋复制按钮，零错误；截图 react-workbench.png 入交付包。提交 2992738。Streamlit（8501）保留为管理/评价入口，React（8000）为默认工作台。回滚点 pre-s3-react-20261108 可随时回退。
