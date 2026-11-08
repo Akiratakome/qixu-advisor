@@ -238,3 +238,11 @@
 - qixu-ui 交付 web/（React 19＋TS＋Vite：api.ts typed 客户端、Sidebar/PreferencesPanel/MessageStream/Composer/AnalysisPanel/DraftCard、象牙白/墨色/香槟金响应式样式；npm run build 与 lint 通过，dist 不入库）；lead 增 scripts/serve_api.py（uvicorn 生产入口，静态托管 web/dist）。
 - 联调修复三处真实缺陷（均为生产 uvicorn 线程池/联调暴露，测试未覆盖）：① sqlite3 跨线程顺序访问被拒——connect_db 加 check_same_thread=False（每请求独占连接、不并发，186 项测试）；② PATCH /conversations 的 settings/product_ids 未映射 settings_json/product_ids_json 列——API 层映射并统一序列化（187 项）；③ POST /generations 未先 records.create_run 导致 manifest 缺失——补建运行、失败回滚占位为 interrupted（188 项）。
 - React 端到端真实流程通过：消息落库→分析→生成→三张候选卡＋复制按钮，零错误；截图 react-workbench.png 入交付包。提交 2992738。Streamlit（8501）保留为管理/评价入口，React（8000）为默认工作台。回滚点 pre-s3-react-20261108 可随时回退。
+
+## 2026-11-08 16:20–16:50 · 顾客自配 API 与就地编辑复制
+
+- 用户要求：顾客可自行配置模型 API；生成结果可简单修改后再复制。
+- qixu-core：migrations/002_runtime_settings.sql（runtime_settings 键值表）；storage get/set_setting（白名单）；get_config(root, runtime=…) 运行时覆盖（空值回退）；generate/analyze_conversation 增加 config 参数；records.create_run 增加 config 参数（manifest 快照实际配置，凭据不回显），保证 begin_case 守卫一致放行。
+- qixu-api：GET/PUT /settings/model（api_key_set/source，永不回显密钥；422 校验）；生成与分析路径按运行时配置组装 ModelConfig 并以 config= 传入；create_run 后把 manifest.model_config 对齐实际配置（桥接 core 的 records 权限边界）。
+- qixu-ui（React）：侧栏「模型配置」表单（base_url/model/api_key 密码框/温度，保存 PUT，状态展示，密钥本地保存说明）；DraftCard 改为就地可编辑 textarea，复制始终取当前编辑值（未保存可复制、留证实际 copied_text），保存修改 PATCH 带 expected_revision，切换会话未保存提示＋beforeunload 拦截。
+- lead 集成：201 项测试全绿；E2E 验证——配置表单渲染、PUT 生效（source/env 回退正确、密钥不回显）、生成后三张候选卡原地编辑成功（文本框追加「（改）」）、复制按钮在位；截图 react-workbench-v2.png／react-workbench-inline-edit.png 入交付包。冻结 formal-v21；提交 3215ba8。formal-v8 C 表不变（提示未改）。
