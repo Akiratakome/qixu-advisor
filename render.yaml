@@ -1,0 +1,16 @@
+# Render 部署配置（render.com：New Blueprint → 连接仓库）
+services:
+  - type: web
+    name: qixu-advisor
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/v1/settings/model
+    envVars:
+      - key: QIXU_RUNTIME_DIR
+        value: /app/runtime
+      - key: DEEPSEEK_API_KEY
+        sync: false   # 在 Render Dashboard 手动填
+    disk:
+      name: qixu-data
+      mountPath: /app/runtime
+      sizeGB: 1
