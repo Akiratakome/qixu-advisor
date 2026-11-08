@@ -101,7 +101,7 @@ export default function ModelConfig({ model, onChanged }: ModelConfigProps) {
         {saving ? '保存中…' : '保存配置'}
       </button>
       {saved && <p className="notice">配置已保存。</p>}
-      {saveError && <div className="alert error">{saveError}（未自动重试）</div>}
+      {saveError && <div className="alert error">{saveError}</div>}
       <div className="model-status">
         {model === null ? (
           <p className="muted">状态加载中…</p>

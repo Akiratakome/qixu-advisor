@@ -191,7 +191,7 @@ async function request<T>(
       body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
     })
   } catch {
-    throw new ApiError(0, 'network', '无法连接服务，请确认 API 已在 8000 端口启动')
+    throw new ApiError(0, 'network', '网络不可用，请稍后重试')
   }
   if (!response.ok) {
     let body: ErrorBody | null = null
@@ -328,9 +328,26 @@ export const api = {
   },
 }
 
+// 面向用户的错误文案：不展示请求 ID 与错误码；网络/5xx/冲突等常见情形给固定友好话术，
+// 其余按服务端 message 字段展示（不追加内部细节）。
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) {
-    return error.message
+    switch (error.status) {
+      case 0:
+        return '网络不可用，请稍后重试'
+      case 404:
+        return '内容不存在或已被移除，请刷新后重试'
+      case 409:
+        return '内容已被更新，请刷新后重试'
+      case 429:
+        return '已有进行中的生成任务，请稍后再试'
+      case 500:
+        return '服务暂时不可用，请稍后重试'
+      case 502:
+        return '分析服务暂时不可用，请稍后重试'
+      default:
+        return error.message || '操作失败，请重试'
+    }
   }
   if (error instanceof Error) {
     return error.message

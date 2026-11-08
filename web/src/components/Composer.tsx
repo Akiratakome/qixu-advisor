@@ -17,23 +17,22 @@ export default function Composer({ value, onChange, onSubmit, busy, disabled }: 
   const invalidInput = touched && !valid
   return (
     <div className="composer">
-      <textarea
-        className="composer-input"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        onBlur={() => setTouched(true)}
-        placeholder={'客户：这次想给妹妹挑一款。\n顾问：她平时喜欢哪一类气味？\n客户：她喜欢清爽一点的味道。'}
-        rows={4}
-      />
-      <div className="composer-footer">
-        <span className="composer-hint">每行一条消息，以「客户：」或「顾问：」开头；保存与复制均不会发送微信。</span>
+      <div className="composer-row">
+        <textarea
+          className="composer-input"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          onBlur={() => setTouched(true)}
+          placeholder={'客户：这次想给妹妹挑一款。\n顾问：她平时喜欢哪一类气味？'}
+          rows={2}
+        />
         <button
-          className="btn primary"
+          className="btn primary composer-submit"
           type="button"
           disabled={disabled || busy || lines.length === 0}
           onClick={onSubmit}
         >
-          {busy ? '正在写入…' : '添加消息'}
+          {busy ? '写入中…' : '添加消息'}
         </button>
       </div>
       {invalidInput && <p className="form-error">存在空内容的消息行，请补全后再添加。</p>}

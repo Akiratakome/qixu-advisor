@@ -60,7 +60,7 @@ export default function DraftCard({ draft, index, onDraftUpdated, onNotice, onDi
       })
       onDraftUpdated(updated)
       onDirtyChange(draft.draft_id, false)
-      onNotice('修改已保存；机器原稿保留在证据链中，基准修订已更新。')
+      onNotice('修改已保存。')
     } catch (error) {
       setSaveError(errorMessage(error))
     } finally {
@@ -72,7 +72,7 @@ export default function DraftCard({ draft, index, onDraftUpdated, onNotice, onDi
     setActing(true)
     try {
       await api.drafts.action(draft.draft_id, { action, base_revision: draft.revision })
-      onNotice(action === 'selected' ? '已选用留证。' : '已弃用留证。')
+      onNotice(action === 'selected' ? '已选用。' : '已弃用。')
     } catch (error) {
       onNotice(`处理失败：${errorMessage(error)}`)
     } finally {
@@ -84,22 +84,20 @@ export default function DraftCard({ draft, index, onDraftUpdated, onNotice, onDi
     <article className="draft-card">
       <div className="draft-card-head">
         <span className="draft-no">候选 {index}</span>
-        <span className="draft-meta">
-          直接编辑正文 · 复制读取当下修改{dirty ? ' · 有未保存修改' : ''} · 保存与复制均不会发送
-        </span>
+        {dirty && <span className="draft-meta">有未保存修改</span>}
       </div>
       <textarea
         className="draft-editor"
         value={text}
         onChange={(event) => handleTextChange(event.target.value)}
-        rows={6}
+        rows={3}
       />
-      {copyState === 'failed' && <div className="alert error">自动复制失败，请手动选中正文复制。</div>}
-      {copyState === 'recording-failed' && <div className="alert error">复制成功，但留证失败，请重试。</div>}
-      {saveError && <div className="alert error">{saveError}</div>}
+      {copyState === 'failed' && <p className="form-error">自动复制失败，请手动选中正文复制。</p>}
+      {copyState === 'recording-failed' && <p className="form-error">复制成功，但保存记录失败，请重试。</p>}
+      {saveError && <p className="form-error">{saveError}</p>}
       <div className="draft-actions">
         <button className="btn copy" type="button" onClick={() => void handleCopy()}>
-          复制{copyState === 'copied' ? ' · 已复制' : ''}
+          复制{copyState === 'copied' ? ' ✓' : ''}
         </button>
         <button className="btn primary" type="button" disabled={saving || !dirty} onClick={() => void handleSave()}>
           {saving ? '保存中…' : '保存修改'}

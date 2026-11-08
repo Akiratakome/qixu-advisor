@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import type {
   AnalyzeResult,
@@ -19,6 +19,8 @@ import MessageStream from './components/MessageStream'
 import Sidebar from './components/Sidebar'
 
 const SETTINGS_STORAGE_KEY = 'qixu.writing-settings'
+
+type PendingAction = { kind: 'switch-conversation'; id: string } | { kind: 'generate' } | null
 
 function loadSettings(): WritingSettings {
   try {
@@ -52,6 +54,7 @@ export default function App() {
 
   const [analysis, setAnalysis] = useState<AnalyzeResult | null>(null)
   const [scenario, setScenario] = useState<string>('')
+  const [needText, setNeedText] = useState('')
   const [analyzing, setAnalyzing] = useState(false)
   const [analysisError, setAnalysisError] = useState<string | null>(null)
   const [generation, setGeneration] = useState<Generation | null>(null)
@@ -60,13 +63,13 @@ export default function App() {
   const [notice, setNotice] = useState<string | null>(null)
   const [banner, setBanner] = useState<string | null>(null)
   const [dirtyDraftIds, setDirtyDraftIds] = useState<Set<number>>(new Set())
-  const [pendingSelectId, setPendingSelectId] = useState<string | null>(null)
+  const [pendingAction, setPendingAction] = useState<PendingAction>(null)
 
   useEffect(() => {
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings))
   }, [settings])
 
-  // 刷新前拦截：有未保存修改时给出浏览器原生提示（不覆盖已保存修订）。
+  // 刷新前拦截：有未保存修改时给出浏览器原生提示。
   useEffect(() => {
     function handleBeforeUnload(event: BeforeUnloadEvent) {
       if (dirtyDraftIds.size > 0) {
@@ -121,7 +124,7 @@ export default function App() {
     }
   }, [])
 
-  // 切换会话：重载消息；分析与草稿重置在点击事件中完成（新会话不沿用上一会话上下文）。
+  // 切换会话：重载消息；分析与草稿重置在点击事件中完成。
   useEffect(() => {
     if (!selectedId) {
       return
@@ -145,9 +148,8 @@ export default function App() {
       return
     }
     if (dirtyDraftIds.size > 0) {
-      // 有未保存的候选修改：先提示，不静默丢失本地编辑（已保存修订不受影响）。
       setSidebarOpen(false)
-      setPendingSelectId(id)
+      setPendingAction({ kind: 'switch-conversation', id })
       return
     }
     switchConversation(id)
@@ -157,24 +159,15 @@ export default function App() {
     setSelectedId(id)
     setAnalysis(null)
     setScenario('')
+    setNeedText('')
     setAnalysisError(null)
     setGeneration(null)
     setGenerationError(null)
     setComposer('')
     setNotice(null)
-    setPendingSelectId(null)
+    setPendingAction(null)
     setDirtyDraftIds(new Set())
     setSidebarOpen(false)
-  }
-
-  async function refreshDetail() {
-    if (!detail) {
-      return
-    }
-    const loaded = await loadDetail(detail.conversation_id)
-    if (loaded) {
-      setDetail(loaded)
-    }
   }
 
   async function handleCreateConversation() {
@@ -192,6 +185,23 @@ export default function App() {
     }
   }
 
+  async function handleCustomerChange(customerId: string) {
+    if (!detail || customerId === (detail.customer_id ?? '')) {
+      return
+    }
+    try {
+      const patched = await api.conversations.patch(detail.conversation_id, {
+        expected_version: detail.version,
+        customer_id: customerId,
+      })
+      setDetail({ ...detail, version: patched.version, customer_id: patched.customer_id })
+      setPrefCustomerId(patched.customer_id ?? null)
+      setNotice('客户已关联到本会话。')
+    } catch (error) {
+      setBanner(errorMessage(error))
+    }
+  }
+
   async function handleAddMessages() {
     if (!detail) {
       return
@@ -202,6 +212,7 @@ export default function App() {
     }
     setPosting(true)
     setBanner(null)
+    let loaded: ConversationDetail | null = null
     try {
       for (const line of lines) {
         await api.conversations.postMessage(detail.conversation_id, {
@@ -211,34 +222,50 @@ export default function App() {
         })
       }
       setComposer('')
-      await refreshDetail()
+      loaded = await loadDetail(detail.conversation_id)
+      if (loaded) {
+        setDetail(loaded)
+      }
       setNotice('消息已写入会话。')
     } catch (error) {
       setBanner(errorMessage(error))
     } finally {
       setPosting(false)
     }
+    if (loaded) {
+      await analyzeConversation(loaded)
+    }
   }
 
-  async function handleAnalyze() {
-    if (!detail) {
-      return
-    }
+  async function analyzeConversation(target: ConversationDetail, silentRetry = true) {
     setAnalyzing(true)
     setAnalysisError(null)
-    setGeneration(null)
     setBanner(null)
-    const customer = customers.find((item) => item.customer_id === detail.customer_id)
-    try {
-      const result = await api.analyze({
-        conversation_history: detail.messages.map((message) => ({
+    const customer = customers.find((item) => item.customer_id === target.customer_id)
+    const run = () =>
+      api.analyze({
+        conversation_history: target.messages.map((message) => ({
           role: message.role,
           content: message.content,
         })),
         client_information: customer ? (customer.profile as Record<string, unknown>) : {},
       })
+    try {
+      let result: AnalyzeResult
+      if (silentRetry) {
+        try {
+          result = await run()
+        } catch {
+          // 自动分析首次失败：静默重试一次。
+          result = await run()
+        }
+      } else {
+        result = await run()
+      }
       setAnalysis(result)
       setScenario(isScenario(result.scenario) ? result.scenario : SCENARIOS[0])
+      setNeedText(result.current_need)
+      setAnalysisError(null)
     } catch (error) {
       setAnalysisError(errorMessage(error))
     } finally {
@@ -246,7 +273,21 @@ export default function App() {
     }
   }
 
-  async function handleGenerate() {
+  function handleRetryAnalysis() {
+    if (detail) {
+      void analyzeConversation(detail, false)
+    }
+  }
+
+  function requestGenerate() {
+    if (dirtyDraftIds.size > 0) {
+      setPendingAction({ kind: 'generate' })
+      return
+    }
+    void runGenerate()
+  }
+
+  async function runGenerate() {
     if (!detail || !analysis) {
       return
     }
@@ -258,7 +299,7 @@ export default function App() {
         expected_version: detail.version,
         scenario: scenario || analysis.scenario,
         settings,
-        current_need: analysis.current_need,
+        current_need: needText.trim() || analysis.current_need,
       })
       const result = await api.conversations.createGeneration(
         detail.conversation_id,
@@ -272,6 +313,17 @@ export default function App() {
       setGenerationError(errorMessage(error))
     } finally {
       setGenerating(false)
+    }
+  }
+
+  function confirmPendingAction() {
+    const action = pendingAction
+    setPendingAction(null)
+    setDirtyDraftIds(new Set())
+    if (action?.kind === 'switch-conversation') {
+      switchConversation(action.id)
+    } else if (action?.kind === 'generate') {
+      void runGenerate()
     }
   }
 
@@ -300,14 +352,6 @@ export default function App() {
   }
 
   const hasDrafts = generation !== null && generation.business_status === 'success' && generation.drafts.length > 0
-  const conversationTitle = useMemo(() => {
-    if (!detail) {
-      return '会话'
-    }
-    const customer = customers.find((item) => item.customer_id === detail.customer_id)
-    const name = customer ? ((customer.profile.display_name as string | undefined) ?? '客户') : '客户'
-    return `${name} · ${detail.scenario ?? '场景未定'}`
-  }, [detail, customers])
 
   return (
     <div className="app-shell">
@@ -328,31 +372,51 @@ export default function App() {
         onPrefCustomerChange={setPrefCustomerId}
       />
       <main className="main-area">
-        <header className="brand">
-          <div className="brand-row">
-            <button
-              className="hamburger"
-              type="button"
-              aria-label="打开侧栏"
-              onClick={() => setSidebarOpen((value) => !value)}
-            >
-              ☰
-            </button>
-            <div>
-              <h1 className="brand-title">栖序 QIXU</h1>
-              <p className="brand-sub">香水顾问写作助手 · 资料均为虚构</p>
-            </div>
-          </div>
+        <header className="top-bar">
+          <button
+            className="hamburger"
+            type="button"
+            aria-label="打开侧栏"
+            onClick={() => setSidebarOpen((value) => !value)}
+          >
+            ☰
+          </button>
+          <span className="bar-brand">
+            栖序 QIXU<span className="bar-sub"> · 香水顾问写作助手 · 资料均为虚构</span>
+          </span>
+          <span className="spacer" />
+          {detail && (
+            <label className="field inline">
+              <span className="field-label">客户</span>
+              <select
+                className="compact-select"
+                value={detail.customer_id ?? ''}
+                onChange={(event) => void handleCustomerChange(event.target.value)}
+              >
+                <option value="">未选择客户</option>
+                {customers.map((customer) => (
+                  <option key={customer.customer_id} value={customer.customer_id}>
+                    {((customer.profile.display_name as string | undefined) ??
+                      (customer.profile.name as string | undefined) ??
+                      customer.customer_id)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <button className="btn mini" type="button" disabled={creating} onClick={() => void handleCreateConversation()}>
+            新建会话
+          </button>
         </header>
         {banner && <div className="alert error">{banner}</div>}
-        {pendingSelectId && (
+        {pendingAction && (
           <div className="alert warning unsaved-guard">
-            <span>当前候选卡有未保存的修改。切换会话将丢失这些本地修改；已保存的修订不受影响。</span>
+            <span>当前候选卡有未保存的修改，继续操作将丢失这些本地修改；已保存的内容不受影响。</span>
             <div className="unsaved-guard-actions">
-              <button className="btn mini danger" type="button" onClick={() => switchConversation(pendingSelectId)}>
-                放弃修改并切换
+              <button className="btn mini danger" type="button" onClick={confirmPendingAction}>
+                放弃修改并继续
               </button>
-              <button className="btn mini" type="button" onClick={() => setPendingSelectId(null)}>
+              <button className="btn mini" type="button" onClick={() => setPendingAction(null)}>
                 继续编辑
               </button>
             </div>
@@ -381,10 +445,7 @@ export default function App() {
           </div>
         ) : (
           <div className="workspace">
-            <section className="panel">
-              <div className="panel-head">
-                <h2>{conversationTitle}</h2>
-              </div>
+            <section className="panel chat-panel">
               <MessageStream messages={detail.messages} />
               <Composer
                 value={composer}
@@ -399,30 +460,35 @@ export default function App() {
               analysis={analysis}
               scenario={scenario}
               onScenarioChange={setScenario}
+              needText={needText}
+              onNeedTextChange={setNeedText}
               analyzing={analyzing}
               analysisError={analysisError}
-              onAnalyze={() => void handleAnalyze()}
+              onRetryAnalysis={handleRetryAnalysis}
               generating={generating}
               generationError={generationError}
-              onGenerate={() => void handleGenerate()}
+              onGenerate={requestGenerate}
               generation={generation}
+              hasMessages={detail.messages.length > 0}
             />
             {hasDrafts && (
               <section className="panel drafts-section">
                 <div className="panel-head">
                   <h2>三条候选</h2>
-                  <span className="muted">结构检查通过不代表内容已经通过人工评价；请核对人物、价格、规格和承诺。</span>
+                  <span className="muted">保存与复制均不会发送微信 · 请核对人物、价格、规格和承诺后再选用</span>
                 </div>
-                {generation.drafts.map((draft, index) => (
-                  <DraftCard
-                    key={draft.draft_id}
-                    draft={draft}
-                    index={index + 1}
-                    onDraftUpdated={handleDraftUpdated}
-                    onNotice={setNotice}
-                    onDirtyChange={handleDraftDirty}
-                  />
-                ))}
+                <div className="drafts-grid">
+                  {generation.drafts.map((draft, index) => (
+                    <DraftCard
+                      key={draft.draft_id}
+                      draft={draft}
+                      index={index + 1}
+                      onDraftUpdated={handleDraftUpdated}
+                      onNotice={setNotice}
+                      onDirtyChange={handleDraftDirty}
+                    />
+                  ))}
+                </div>
               </section>
             )}
           </div>
