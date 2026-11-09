@@ -26,7 +26,8 @@
     "win": {
       "target": [
         { "target": "nsis", "arch": ["x64"] }
-      ]
+      ],
+      "artifactName": "qixu-advisor-setup-${version}-x64.${ext}"
     },
     "nsis": {
       "oneClick": false,
@@ -37,12 +38,14 @@
       "target": [
         { "target": "dmg", "arch": ["x64"] }
       ],
+      "artifactName": "qixu-advisor-${version}-mac-x64.${ext}",
       "category": "public.app-category.business"
     },
     "linux": {
       "target": [
         { "target": "AppImage", "arch": ["x64"] }
       ],
+      "artifactName": "qixu-advisor-${version}-linux-x64.${ext}",
       "category": "Office"
     }
   }
