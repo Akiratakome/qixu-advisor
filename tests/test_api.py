@@ -683,6 +683,108 @@ def test_generation_runtime_config_aligned_in_manifest(tmp_path, monkeypatch):
         assert fake.kwargs_list[0]["config"].api_key.get_secret_value() == "sk-runtime-1"
 
 
+# ---------- 冷启动默认与示例客户 ----------
+
+
+def test_generation_cold_start_birthday_occasion_default(client, monkeypatch, db_path):
+    """无消息的生日会话缺 occasion：generate 收到默认缘由，payload_json 记默认标记，响应体不暴露。"""
+    fake = FakeGenerator(result=success_result)
+    monkeypatch.setattr(api, "generate", fake)
+    conversation = make_conversation(client, scenario="生日与节庆", current_need=None)
+    response = client.post(
+        f"/api/v1/conversations/{conversation['conversation_id']}/generations",
+        json={"expected_version": 1},
+        headers={"Idempotency-Key": "key-1"},
+    )
+    assert response.status_code == 200, response.text
+    assert len(fake.calls) == 1
+    generated_request = fake.calls[0][0]
+    assert generated_request.client_information.get("occasion") == "客户生日（默认缘由，可改）"
+
+    with storage.connect_db(db_path) as conn:
+        row = conn.execute("SELECT payload_json FROM generations").fetchone()
+    payload = json.loads(row["payload_json"])
+    assert payload["cold_start_defaults_applied"] is True
+    assert "cold_start_defaults_applied" not in response.text
+
+
+def test_generation_cold_start_complete_input_no_defaults(client, monkeypatch, db_path):
+    """无消息但输入完整：不应用默认，payload 不含默认标记，原值原样传入。"""
+    fake = FakeGenerator(result=success_result)
+    monkeypatch.setattr(api, "generate", fake)
+    conversation = make_conversation(client, scenario="生日与节庆", current_need="朋友过生日", occasion="生日")
+    response = client.post(
+        f"/api/v1/conversations/{conversation['conversation_id']}/generations",
+        json={"expected_version": 1},
+        headers={"Idempotency-Key": "key-1"},
+    )
+    assert response.status_code == 200, response.text
+    generated_request = fake.calls[0][0]
+    assert generated_request.client_information.get("occasion") == "生日"
+
+    with storage.connect_db(db_path) as conn:
+        row = conn.execute("SELECT payload_json FROM generations").fetchone()
+    payload = json.loads(row["payload_json"])
+    assert "cold_start_defaults_applied" not in payload
+
+
+def test_generation_cold_start_event_missing_event_id_422(client, monkeypatch):
+    """活动邀请缺 event_id：无默认值，422 带 fields 提示选活动，不调用模型。"""
+    fake = FakeGenerator(result=success_result)
+    monkeypatch.setattr(api, "generate", fake)
+    conversation = make_conversation(client, scenario="活动邀请", current_need=None)
+    response = client.post(
+        f"/api/v1/conversations/{conversation['conversation_id']}/generations",
+        json={"expected_version": 1},
+        headers={"Idempotency-Key": "key-1"},
+    )
+    assert response.status_code == 422
+    body = response.json()
+    assert body["error"]["code"] == "validation_error"
+    assert "event_id" in body["error"]["fields"]
+    assert fake.calls == []
+
+
+def test_generation_cold_start_need_scenarios_422(client, monkeypatch):
+    """产品推荐/价格异议缺 current_need：无默认值，422 带 fields。"""
+    fake = FakeGenerator(result=success_result)
+    monkeypatch.setattr(api, "generate", fake)
+    for index, scenario in enumerate(("产品推荐", "价格异议"), 1):
+        conversation = make_conversation(client, scenario=scenario, current_need=None)
+        response = client.post(
+            f"/api/v1/conversations/{conversation['conversation_id']}/generations",
+            json={"expected_version": 1},
+            headers={"Idempotency-Key": f"key-need-{index}"},
+        )
+        assert response.status_code == 422, response.text
+        assert "current_need" in response.json()["error"]["fields"]
+    assert fake.calls == []
+
+
+def test_seed_customers_idempotent(client):
+    first = client.post("/api/v1/customers/seed")
+    assert first.status_code == 200, first.text
+    payload = first.json()
+    assert payload["total"] == 8
+    assert len(payload["created"]) == 8
+    assert payload["skipped"] == []
+
+    second = client.post("/api/v1/customers/seed")
+    assert second.status_code == 200, second.text
+    assert second.json()["created"] == []
+    assert len(second.json()["skipped"]) == 8
+    assert second.json()["total"] == 8
+
+    listed = client.get("/api/v1/customers")
+    assert listed.status_code == 200
+    customers = listed.json()
+    assert len(customers) == 8
+    by_id = {item["customer_id"]: item for item in customers}
+    assert set(by_id) == set(payload["created"])
+    assert "C001" in by_id
+    assert by_id["C001"]["profile"]["display_name"] == "林女士"
+
+
 def test_error_envelope_shape_and_request_id(client):
     missing = client.get("/api/v1/customers/NOPE")
     assert missing.status_code == 404

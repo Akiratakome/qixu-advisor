@@ -76,12 +76,21 @@ class CustomerOut(BaseModel):
     """storage.customers 行对外形状；profile 为整份档案 dict。"""
 
     model_config = ConfigDict(extra="ignore")
-
     customer_id: str
     version: int
     profile: dict[str, Any]
     created_at: str | None = None
     updated_at: str | None = None
+
+
+class SeedCustomersOut(BaseModel):
+    """示例客户入库结果：幂等，已存在 client_id 跳过；total 为本次处理总数。"""
+
+    model_config = ConfigDict(extra="ignore")
+
+    created: list[str] = Field(default_factory=list)
+    skipped: list[str] = Field(default_factory=list)
+    total: int
 
 
 # ---------- 会话与消息 ----------

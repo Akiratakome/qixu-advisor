@@ -58,11 +58,44 @@ h4 {
 .sidebar {
   background: var(--qixu-parchment);
   border-right: 1px solid var(--qixu-line);
-  padding: 14px 14px 28px;
+  padding: 10px 12px 24px;
   overflow-y: auto;
   height: 100vh;
   position: sticky;
   top: 0;
+}
+
+/* 折叠分区：默认只展开「会话」 */
+
+.sidebar-details {
+  border-bottom: 1px solid var(--qixu-line);
+  padding: 4px 0 8px;
+  margin-bottom: 2px;
+}
+
+.sidebar-details summary {
+  cursor: pointer;
+  font-family: 'Noto Serif SC', 'Songti SC', serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--qixu-ink);
+  padding: 3px 2px;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sidebar-details summary::after {
+  content: '▸';
+  color: var(--qixu-gold);
+  font-size: 0.8rem;
+  transition: transform 0.15s ease;
+}
+
+.sidebar-details[open] summary::after {
+  transform: rotate(90deg);
 }
 
 .sidebar-section {
@@ -411,6 +444,29 @@ input[type='number']:focus {
   margin: 5px 0 3px;
 }
 
+/* ---------- 发起对话（冷启动行） ---------- */
+
+.cold-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cold-row > .field-label {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--qixu-gold);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.cold-need-input {
+  flex: 1;
+  min-width: 200px;
+}
+
 .questions-toggle {
   font-size: 0.82rem;
   color: var(--qixu-ink);
@@ -644,6 +700,35 @@ input[type='number'] {
 .pref-form h4 {
   font-size: 0.86rem;
   margin: 2px 0;
+}
+
+/* ---------- 客户资料 ---------- */
+
+.customer-list {
+  margin: 4px 0;
+}
+
+.customer-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.customer-rows li {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 3px 0;
+  border-bottom: 1px dashed var(--qixu-line);
+  font-size: 0.82rem;
+}
+
+.customer-name {
+  font-weight: 600;
+}
+
+.customer-actions {
+  margin: 4px 0 0;
 }
 
 .sidebar-backdrop {

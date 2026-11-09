@@ -283,6 +283,8 @@ export const api = {
     list: () => request<Customer[]>('/customers'),
     create: (body: CustomerIn) => request<Customer>('/customers', { method: 'POST', body }),
     get: (customerId: string) => request<Customer>(`/customers/${encodeURIComponent(customerId)}`),
+    // 导入示例客户：由服务端把合成示例客户写入运行库（不覆盖已有客户）。
+    seed: () => request<Customer[]>('/customers/seed', { method: 'POST' }),
   },
   conversations: {
     list: () => request<Conversation[]>('/conversations'),
@@ -329,7 +331,7 @@ export const api = {
 }
 
 // 面向用户的错误文案：不展示请求 ID 与错误码；网络/5xx/冲突等常见情形给固定友好话术，
-// 其余按服务端 message 字段展示（不追加内部细节）。
+// 其余按服务端 message 字段展示（不追加内部细节）。422 带 fields 时按字段名映射友好提示。
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) {
     switch (error.status) {
@@ -339,6 +341,22 @@ export function errorMessage(error: unknown): string {
         return '内容不存在或已被移除，请刷新后重试'
       case 409:
         return '内容已被更新，请刷新后重试'
+      case 422: {
+        if (error.fields) {
+          const keys = Object.keys(error.fields).join(' ')
+          if (keys.includes('event')) {
+            return '活动邀请需要选择具体活动'
+          }
+          if (keys.includes('scenario')) {
+            return '请先选择沟通场景'
+          }
+          if (keys.includes('customer')) {
+            return '所选客户不存在，请刷新后重试'
+          }
+          return '请补充必要信息后重试'
+        }
+        return error.message || '请求信息不完整，请检查后重试'
+      }
       case 429:
         return '已有进行中的生成任务，请稍后再试'
       case 500:

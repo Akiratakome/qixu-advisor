@@ -4,6 +4,7 @@ import type {
   AnalyzeResult,
   Conversation,
   ConversationDetail,
+  ConversationPatch,
   Customer,
   Draft,
   Generation,
@@ -11,7 +12,7 @@ import type {
   WritingSettings,
 } from './api'
 import { DEFAULT_SETTINGS, api, errorMessage } from './api'
-import { SCENARIOS, isScenario, parseChatLines } from './chat'
+import { COLD_NEED_PLACEHOLDERS, EVENTS, SCENARIOS, isScenario, parseChatLines } from './chat'
 import AnalysisPanel from './components/AnalysisPanel'
 import Composer from './components/Composer'
 import DraftCard from './components/DraftCard'
@@ -20,7 +21,11 @@ import Sidebar from './components/Sidebar'
 
 const SETTINGS_STORAGE_KEY = 'qixu.writing-settings'
 
-type PendingAction = { kind: 'switch-conversation'; id: string } | { kind: 'generate' } | null
+type PendingAction =
+  | { kind: 'switch-conversation'; id: string }
+  | { kind: 'generate' }
+  | { kind: 'generate-cold' }
+  | null
 
 function loadSettings(): WritingSettings {
   try {
@@ -64,6 +69,11 @@ export default function App() {
   const [banner, setBanner] = useState<string | null>(null)
   const [dirtyDraftIds, setDirtyDraftIds] = useState<Set<number>>(new Set())
   const [pendingAction, setPendingAction] = useState<PendingAction>(null)
+  // 冷启动（无消息）发起对话行：场景/客户/缘由需求/活动，与自动分析模式互不干扰。
+  const [coldScenario, setColdScenario] = useState<string>(SCENARIOS[0])
+  const [coldCustomerId, setColdCustomerId] = useState('')
+  const [coldNeed, setColdNeed] = useState('')
+  const [coldEventId, setColdEventId] = useState('')
 
   useEffect(() => {
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings))
@@ -135,6 +145,11 @@ export default function App() {
       if (!cancelled && loaded) {
         setDetail(loaded)
         setPrefCustomerId(loaded.customer_id ?? null)
+        const loadedScenario = loaded.scenario ?? ''
+        setColdScenario(isScenario(loadedScenario) ? loadedScenario : SCENARIOS[0])
+        setColdCustomerId(loaded.customer_id ?? '')
+        setColdNeed(loaded.current_need ?? '')
+        setColdEventId(loaded.event_id ?? '')
       }
     })()
     return () => {
@@ -167,6 +182,10 @@ export default function App() {
     setNotice(null)
     setPendingAction(null)
     setDirtyDraftIds(new Set())
+    setColdScenario(SCENARIOS[0])
+    setColdCustomerId('')
+    setColdNeed('')
+    setColdEventId('')
     setSidebarOpen(false)
   }
 
@@ -343,6 +362,59 @@ export default function App() {
     void runGenerate()
   }
 
+  function requestColdGenerate() {
+    if (dirtyDraftIds.size > 0) {
+      setPendingAction({ kind: 'generate-cold' })
+      return
+    }
+    void runColdGenerate()
+  }
+
+  async function runColdGenerate() {
+    if (!detail) {
+      return
+    }
+    setGenerating(true)
+    setGenerationError(null)
+    setBanner(null)
+    try {
+      const patchBody: ConversationPatch = {
+        expected_version: detail.version,
+        scenario: coldScenario,
+        settings,
+        customer_id: coldCustomerId || undefined,
+        event_id: coldScenario === '活动邀请' ? coldEventId || undefined : undefined,
+        current_need: coldNeed.trim() || undefined,
+      }
+      const patched = await api.conversations.patch(detail.conversation_id, patchBody)
+      const result = await api.conversations.createGeneration(
+        detail.conversation_id,
+        { expected_version: patched.version, settings },
+        `v${patched.version}-${Date.now()}`,
+      )
+      setGeneration(result)
+      setDetail({ ...detail, version: patched.version, scenario: patched.scenario, customer_id: patched.customer_id, event_id: patched.event_id, current_need: patched.current_need })
+      setDirtyDraftIds(new Set())
+    } catch (error) {
+      setGenerationError(errorMessage(error))
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  function confirmPendingAction() {
+    const action = pendingAction
+    setPendingAction(null)
+    setDirtyDraftIds(new Set())
+    if (action?.kind === 'switch-conversation') {
+      switchConversation(action.id)
+    } else if (action?.kind === 'generate') {
+      void runGenerate()
+    } else if (action?.kind === 'generate-cold') {
+      void runColdGenerate()
+    }
+  }
+
   async function runGenerate() {
     if (!detail || !analysis) {
       return
@@ -390,20 +462,17 @@ export default function App() {
     }
   }
 
-  function confirmPendingAction() {
-    const action = pendingAction
-    setPendingAction(null)
-    setDirtyDraftIds(new Set())
-    if (action?.kind === 'switch-conversation') {
-      switchConversation(action.id)
-    } else if (action?.kind === 'generate') {
-      void runGenerate()
-    }
-  }
-
   const refreshModelStatus = useCallback(async () => {
     try {
       setModel(await api.settings.model())
+    } catch (error) {
+      setBanner(errorMessage(error))
+    }
+  }, [])
+
+  const refreshCustomers = useCallback(async () => {
+    try {
+      setCustomers(await api.customers.list())
     } catch (error) {
       setBanner(errorMessage(error))
     }
@@ -426,6 +495,8 @@ export default function App() {
   }
 
   const hasDrafts = generation !== null && generation.business_status === 'success' && generation.drafts.length > 0
+  // 无消息会话走「发起对话」冷启动；有消息会话走自动分析流程，两种模式互不干扰。
+  const isColdMode = detail !== null && detail.messages.length === 0
 
   return (
     <div className="app-shell">
@@ -442,6 +513,7 @@ export default function App() {
         model={model}
         onModelChanged={() => void refreshModelStatus()}
         customers={customers}
+        onCustomersChanged={() => void refreshCustomers()}
         prefCustomerId={prefCustomerId}
         onPrefCustomerChange={setPrefCustomerId}
       />
@@ -459,7 +531,7 @@ export default function App() {
             栖序 QIXU<span className="bar-sub"> · 香水顾问写作助手 · 资料均为虚构</span>
           </span>
           <span className="spacer" />
-          {detail && (
+          {detail && !isColdMode && (
             <label className="field inline">
               <span className="field-label">客户</span>
               <select
@@ -520,7 +592,7 @@ export default function App() {
         ) : (
           <div className="workspace">
             <section className="panel chat-panel">
-              <MessageStream messages={detail.messages} />
+              {!isColdMode && <MessageStream messages={detail.messages} />}
               <Composer
                 value={composer}
                 onChange={setComposer}
@@ -530,20 +602,101 @@ export default function App() {
               />
               {notice && <p className="notice">{notice}</p>}
             </section>
-            <AnalysisPanel
-              analysis={analysis}
-              scenario={scenario}
-              onScenarioChange={setScenario}
-              needText={needText}
-              onNeedTextChange={setNeedText}
-              analyzing={analyzing}
-              analysisError={analysisError}
-              onRetryAnalysis={handleRetryAnalysis}
-              generating={generating}
-              generationError={generationError}
-              onGenerate={requestGenerate}
-              generation={generation}
-            />
+            {isColdMode ? (
+              <section className="panel cold-panel">
+                <div className="cold-row">
+                  <span className="field-label">发起对话</span>
+                  <label className="field inline">
+                    <span className="field-label">场景</span>
+                    <select
+                      className="compact-select"
+                      value={coldScenario}
+                      onChange={(event) => setColdScenario(event.target.value)}
+                    >
+                      {SCENARIOS.map((item) => (
+                        <option key={item} value={item}>
+                          {item}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="field inline">
+                    <span className="field-label">客户</span>
+                    <select
+                      className="compact-select"
+                      value={coldCustomerId}
+                      onChange={(event) => setColdCustomerId(event.target.value)}
+                    >
+                      <option value="">不使用档案</option>
+                      {customers.map((customer) => (
+                        <option key={customer.customer_id} value={customer.customer_id}>
+                          {((customer.profile.display_name as string | undefined) ??
+                            (customer.profile.name as string | undefined) ??
+                            customer.customer_id)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {coldScenario === '活动邀请' && (
+                    <label className="field inline">
+                      <span className="field-label">活动</span>
+                      <select
+                        className="compact-select"
+                        value={coldEventId}
+                        onChange={(event) => setColdEventId(event.target.value)}
+                      >
+                        <option value="">请选择活动</option>
+                        {EVENTS.map((event) => (
+                          <option key={event.event_id} value={event.event_id}>
+                            {event.name} · {event.start_at}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                  <input
+                    className="cold-need-input"
+                    type="text"
+                    value={coldNeed}
+                    onChange={(event) => setColdNeed(event.target.value)}
+                    placeholder={COLD_NEED_PLACEHOLDERS[coldScenario as (typeof SCENARIOS)[number]]}
+                  />
+                  <button
+                    className="btn primary"
+                    type="button"
+                    disabled={generating || (coldScenario === '活动邀请' && !coldEventId)}
+                    onClick={requestColdGenerate}
+                  >
+                    {generating ? '生成中…' : '生成三条候选'}
+                  </button>
+                </div>
+                {coldScenario === '活动邀请' && !coldEventId && (
+                  <p className="form-error">活动邀请需要选择具体活动</p>
+                )}
+                {generationError && <div className="alert error inline-alert">{generationError}</div>}
+                {generation && generation.business_status && generation.business_status !== 'success' && (
+                  <div className="alert error inline-alert">
+                    <strong>{generation.business_status === 'needs_input' ? '需要补充资料' : '生成未完成'}</strong>
+                    {generation.missing_fields.length > 0 && <span> · 待补充：{generation.missing_fields.join('、')}</span>}
+                  </div>
+                )}
+              </section>
+            ) : (
+              <AnalysisPanel
+                analysis={analysis}
+                scenario={scenario}
+                onScenarioChange={setScenario}
+                needText={needText}
+                onNeedTextChange={setNeedText}
+                analyzing={analyzing}
+                analysisError={analysisError}
+                onRetryAnalysis={handleRetryAnalysis}
+                generating={generating}
+                generationError={generationError}
+                onGenerate={requestGenerate}
+                generation={generation}
+              />
+            )}
             {hasDrafts && (
               <section className="panel drafts-section">
                 <div className="panel-head">

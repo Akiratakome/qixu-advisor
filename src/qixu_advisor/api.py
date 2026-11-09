@@ -68,6 +68,7 @@ from .api_models import (
     PreferenceIn,
     PreferenceOut,
     PreferencePatch,
+    SeedCustomersOut,
 )
 from .data import PROJECT_ROOT, catalog_records, load_catalog
 from .generation import generate
@@ -180,6 +181,40 @@ def _effective_model_config(conn: sqlite3.Connection, root: Path) -> tuple[Model
         temperature=temperature,
     )
     return effective, "runtime"
+
+
+def _apply_cold_start_defaults(snapshot: dict[str, Any]) -> dict[str, Any]:
+    """会话无消息时的冷启动默认输入：只补缺失字段，是显式输入而非放宽引擎校验。
+    返回实际应用的变更（非空表示已应用）。"""
+    scenario = snapshot.get("scenario")
+    client_information = snapshot.setdefault("client_information", {})
+    changes: dict[str, Any] = {}
+    if scenario == "生日与节庆" and not client_information.get("occasion"):
+        client_information["occasion"] = "客户生日（默认缘由，可改）"
+        changes["occasion"] = client_information["occasion"]
+    if scenario == "购后关怀" and not client_information.get("current_need"):
+        client_information["current_need"] = "客户刚完成购买，做一次跟进问候"
+        changes["current_need"] = client_information["current_need"]
+    if scenario == "沉睡唤醒" and not snapshot.get("client_id") and not any(client_information.values()):
+        client_information["relationship"] = "老客户，长时间未联系（默认）"
+        changes["relationship"] = client_information["relationship"]
+    return changes
+
+
+def _check_cold_start_required(snapshot: dict[str, Any]) -> None:
+    """会话无消息时的必填校验：活动邀请必须已选活动，产品推荐/价格异议必须有一句需求。
+    不满足时 422 并带 fields（无默认值）。"""
+    scenario = snapshot.get("scenario")
+    client_information = snapshot.get("client_information") or {}
+    fields: dict[str, str] = {}
+    if scenario == "活动邀请" and not snapshot.get("event_id"):
+        fields["event_id"] = "活动邀请需要先选择具体活动（无默认值）"
+    if scenario in {"产品推荐", "价格异议"} and not client_information.get("current_need"):
+        fields["current_need"] = "该场景需要一句客户需求或原话（无默认值）"
+    if fields:
+        raise RequestValidationError(
+            errors=[{"type": "value_error", "loc": ("body", key), "msg": message, "input": None} for key, message in fields.items()]
+        )
 
 
 def _model_status(conn: sqlite3.Connection, root: Path) -> ModelSettingsOut:
@@ -410,6 +445,25 @@ def create_app(db_path: str | Path, *, root: Path = PROJECT_ROOT, static_dir: Pa
                 raise ConflictError(f"客户已存在：{customer_id}")
         return _customer_out(storage.create_customer(conn, customer_id, body.profile_fields()))
 
+    @app.post("/api/v1/customers/seed", response_model=SeedCustomersOut)
+    def seed_customers(request: Request, conn: sqlite3.Connection = Depends(get_conn)):
+        """把 data/fictional/customers.json 的示例客户写入 customers 表：幂等，
+        已存在 client_id 跳过；profile_json 为整份档案，client_id 为表主键 id。"""
+        records_list = catalog_records(load_catalog("customers", root=request.app.state.root))
+        created: list[str] = []
+        skipped: list[str] = []
+        for record in records_list:
+            client_id = record.get("client_id") or record.get("customer_id") or record.get("id")
+            if not client_id:
+                continue
+            existing = conn.execute("SELECT 1 FROM customers WHERE id = ?", (client_id,)).fetchone()
+            if existing is not None:
+                skipped.append(client_id)
+                continue
+            storage.create_customer(conn, client_id, dict(record))
+            created.append(client_id)
+        return SeedCustomersOut(created=created, skipped=skipped, total=len(created) + len(skipped))
+
     @app.get("/api/v1/customers/{customer_id}", response_model=CustomerOut)
     def get_customer(customer_id: str, conn: sqlite3.Connection = Depends(get_conn)):
         return _customer_out(storage.get_customer(conn, customer_id))
@@ -573,21 +627,41 @@ def create_app(db_path: str | Path, *, root: Path = PROJECT_ROOT, static_dir: Pa
         key = (idempotency_key or body.idempotency_key or "").strip()
         if not key:
             raise HTTPException(status_code=422, detail="缺少幂等键：请提供 Idempotency-Key 头或请求体 idempotency_key")
-        payload = json.dumps(
-            {"expected_version": body.expected_version, "settings": body.settings.model_dump() if body.settings else None},
-            sort_keys=True,
-            separators=(",", ":"),
-            ensure_ascii=False,
-        )
+        conversation = storage.get_conversation(conn, conversation_id)
+        snapshot = conversations.snapshot_for_generation(conn, conversation_id)
+        if body.settings is not None:
+            for field in ("output_language", "tone", "length", "goal"):
+                snapshot[field] = getattr(body.settings, field)
+        # 冷启动默认输入：仅会话无消息且相应字段缺失时应用（显式默认值，不放宽引擎校验）；
+        # 应用时在幂等 payload 中记录 cold_start_defaults_applied（响应体不暴露该标记）。
+        messages_count = len(snapshot.get("conversation_history") or [])
+        cold_start_changes: dict[str, Any] = {}
+        if messages_count == 0:
+            cold_start_changes = _apply_cold_start_defaults(snapshot)
+        payload_object: dict[str, Any] = {
+            "expected_version": body.expected_version,
+            "settings": body.settings.model_dump() if body.settings else None,
+        }
+        if cold_start_changes:
+            payload_object["cold_start_defaults_applied"] = True
+        payload = json.dumps(payload_object, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
         # 幂等键优先：同键同内容返回首次任务；同键不同内容 409。之后再校验版本与繁忙状态。
         existing = _find_generation(conn, conversation_id, key)
         if existing is not None:
             if existing["payload_json"] != payload:
                 raise ConflictError(f"幂等键内容不一致：{conversation_id}/{key}")
             return _generation_out(conn, existing)
-        conversation = storage.get_conversation(conn, conversation_id)
         if conversation["version"] != body.expected_version:
             raise ConflictError(f"会话版本冲突：当前 {conversation['version']}，期望 {body.expected_version}")
+        if not snapshot.get("scenario"):
+            raise HTTPException(status_code=422, detail="会话未设置场景，无法生成；请先 PATCH 会话补充场景")
+        if messages_count == 0:
+            _check_cold_start_required(snapshot)
+        try:
+            generation_request = GenerationRequest.model_validate(snapshot)
+        except ValidationError as exc:
+            first = exc.errors()[0] if exc.errors() else {"msg": "快照结构非法"}
+            raise HTTPException(status_code=422, detail=f"会话快照不满足生成要求：{first.get('msg', '结构非法')}") from exc
         if _running_generation_count(conn) > 0:
             raise HTTPException(status_code=429, detail="已有进行中的生成任务，请稍后再试")
         try:
@@ -599,19 +673,6 @@ def create_app(db_path: str | Path, *, root: Path = PROJECT_ROOT, static_dir: Pa
                     raise ConflictError(f"幂等键内容不一致：{conversation_id}/{key}")
                 return _generation_out(conn, raced)
             raise
-        snapshot = conversations.snapshot_for_generation(conn, conversation_id)
-        if body.settings is not None:
-            for field in ("output_language", "tone", "length", "goal"):
-                snapshot[field] = getattr(body.settings, field)
-        if not snapshot.get("scenario"):
-            storage.complete_generation(conn, generation["id"], "interrupted", None, None)
-            raise HTTPException(status_code=422, detail="会话未设置场景，无法生成；请先 PATCH 会话补充场景")
-        try:
-            generation_request = GenerationRequest.model_validate(snapshot)
-        except ValidationError as exc:
-            storage.complete_generation(conn, generation["id"], "interrupted", None, None)
-            first = exc.errors()[0] if exc.errors() else {"msg": "快照结构非法"}
-            raise HTTPException(status_code=422, detail=f"会话快照不满足生成要求：{first.get('msg', '结构非法')}") from exc
         run_id = f"web-{generation['id'][:12]}"
         case_id = f"web-{generation['id'][:24]}"
         # 有效模型配置：运行时设置优先（api_key 非空），否则回退 .env。

@@ -1,6 +1,6 @@
 import type { Conversation, Customer, ModelSettings, WritingSettings } from '../api'
+import CustomerPanel from './CustomerPanel'
 import ModelConfig from './ModelConfig'
-import PreferencesPanel from './PreferencesPanel'
 
 const LANGUAGE_OPTIONS: Array<{ label: string; value: WritingSettings['output_language'] }> = [
   { label: '中文', value: 'zh-CN' },
@@ -47,6 +47,7 @@ interface SidebarProps {
   model: ModelSettings | null
   onModelChanged: () => void
   customers: Customer[]
+  onCustomersChanged: () => void
   prefCustomerId: string | null
   onPrefCustomerChange: (id: string | null) => void
 }
@@ -64,6 +65,7 @@ export default function Sidebar({
   model,
   onModelChanged,
   customers,
+  onCustomersChanged,
   prefCustomerId,
   onPrefCustomerChange,
 }: SidebarProps) {
@@ -71,9 +73,9 @@ export default function Sidebar({
     <>
       {open && <div className="sidebar-backdrop" onClick={onClose} />}
       <aside className={`sidebar ${open ? 'open' : ''}`}>
-        <section className="sidebar-section">
+        <details className="sidebar-details" open>
+          <summary>会话</summary>
           <div className="sidebar-head">
-            <h3>会话</h3>
             <button className="btn mini primary" type="button" disabled={creating} onClick={onCreate}>
               {creating ? '新建中…' : '新建会话'}
             </button>
@@ -98,10 +100,20 @@ export default function Sidebar({
               ))}
             </ul>
           )}
-        </section>
+        </details>
 
-        <section className="sidebar-section">
-          <h3>写作设置</h3>
+        <details className="sidebar-details">
+          <summary>客户资料</summary>
+          <CustomerPanel
+            customers={customers}
+            onChanged={onCustomersChanged}
+            prefCustomerId={prefCustomerId}
+            onPrefCustomerChange={onPrefCustomerChange}
+          />
+        </details>
+
+        <details className="sidebar-details">
+          <summary>写作设置</summary>
           <label className="field">
             <span className="field-label">输出语言</span>
             <select
@@ -166,12 +178,13 @@ export default function Sidebar({
               ))}
             </select>
           </label>
-          <p className="muted">设置保存在本机浏览器（localStorage），生成时随请求传入。</p>
-        </section>
+          <p className="muted">设置保存在本机浏览器，生成时随请求传入。</p>
+        </details>
 
-        <PreferencesPanel customers={customers} customerId={prefCustomerId} onCustomerChange={onPrefCustomerChange} />
-
-        <ModelConfig key={`${model?.base_url ?? ''}|${model?.model ?? ''}`} model={model} onChanged={onModelChanged} />
+        <details className="sidebar-details">
+          <summary>模型配置</summary>
+          <ModelConfig key={`${model?.base_url ?? ''}|${model?.model ?? ''}`} model={model} onChanged={onModelChanged} />
+        </details>
       </aside>
     </>
   )
