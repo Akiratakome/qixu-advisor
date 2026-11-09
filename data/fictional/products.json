@@ -1,5 +1,5 @@
 {
-  "version": "fictional-v2",
+  "version": "fictional-v3",
   "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
   "as_of": "2026-11-09",
   "fictional": true,
@@ -16,7 +16,13 @@
       "stock": null,
       "longevity": null,
       "trial_available": true,
-      "version": "fictional-v2",
+      "selling_points": {
+        "story": "灵感来自江南青橘园清晨，露水未散时剥开青橘皮的清冽",
+        "positioning": "经典款",
+        "suits": "喜欢清爽柑橘的人，适合日常通勤与春夏",
+        "extra": "品牌首款作品，青岚之名取自园中晨雾（虚构）"
+      },
+      "version": "fictional-v3",
       "source": "QIXU 合成商品卡"
     },
     {
@@ -31,7 +37,13 @@
       "stock": null,
       "longevity": null,
       "trial_available": true,
-      "version": "fictional-v2",
+      "selling_points": {
+        "story": "灵感来自江南青橘园清晨，露水未散时剥开青橘皮的清冽",
+        "positioning": "经典款",
+        "suits": "喜欢清爽柑橘的人，适合日常通勤与春夏",
+        "extra": "品牌首款作品，青岚之名取自园中晨雾（虚构）"
+      },
+      "version": "fictional-v3",
       "source": "QIXU 合成商品卡"
     },
     {
@@ -46,7 +58,13 @@
       "stock": null,
       "longevity": null,
       "trial_available": true,
-      "version": "fictional-v2",
+      "selling_points": {
+        "story": "灵感来自黄昏时分的玫瑰园，阳光将落未落的柔和一刻",
+        "positioning": "经典款",
+        "suits": "喜欢柔和玫瑰的人，适合送礼与重要场合",
+        "extra": "十周年月期间可选纪念礼盒包装（以门店为准）"
+      },
+      "version": "fictional-v3",
       "source": "QIXU 合成商品卡"
     },
     {
@@ -61,7 +79,13 @@
       "stock": null,
       "longevity": null,
       "trial_available": true,
-      "version": "fictional-v2",
+      "selling_points": {
+        "story": "灵感来自黄昏时分的玫瑰园，阳光将落未落的柔和一刻",
+        "positioning": "经典款",
+        "suits": "喜欢柔和玫瑰的人，适合送礼与重要场合",
+        "extra": "十周年月期间可选纪念礼盒包装（以门店为准）"
+      },
+      "version": "fictional-v3",
       "source": "QIXU 合成商品卡"
     },
     {
@@ -76,7 +100,13 @@
       "stock": null,
       "longevity": null,
       "trial_available": true,
-      "version": "fictional-v2",
+      "selling_points": {
+        "story": "灵感来自高山茶园雨后，茶叶与鸢尾在雾中交替的气息",
+        "positioning": "新品",
+        "suits": "喜欢茶香、追求安静气质的人",
+        "extra": "与调香师林见川合作创作（虚构）"
+      },
+      "version": "fictional-v3",
       "source": "QIXU 合成商品卡"
     },
     {
@@ -91,7 +121,13 @@
       "stock": null,
       "longevity": null,
       "trial_available": true,
-      "version": "fictional-v2",
+      "selling_points": {
+        "story": "灵感来自旧书房的书架与一炉将熄的焚香",
+        "positioning": "限量",
+        "suits": "喜欢干燥木质、偏好沉稳场合的人",
+        "extra": "仅 30 mL 小容量，适合随身携带或收藏（虚构）"
+      },
+      "version": "fictional-v3",
       "source": "QIXU 合成商品卡"
     }
   ]
