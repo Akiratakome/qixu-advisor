@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react'
 import type { Customer, DatasourceSettings } from '../api'
 import { api, errorMessage } from '../api'
 
+import DataSourcePanel from './DataSourcePanel'
+
 const PERMISSION_LABELS: Record<string, string> = {
   allowed: '允许联系',
   denied: '拒绝联系',
@@ -135,6 +137,7 @@ export default function DatabaseView() {
           {seeding ? '导入中…' : '导入示例客户'}
         </button>
       </div>
+      <DataSourcePanel />
       {error && <div className="alert error">{error}</div>}
       {notice && <p className="notice">{notice}</p>}
       {customers === null ? (
