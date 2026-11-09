@@ -290,3 +290,11 @@
 - qixu-content：fictional-v2（13 位客户含奢侈品语境与拒绝联系 1 位、2 个新活动、VIP 售后政策、品牌语感）；50 例全部重写为奢侈品语境（每场景五类覆盖：正常/对象归属/多轮变化/语言语气/政策边界）；expectations 补 hard_fail_if/fact_checks；新建 rubric-v2.json、research_seed_v1.jsonl（12 条：5 en＋1 拒绝）、unacceptable_examples.jsonl（8 反例）；manifest 升 cases-v2.0。
 - qixu-core：4 项测试断言适配新数据（seed 13 位、未知引用/公开源隔离、购后合同、设置默认）；告警器第五轮——每毫升差价（3.8=|19.6−15.8|）与无连接词共享容量列表按序配对；229 项全绿。
 - lead：validate-data 50 例通过；诊断 diagnostic-s9 6/6（私人预览/前中后调/焚香尾调语感确认）；formal-v9 50/50 首轮全成，重放告警仅剩 REC-004「砚泊 50 mL 不存在」真实错误（正确保留）；v9 交付包组装（outputs.csv 八列 50 行含 BOM＋新增 outputs.xlsx 排版版、row-provenance、versions、B/E 按新协议重写、评价表 1620 行、用例复核 936 行）；冻结 formal-v26/v27；提交 03da101 推送。
+
+## 2026-11-09 14:30–15:15 · 生日真人样本、数据源可见化与悬浮卡片
+
+- 用户三条：①数据库接入要有可见版本；②之前要的卡片化小应用没做；③生日祝福去网上找真人文案轻改，不自创。
+- 生日样本：qixu-content 从公开合集（好作文网/第一范文网）轻改 12 条进 writing_rules.md 并登记 sources.jsonl；首轮仍出「长寿面/犒劳自己」式臆测，用户否掉——lead 再改为 40–60 字通用祝愿＋禁具体生活臆测（formal-v29），formal-v11 后 BD-001/102/103 输出干净（「愿您新的一岁平安顺遂，想做的事都顺顺当当，所有的美好都如约而至」）。
+- 数据源可见化：storage 白名单加 supabase_url/supabase_service_key；sources.ping_supabase；GET/PUT /settings/datasource（不回显密钥）＋POST /settings/datasource/test；React 客户资料分区新增「外部数据源」配置＋测试连接；线上端点验证 200。
+- 悬浮卡片：React 新增 ?floating=1 极简卡片模式（FloatingMode＋DraftCard minimal：毛玻璃、复制高亮「已复制」）；desktop/ Electron 常驻置顶壳（main.js：Ctrl+Shift+Q 显隐、剪贴板 IPC），npm 安装因本机 TLS 网络受限未完成（已如实记录）；截图/OCR 列为下一步。
+- formal-v11（50/50）为最终 C 表：生日祝福已按新规则；唯一事实告警 REC-103 折叠容量列表为已知误报类（记 E）；v11 包（csv/xlsx/评价表 1620 行/溯源/B/E）组装完成；233 项测试全绿；提交 629dc80/f6ae476 推送，Render 已自动部署。
