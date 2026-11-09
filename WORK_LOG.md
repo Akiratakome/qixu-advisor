@@ -275,3 +275,11 @@
 - qixu-api：无消息会话冷启动默认值（生日→默认祝福缘由、购后→默认回访事由、唤醒→默认关系背景；应用时 payload 记 cold_start_defaults_applied；活动缺 event 与推荐/价格缺 need 仍 422 带 fields）；新增 POST /customers/seed（8 位示例客户幂等入库）；211 项测试。
 - qixu-ui：无消息会话显示「发起对话」行（六场景＋客户＋缘由/需求一行＋活动下拉，留空由后端默认生成）；侧栏改为折叠分区（默认只展开会话）；新增客户资料分区（列表/新建客户/导入示例客户/偏好管理）；三种布局 scrollHeight 回归 768；构建通过。
 - lead 本地集成：seed 8/8 入库；真实冷启动生成验证——无消息无档案的生日会话直接产出三条（“生日快乐。愿您新的一岁平安顺遂…”）；活动缺 event 返回 422。冻结 formal-v24；提交 73625fd。GitHub 推送多次因网络抖动失败，待恢复后重推（Render 会自动重新部署）。
+
+## 2026-11-09 12:50–13:10 · 篇幅/语气生效、外接数据库示例与模型自测
+
+- 用户要求：①篇幅/语气设置要真正生效，可调 temperature/top_k；②外接数据库（Supabase 等）接入示例；③上交后密钥安全与「确认他们自己的模型能工作」；④悬浮框小应用可行性。
+- qixu-core：篇幅写死字数指令（简短 15–35 字删铺垫收尾；标准 60–120 字含得体承接/收束）、语气细化；TONE_TEMPERATURE={natural:0.7,warm:0.9,direct:0.3}（显式温度优先）、ModelConfig.top_p=0.9 进 payload、QIXU_TOP_P/runtime top_p 支持（DeepSeek 无 top_k，用 top_p 替代）；provenance 记录实际 temperature/top_p。
+- qixu-api：POST /settings/model/test 模型连接自测（GET /models，友好失败原因，不回显密钥；trust_env=False 直连）；PUT 支持 top_p。
+- lead：新增 sources.py（Supabase 示例 + 自建 API 扩展示例，只读、首次使用缓存本地快照以满足外键）+ tests/test_sources.py + docs/customer-db-integration.md；api.py 接线——客户不在虚构目录时把档案合入 client_information 且不传 client_id，POST/PATCH 会话允许外部可解析客户；修复测试插入截断；225 项测试全绿。
+- 线上验证（Render 自动部署后）：short 26–47 字 vs standard 54–72 字、direct/warm 措辞区分明显；DEPLOY.md 增补交接安全（密钥轮换/删除、自配模型、自测端点）与悬浮框可行性（桌面伴生小应用，交付后实现，PDF 不要求）。冻结 formal-v25；提交 82bdea3 并推送。
