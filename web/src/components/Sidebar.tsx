@@ -73,6 +73,9 @@ export default function Sidebar({
     <>
       {open && <div className="sidebar-backdrop" onClick={onClose} />}
       <aside className={`sidebar ${open ? 'open' : ''}`}>
+        <a className="database-link" href="/?view=database">
+          📇 数据库
+        </a>
         <details className="sidebar-details" open>
           <summary>会话</summary>
           <div className="sidebar-head">

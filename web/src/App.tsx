@@ -15,6 +15,7 @@ import { DEFAULT_SETTINGS, api, errorMessage } from './api'
 import { COLD_NEED_PLACEHOLDERS, EVENTS, SCENARIOS, isScenario, parseChatLines } from './chat'
 import AnalysisPanel from './components/AnalysisPanel'
 import Composer from './components/Composer'
+import DatabaseView from './components/DatabaseView'
 import DraftCard from './components/DraftCard'
 import FloatingMode from './components/FloatingMode'
 import MessageStream from './components/MessageStream'
@@ -28,10 +29,14 @@ type PendingAction =
   | { kind: 'generate-cold' }
   | null
 
-// 入口路由：?floating=1 进入桌面壳的悬浮卡片模式，否则为完整工作台。
+// 入口路由：?floating=1 进入桌面壳的悬浮卡片模式；?view=database 进入客户档案总览；否则为完整工作台。
 export default function App() {
-  if (new URLSearchParams(window.location.search).get('floating') === '1') {
+  const search = new URLSearchParams(window.location.search)
+  if (search.get('floating') === '1') {
     return <FloatingMode />
+  }
+  if (search.get('view') === 'database') {
+    return <DatabaseView />
   }
   return <Workbench />
 }

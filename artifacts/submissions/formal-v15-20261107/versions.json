@@ -1,0 +1,35 @@
+{
+  "submission_id": "formal-v15-20261107",
+  "created_at": "2026-11-09T15:32:03.602+08:00",
+  "dataset": "cases-v2.0（奢侈品化 50 例）",
+  "tool_versions": {
+    "python": "3.12.15",
+    "pydantic": "2.14.3"
+  },
+  "runs": {
+    "formal-v15": {
+      "freeze": "formal-v33",
+      "cases": 50,
+      "statuses": "50/50 首轮全成",
+      "role": "最终 C 表（品牌内化＋加长版）"
+    },
+    "formal-v14": {
+      "role": "上一版（落款式）"
+    },
+    "formal-v8": {
+      "role": "旧测试集回归证据"
+    }
+  },
+  "freeze_ids": [
+    "formal-v26",
+    "formal-v27",
+    "formal-v28",
+    "formal-v29",
+    "formal-v31",
+    "formal-v32",
+    "formal-v33"
+  ],
+  "git_commits": [
+    "478e0eb"
+  ]
+}

@@ -89,8 +89,10 @@ export interface ModelSettingsIn {
 }
 
 export interface DatasourceSettings {
-  supabase_url?: string
+  supabase_url?: string | null
   supabase_service_key?: string
+  // GET 响应：是否已保存密钥（不返回密钥明文）。
+  service_key_set?: boolean
 }
 
 export interface DatasourceTestResult {
