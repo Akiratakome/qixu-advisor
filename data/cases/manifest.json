@@ -1,6 +1,6 @@
 {
-  "version": "cases-v1.1",
-  "prepared_on": "2026-11-06",
+  "version": "cases-v2.0",
+  "prepared_on": "2026-11-09",
   "authorship": "AI 辅助编写的合成任务与预期，尚待真实评价者审阅；不是人工评分",
   "formal_case_count": 50,
   "dev_count": 20,
@@ -17,328 +17,393 @@
     "BD-101",
     "BD-105",
     "REC-101",
-    "REC-102",
+    "REC-103",
     "AFTER-101",
-    "AFTER-104",
+    "AFTER-103",
     "WAKE-101",
     "WAKE-105",
     "EVENT-101",
-    "EVENT-103",
-    "PRICE-102",
-    "PRICE-105"
+    "EVENT-102",
+    "PRICE-101",
+    "PRICE-104"
   ],
   "cases": [
     {
       "case_id": "BD-001",
       "split": "dev",
       "scenario": "生日与节庆",
-      "family_id": "qixu-bd-001"
+      "family_id": "qixu-v2-bd-001"
     },
     {
       "case_id": "BD-002",
       "split": "dev",
       "scenario": "生日与节庆",
-      "family_id": "qixu-bd-002"
+      "family_id": "qixu-v2-bd-002"
     },
     {
       "case_id": "BD-003",
       "split": "dev",
       "scenario": "生日与节庆",
-      "family_id": "qixu-bd-003"
+      "family_id": "qixu-v2-bd-003"
     },
     {
       "case_id": "REC-001",
       "split": "dev",
       "scenario": "产品推荐",
-      "family_id": "qixu-rec-001"
+      "family_id": "qixu-v2-rec-001"
     },
     {
       "case_id": "REC-002",
       "split": "dev",
       "scenario": "产品推荐",
-      "family_id": "qixu-rec-002"
+      "family_id": "qixu-v2-rec-002"
     },
     {
       "case_id": "REC-003",
       "split": "dev",
       "scenario": "产品推荐",
-      "family_id": "qixu-rec-003"
+      "family_id": "qixu-v2-rec-003"
     },
     {
       "case_id": "REC-004",
       "split": "dev",
       "scenario": "产品推荐",
-      "family_id": "qixu-rec-004"
+      "family_id": "qixu-v2-rec-004"
     },
     {
       "case_id": "AFTER-001",
       "split": "dev",
       "scenario": "购后关怀",
-      "family_id": "qixu-after-001"
+      "family_id": "qixu-v2-after-001"
     },
     {
       "case_id": "AFTER-002",
       "split": "dev",
       "scenario": "购后关怀",
-      "family_id": "qixu-after-002"
+      "family_id": "qixu-v2-after-002"
     },
     {
       "case_id": "AFTER-003",
       "split": "dev",
       "scenario": "购后关怀",
-      "family_id": "abcd-3592"
+      "family_id": "qixu-v2-after-003"
     },
     {
       "case_id": "WAKE-001",
       "split": "dev",
       "scenario": "沉睡唤醒",
-      "family_id": "qixu-wake-001"
+      "family_id": "qixu-v2-wake-001"
     },
     {
       "case_id": "WAKE-002",
       "split": "dev",
       "scenario": "沉睡唤醒",
-      "family_id": "qixu-wake-002"
+      "family_id": "qixu-v2-wake-002"
     },
     {
       "case_id": "WAKE-003",
       "split": "dev",
       "scenario": "沉睡唤醒",
-      "family_id": "qixu-wake-003"
+      "family_id": "qixu-v2-wake-003"
     },
     {
       "case_id": "EVENT-001",
       "split": "dev",
       "scenario": "活动邀请",
-      "family_id": "qixu-event-001"
+      "family_id": "qixu-v2-event-001"
     },
     {
       "case_id": "EVENT-002",
       "split": "dev",
       "scenario": "活动邀请",
-      "family_id": "qixu-event-002"
+      "family_id": "qixu-v2-event-002"
     },
     {
       "case_id": "EVENT-003",
       "split": "dev",
       "scenario": "活动邀请",
-      "family_id": "qixu-event-003"
+      "family_id": "qixu-v2-event-003"
     },
     {
       "case_id": "PRICE-001",
       "split": "dev",
       "scenario": "价格异议",
-      "family_id": "qixu-price-001"
+      "family_id": "qixu-v2-price-001"
     },
     {
       "case_id": "PRICE-002",
       "split": "dev",
       "scenario": "价格异议",
-      "family_id": "abcd-10287"
+      "family_id": "qixu-v2-price-002"
     },
     {
       "case_id": "PRICE-003",
       "split": "dev",
       "scenario": "价格异议",
-      "family_id": "abcd-8252"
+      "family_id": "qixu-v2-price-003"
     },
     {
       "case_id": "PRICE-004",
       "split": "dev",
       "scenario": "价格异议",
-      "family_id": "abcd-7132"
+      "family_id": "qixu-v2-price-004"
     },
     {
       "case_id": "BD-101",
       "split": "holdout",
       "scenario": "生日与节庆",
-      "family_id": "qixu-bd-101"
+      "family_id": "qixu-v2-bd-101"
     },
     {
       "case_id": "BD-102",
       "split": "holdout",
       "scenario": "生日与节庆",
-      "family_id": "qixu-bd-102"
+      "family_id": "qixu-v2-bd-102"
     },
     {
       "case_id": "BD-103",
       "split": "holdout",
       "scenario": "生日与节庆",
-      "family_id": "qixu-bd-103"
+      "family_id": "qixu-v2-bd-103"
     },
     {
       "case_id": "BD-104",
       "split": "holdout",
       "scenario": "生日与节庆",
-      "family_id": "qixu-bd-104"
+      "family_id": "qixu-v2-bd-104"
     },
     {
       "case_id": "BD-105",
       "split": "holdout",
       "scenario": "生日与节庆",
-      "family_id": "qixu-bd-105"
+      "family_id": "qixu-v2-bd-105"
     },
     {
       "case_id": "REC-101",
       "split": "holdout",
       "scenario": "产品推荐",
-      "family_id": "qixu-rec-101"
+      "family_id": "qixu-v2-rec-101"
     },
     {
       "case_id": "REC-102",
       "split": "holdout",
       "scenario": "产品推荐",
-      "family_id": "qixu-rec-102"
+      "family_id": "qixu-v2-rec-102"
     },
     {
       "case_id": "REC-103",
       "split": "holdout",
       "scenario": "产品推荐",
-      "family_id": "qixu-rec-103"
+      "family_id": "qixu-v2-rec-103"
     },
     {
       "case_id": "REC-104",
       "split": "holdout",
       "scenario": "产品推荐",
-      "family_id": "qixu-rec-104"
+      "family_id": "qixu-v2-rec-104"
     },
     {
       "case_id": "REC-105",
       "split": "holdout",
       "scenario": "产品推荐",
-      "family_id": "qixu-rec-105"
+      "family_id": "qixu-v2-rec-105"
     },
     {
       "case_id": "REC-106",
       "split": "holdout",
       "scenario": "产品推荐",
-      "family_id": "qixu-rec-106"
+      "family_id": "qixu-v2-rec-106"
     },
     {
       "case_id": "AFTER-101",
       "split": "holdout",
       "scenario": "购后关怀",
-      "family_id": "qixu-after-101"
+      "family_id": "qixu-v2-after-101"
     },
     {
       "case_id": "AFTER-102",
       "split": "holdout",
       "scenario": "购后关怀",
-      "family_id": "qixu-after-102"
+      "family_id": "qixu-v2-after-102"
     },
     {
       "case_id": "AFTER-103",
       "split": "holdout",
       "scenario": "购后关怀",
-      "family_id": "qixu-after-103"
+      "family_id": "qixu-v2-after-103"
     },
     {
       "case_id": "AFTER-104",
       "split": "holdout",
       "scenario": "购后关怀",
-      "family_id": "qixu-after-104"
+      "family_id": "qixu-v2-after-104"
     },
     {
       "case_id": "AFTER-105",
       "split": "holdout",
       "scenario": "购后关怀",
-      "family_id": "qixu-team-gifts-service"
+      "family_id": "qixu-v2-after-105"
     },
     {
       "case_id": "WAKE-101",
       "split": "holdout",
       "scenario": "沉睡唤醒",
-      "family_id": "qixu-wake-101"
+      "family_id": "qixu-v2-wake-101"
     },
     {
       "case_id": "WAKE-102",
       "split": "holdout",
       "scenario": "沉睡唤醒",
-      "family_id": "qixu-wake-102"
+      "family_id": "qixu-v2-wake-102"
     },
     {
       "case_id": "WAKE-103",
       "split": "holdout",
       "scenario": "沉睡唤醒",
-      "family_id": "qixu-wake-103"
+      "family_id": "qixu-v2-wake-103"
     },
     {
       "case_id": "WAKE-104",
       "split": "holdout",
       "scenario": "沉睡唤醒",
-      "family_id": "qixu-wake-104"
+      "family_id": "qixu-v2-wake-104"
     },
     {
       "case_id": "WAKE-105",
       "split": "holdout",
       "scenario": "沉睡唤醒",
-      "family_id": "qixu-wake-105"
+      "family_id": "qixu-v2-wake-105"
     },
     {
       "case_id": "EVENT-101",
       "split": "holdout",
       "scenario": "活动邀请",
-      "family_id": "qixu-friend-forward-invitation"
+      "family_id": "qixu-v2-event-101"
     },
     {
       "case_id": "EVENT-102",
       "split": "holdout",
       "scenario": "活动邀请",
-      "family_id": "qixu-event-102"
+      "family_id": "qixu-v2-event-102"
     },
     {
       "case_id": "EVENT-103",
       "split": "holdout",
       "scenario": "活动邀请",
-      "family_id": "qixu-event-103"
+      "family_id": "qixu-v2-event-103"
     },
     {
       "case_id": "PRICE-101",
       "split": "holdout",
       "scenario": "价格异议",
-      "family_id": "qixu-price-101"
+      "family_id": "qixu-v2-price-101"
     },
     {
       "case_id": "PRICE-102",
       "split": "holdout",
       "scenario": "价格异议",
-      "family_id": "qixu-price-102"
+      "family_id": "qixu-v2-price-102"
     },
     {
       "case_id": "PRICE-103",
       "split": "holdout",
       "scenario": "价格异议",
-      "family_id": "qixu-price-103"
+      "family_id": "qixu-v2-price-103"
     },
     {
       "case_id": "PRICE-104",
       "split": "holdout",
       "scenario": "价格异议",
-      "family_id": "qixu-price-104"
+      "family_id": "qixu-v2-price-104"
     },
     {
       "case_id": "PRICE-105",
       "split": "holdout",
       "scenario": "价格异议",
-      "family_id": "qixu-price-105"
+      "family_id": "qixu-v2-price-105"
     },
     {
       "case_id": "PRICE-106",
       "split": "holdout",
       "scenario": "价格异议",
-      "family_id": "qixu-price-106"
+      "family_id": "qixu-v2-price-106"
     }
   ],
   "holdout_policy": "未观察模型结果前固定。若看过本保留集输出后调参，后续仅称回归验证。",
-  "independence_note": "共享品牌和部分虚构人物；50例不等于50位独立真实顾客。公开改写仅4例开发集。",
-  "revision": {
-    "previous_version": "cases-v1",
-    "changed_case_ids": [
-      "AFTER-103",
-      "AFTER-105",
-      "EVENT-101"
+  "independence_note": "共享品牌和部分虚构人物；50 例不等于 50 位独立真实顾客。cases-v2.0 全部为 QIXU 合成新编；v1.1 的四例公开改写（ABCD）在 v2.0 中已重写，不再标记，公开源记录仍保留在 data/references/。",
+  "coverage_matrix": {
+    "per_scenario_classes": [
+      "正常任务资料完整",
+      "购买者/收礼人对象归属冲突",
+      "多轮纠正或预算/偏好变化",
+      "语言或语气变化（正式集用 tone/length，英文在 research_seed_v1.jsonl）",
+      "政策/缺资料/拒绝联系边界"
     ],
-    "reason": "移除开发与保留集共享的妹妹送礼故事链；区分旧档案和当前购买状态。",
+    "note": "每场景在 dev+holdout 内至少覆盖上述五类；案例不换姓名凑数。"
+  },
+  "companion_files": {
+    "expectations": "expectations.jsonl（50 行：must_respond/must_not/hard_fail_if/fact_checks）",
+    "rubric": "rubric-v2.json（六维量表、五类硬失败、AI 味判定边界、两阶段评价协议）",
+    "research_seeds": "research_seed_v1.jsonl（12 条：六场景×2，5 条英文输出，1 条拒绝联系 contact_blocked）",
+    "unacceptable_examples": "unacceptable_examples.jsonl（8 条合成反例，评阅者口径校准，不是模型输出）",
+    "multiturn": "multiturn.jsonl（6 条多轮，group=multiturn）",
+    "language": "language.jsonl（24 条语言组，group=language）"
+  },
+  "revision": {
+    "previous_version": "cases-v1.1",
+    "changed_case_ids": [
+      "BD-001",
+      "BD-002",
+      "BD-003",
+      "REC-001",
+      "REC-002",
+      "REC-003",
+      "REC-004",
+      "AFTER-001",
+      "AFTER-002",
+      "AFTER-003",
+      "WAKE-001",
+      "WAKE-002",
+      "WAKE-003",
+      "EVENT-001",
+      "EVENT-002",
+      "EVENT-003",
+      "PRICE-001",
+      "PRICE-002",
+      "PRICE-003",
+      "PRICE-004",
+      "BD-101",
+      "BD-102",
+      "BD-103",
+      "BD-104",
+      "BD-105",
+      "REC-101",
+      "REC-102",
+      "REC-103",
+      "REC-104",
+      "REC-105",
+      "REC-106",
+      "AFTER-101",
+      "AFTER-102",
+      "AFTER-103",
+      "AFTER-104",
+      "AFTER-105",
+      "WAKE-101",
+      "WAKE-102",
+      "WAKE-103",
+      "WAKE-104",
+      "WAKE-105",
+      "EVENT-101",
+      "EVENT-102",
+      "EVENT-103",
+      "PRICE-101",
+      "PRICE-102",
+      "PRICE-103",
+      "PRICE-104",
+      "PRICE-105",
+      "PRICE-106"
+    ],
+    "reason": "按 response-test-set-design.md 奢侈品化改造：虚构资料升 fictional-v2（新增 C009–C013、EVT-PRIVATE/EVT-LIMITED、刻字/礼盒/专属顾问/试香预约服务），50 例全部重写为奢侈品语境并覆盖五类矩阵，预期升级为 must_respond/must_not/hard_fail_if/fact_checks。",
     "validation_scope": "本次仅离线数据修订，不重新运行真实模型，不产生模型质量前后结论。",
     "family_limit": "family_id 无交集只能证明标记一致，故事来源独立仍需内容审阅；共享品牌与虚构人物不是独立真实顾客样本。"
   }

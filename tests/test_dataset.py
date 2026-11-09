@@ -38,6 +38,12 @@ def test_catalog_unknowns_and_public_source_isolation():
     assert len({p["sku_id"] for p in products}) == 6
     assert all(p["stock"] is None and p["longevity"] is None and p["currency"] == "CNY" for p in products)
     assert next(p for p in products if p["sku_id"] == "YUBAI-50")["sweetness"] is None
+    # 未知商品/客户引用进入 unknown_references，不静默假装存在。
+    from qixu_advisor.models import GenerationRequest
+    facts = load_facts(GenerationRequest(scenario="产品推荐", client_information={"current_need": "想了解"}, product_ids=["NOPE-50"], client_id="C999"))
+    assert "未知商品或 SKU：NOPE-50" in facts["unknown_references"]
+    assert "未知客户档案：C999" in facts["unknown_references"]
+    # 公开源与本地资料隔离：公开 ABCD 来源固定版本并仅登记；重写后的 50 例不再携带公开数据集标记。
     cases = {c.case_id: c for c in load_cases("all")}
     sources = [json.loads(line) for line in (PROJECT_ROOT / "data/references/sources.jsonl").read_text(encoding="utf-8").splitlines()]
     assert len(sources) == 4
@@ -45,9 +51,9 @@ def test_catalog_unknowns_and_public_source_isolation():
     for source in sources:
         case = cases[source["case_id"]]
         assert case.split == source["local_split"] == "dev"
-        assert case.family_id == source["family_id"]
-        assert case.source["original_id"] == source["original_id"]
         assert source["revision"] == "6b8700ce67c6b37b062dd7a60abc76d7ef832a97"
+        assert case.source.get("dataset") != "ABCD"
+        assert "original_id" not in case.source
 
 
 def test_revised_stories_and_current_purchase_contract():
@@ -64,8 +70,13 @@ def test_revised_stories_and_current_purchase_contract():
     assert len({item["item_ref"] for item in purchases}) == 2
     assert sum(item["feedback"] is not None for item in purchases) == 1
     assert event.request.event_id == "EVT-WOOD"
-    assert event.request.client_information["intended_attendee"]["attendance_confirmed"] is False
-    assert event.request.client_information["registration_instruction"] == "只转达活动信息，暂不代登记"
+    assert event.request.tone == "direct" and event.request.length == "short"
+    # 意向、登记与门店确认分开：代登记案例的参加者出席状态未确认，活动仍要求登记并经门店确认。
+    attendee_case = cases["EVENT-002"]
+    assert attendee_case.request.client_information["intended_attendee"]["attendance_confirmed"] is False
+    event_facts = load_facts(attendee_case.request)
+    assert event_facts["event"]["booking_status"] == "未预约"
+    assert "需登记意向并由门店确认" in event_facts["event"]["conditions"]
     current = cases["AFTER-103"].request.client_information
     assert load_facts(cases["AFTER-103"].request)["customer_profile"] is None
     assert current["profile_snapshot"]["as_of"] < current["purchase"]["received_date"]

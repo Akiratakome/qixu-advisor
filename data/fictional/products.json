@@ -1,7 +1,7 @@
 {
-  "version": "fictional-v1",
+  "version": "fictional-v2",
   "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
-  "as_of": "2026-11-06",
+  "as_of": "2026-11-09",
   "fictional": true,
   "records": [
     {
@@ -16,7 +16,7 @@
       "stock": null,
       "longevity": null,
       "trial_available": true,
-      "version": "fictional-v1",
+      "version": "fictional-v2",
       "source": "QIXU 合成商品卡"
     },
     {
@@ -31,7 +31,7 @@
       "stock": null,
       "longevity": null,
       "trial_available": true,
-      "version": "fictional-v1",
+      "version": "fictional-v2",
       "source": "QIXU 合成商品卡"
     },
     {
@@ -46,7 +46,7 @@
       "stock": null,
       "longevity": null,
       "trial_available": true,
-      "version": "fictional-v1",
+      "version": "fictional-v2",
       "source": "QIXU 合成商品卡"
     },
     {
@@ -61,7 +61,7 @@
       "stock": null,
       "longevity": null,
       "trial_available": true,
-      "version": "fictional-v1",
+      "version": "fictional-v2",
       "source": "QIXU 合成商品卡"
     },
     {
@@ -76,7 +76,7 @@
       "stock": null,
       "longevity": null,
       "trial_available": true,
-      "version": "fictional-v1",
+      "version": "fictional-v2",
       "source": "QIXU 合成商品卡"
     },
     {
@@ -91,7 +91,7 @@
       "stock": null,
       "longevity": null,
       "trial_available": true,
-      "version": "fictional-v1",
+      "version": "fictional-v2",
       "source": "QIXU 合成商品卡"
     }
   ]

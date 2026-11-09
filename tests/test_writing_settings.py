@@ -52,11 +52,20 @@ def test_generation_request_rejects_invalid_settings(field, value):
 
 
 def test_existing_case_jsonl_gets_setting_defaults():
-    for case in load_cases("all"):
-        assert case.request.output_language == "zh-CN"
-        assert case.request.tone == "natural"
-        assert case.request.length == "standard"
-        assert case.request.goal is None
+    """旧格式 jsonl（无写作设置字段）时默认值生效；新数据显式设置原样保留。"""
+    legacy = json.loads((PROJECT_ROOT / "data" / "cases" / "dev.jsonl").read_text(encoding="utf-8").splitlines()[0])
+    request = dict(legacy["request"])
+    for key in ("output_language", "tone", "length", "goal"):
+        request.pop(key, None)
+    model = GenerationRequest.model_validate(request)
+    assert model.output_language == "zh-CN"
+    assert model.tone == "natural"
+    assert model.length == "standard"
+    assert model.goal is None
+    # 新用例显式设置的写作设置原样保留。
+    explicit = next(case.request for case in load_cases("all") if case.request.tone != "natural")
+    assert explicit.tone in {"warm", "direct"}
+    assert explicit.output_language in {"zh-CN", "en"}
 
 
 def test_zh_candidates_without_cjk_are_rejected(isolated_root: Path):

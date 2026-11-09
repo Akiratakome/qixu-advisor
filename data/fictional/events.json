@@ -1,7 +1,7 @@
 {
-  "version": "fictional-v1",
+  "version": "fictional-v2",
   "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
-  "as_of": "2026-11-06",
+  "as_of": "2026-11-09",
   "fictional": true,
   "records": [
     {
@@ -16,7 +16,7 @@
       "capacity": null,
       "available_slots": null,
       "booking_status": "未预约",
-      "version": "fictional-v1",
+      "version": "fictional-v2",
       "source": "QIXU 合成活动卡"
     },
     {
@@ -31,7 +31,37 @@
       "capacity": null,
       "available_slots": null,
       "booking_status": "未预约",
-      "version": "fictional-v1",
+      "version": "fictional-v2",
+      "source": "QIXU 合成活动卡"
+    },
+    {
+      "event_id": "EVT-PRIVATE",
+      "name": "暮光私人预览",
+      "start_at": "2026-11-28T19:00:00+08:00",
+      "end_at": "2026-11-28T21:00:00+08:00",
+      "timezone": "Asia/Shanghai",
+      "location": "栖序虚构体验店·青禾路18号 私人预览室",
+      "content": "提前试闻暮光 100 mL，一对一交流玫瑰与柔和木质的前中后调层次",
+      "conditions": "凭邀请参加；需登记意向并由门店确认；不保证名额；不要求购买",
+      "capacity": null,
+      "available_slots": null,
+      "booking_status": "未预约",
+      "version": "fictional-v2",
+      "source": "QIXU 合成活动卡"
+    },
+    {
+      "event_id": "EVT-LIMITED",
+      "name": "年度限定品鉴",
+      "start_at": "2026-12-05T15:00:00+08:00",
+      "end_at": "2026-12-05T17:00:00+08:00",
+      "timezone": "Asia/Shanghai",
+      "location": "栖序虚构体验店·青禾路18号",
+      "content": "试闻四款香水并记录个人香评（前调、中调、尾调）",
+      "conditions": "免费；限量，需登记意向并由门店确认；是否入围以门店回执为准",
+      "capacity": null,
+      "available_slots": null,
+      "booking_status": "未预约",
+      "version": "fictional-v2",
       "source": "QIXU 合成活动卡"
     }
   ]

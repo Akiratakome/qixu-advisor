@@ -1,0 +1,14 @@
+.git
+.venv
+.cache
+runtime
+artifacts/runs
+artifacts/evaluations
+artifacts/backups
+artifacts/archives
+web/node_modules
+.env
+private
+__pycache__
+*.pyc
+.pytest_cache

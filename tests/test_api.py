@@ -893,20 +893,20 @@ def test_seed_customers_idempotent(client):
     first = client.post("/api/v1/customers/seed")
     assert first.status_code == 200, first.text
     payload = first.json()
-    assert payload["total"] == 8
-    assert len(payload["created"]) == 8
+    assert payload["total"] == 13
+    assert len(payload["created"]) == 13
     assert payload["skipped"] == []
 
     second = client.post("/api/v1/customers/seed")
     assert second.status_code == 200, second.text
     assert second.json()["created"] == []
-    assert len(second.json()["skipped"]) == 8
-    assert second.json()["total"] == 8
+    assert len(second.json()["skipped"]) == 13
+    assert second.json()["total"] == 13
 
     listed = client.get("/api/v1/customers")
     assert listed.status_code == 200
     customers = listed.json()
-    assert len(customers) == 8
+    assert len(customers) == 13
     by_id = {item["customer_id"]: item for item in customers}
     assert set(by_id) == set(payload["created"])
     assert "C001" in by_id

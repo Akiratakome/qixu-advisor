@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="620" viewBox="0 0 1100 620" role="img" aria-label="栖序实际本地应用架构">
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#555"/></marker></defs>
+<rect width="1100" height="620" fill="white"/>
+<g font-family="Microsoft YaHei, sans-serif" fill="#222">
+<text x="40" y="48" font-size="26" font-weight="bold">栖序 QIXU · 本地应用架构</text>
+<text x="40" y="80" font-size="16">六场景共用生成函数；模型原稿、人工编辑和评价分别保存</text>
+<g fill="#f4f4f4" stroke="#777">
+<rect x="40" y="130" width="220" height="90" rx="4"/><rect x="340" y="130" width="340" height="90" rx="4"/><rect x="770" y="130" width="270" height="90" rx="4"/>
+<rect x="40" y="300" width="220" height="105" rx="4"/><rect x="340" y="300" width="340" height="105" rx="4"/><rect x="770" y="300" width="270" height="105" rx="4"/>
+<rect x="340" y="475" width="340" height="90" rx="4"/><rect x="770" y="475" width="270" height="90" rx="4"/>
+</g>
+<g font-size="18"><text x="60" y="165">Streamlit / CLI</text><text x="360" y="165">generation.py · 共享生成</text><text x="790" y="165">model.py · DeepSeek API</text><text x="60" y="335">data.py · JSON 事实</text><text x="360" y="335">records.py · 运行记录</text><text x="790" y="335">顾问选择、编辑、弃用</text><text x="360" y="510">evaluation.py · 批量与导出</text><text x="790" y="510">真实人工评价</text></g>
+<g font-size="15"><text x="60" y="193">输入资料 / 显式提交</text><text x="360" y="193">必要信息 → 提示 → 结构与事实检查</text><text x="790" y="193">一次请求 / 原始返回与用量</text><text x="60" y="363">品牌、客户、SKU、活动、政策</text><text x="60" y="387">来源与版本 / 未知保持未知</text><text x="360" y="363">input / attempts / result</text><text x="360" y="387">manifest 关联版本与固定清单</text><text x="790" y="363">feedback 追加记录</text><text x="790" y="387">复制或存稿均不代表发送</text><text x="360" y="538">固定八列 / 失败和缺失保留</text><text x="790" y="538">独立读取预期与量表 / 待真人填写</text></g>
+<g fill="none" stroke="#555" stroke-width="2" marker-end="url(#arrow)"><path d="M260 175 H330"/><path d="M680 175 H760"/><path d="M150 300 V245 H400 V230"/><path d="M510 220 V290"/><path d="M680 205 H720 V345 H760"/><path d="M770 375 H690"/><path d="M510 405 V465"/><path d="M770 520 H690"/></g>
+<text x="40" y="600" font-size="14" fill="#555">扩展位置：资料读取可替换为数据库；渠道发送与调度未来独立实现。当前未实现 CRM、微信发送或调度。</text>
+</g></svg>

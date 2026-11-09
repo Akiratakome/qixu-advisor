@@ -176,3 +176,74 @@ def test_two_bottle_sum_without_total_context_still_warned(isolated_root: Path):
     candidate = Candidate(candidate_id="T", text="暮光50毫升1080元，两支共2160元。")
     warnings = check_explicit_facts([candidate], facts, request)
     assert any("该金额未在本次资料中出现" in warning and "2160" in warning for warning in warnings)
+
+
+def price101_v9_request() -> GenerationRequest:
+    # 真实 input 快照（formal-v9 PRICE-101）：青岚两规格单位价比较。
+    return GenerationRequest(scenario="价格异议",
+        client_information={"buyer": {"address": "贺女士"}, "long_term_preferences": {"likes": ["柑橘", "玫瑰"], "dislikes": []},
+            "contact_permission": "allowed", "relationship": "SVIP 老客，会写香评",
+            "history": [{"type": "trial", "product_id": "QINGLAN", "date": "2025-11-08", "feedback": "喜欢柑橘前调"},
+                        {"type": "purchase", "sku_id": "MUGUANG-100", "date": "2025-12-28"}],
+            "luxury_context": {"vip_tier": "SVIP"},
+            "current_need": "比较青岚 100 mL 1580 元与 50 mL 980 元的单位价，问贵一点值不值"},
+        conversation_history=[{"role": "client", "content": "青岚 100 毫升 1580，50 毫升 980。每毫升差多少？贵一点值不值？"}],
+        product_ids=["QINGLAN-50", "QINGLAN-100"])
+
+
+def test_price101_formal_v9_real_candidates_no_warnings(isolated_root: Path):
+    """formal-v9 PRICE-101：每毫升 19.6/15.8 与每毫升差值 3.8、总差价 600 均为推导，不告警。"""
+    request = price101_v9_request()
+    facts = load_facts(request, root=isolated_root)
+    real_texts = [
+        "贺女士，按标价算，青岚 50 mL 是每毫升 19.6 元，100 mL 是每毫升 15.8 元，差 3.8 元。100 mL 总价高 600 元，单位价低一些。值不值主要看您用得完用不完，我这边没有额外优惠可以给到。",
+        "算给您：青岚 50 mL 980 元，合每毫升 19.6 元；100 mL 1580 元，合每毫升 15.8 元。100 mL 每毫升省 3.8 元，但一次多付 600 元。您平时用量不算大，可以先按 50 mL 考虑。",
+        "贺女士，两个规格的单位价我算了下：50 mL 每毫升 19.6 元，100 mL 每毫升 15.8 元。差价来自容量，香是一样的。您要是想再闻一次确认，我可以帮您登记到店试香意向，由门店跟您约时间。",
+    ]
+    candidates = [Candidate(candidate_id=f"PRICE-101-C{i}", text=text) for i, text in enumerate(real_texts, 1)]
+    assert check_explicit_facts(candidates, facts, request) == []
+
+
+def test_wrong_unit_price_still_warned_v9(isolated_root: Path):
+    """对照组：错误单位价（每毫升 21 元，不是任何 SKU 单位价或单位价差）仍告警。"""
+    request = price101_v9_request()
+    facts = load_facts(request, root=isolated_root)
+    candidate = Candidate(candidate_id="T", text="青岚 50 mL 是每毫升 21 元。")
+    warnings = check_explicit_facts([candidate], facts, request)
+    assert any("该金额未在本次资料中出现" in warning and "21" in warning for warning in warnings)
+
+
+def rec106_v9_request() -> GenerationRequest:
+    # 真实 input 快照（formal-v9 REC-106）：为商务伙伴选木质调。
+    return GenerationRequest(scenario="产品推荐",
+        client_information={"buyer": {"address": "周先生"}, "long_term_preferences": {"likes": ["柑橘", "清爽木质"], "dislikes": ["浓郁花香"]},
+            "contact_permission": "allowed", "relationship": "购过青岚",
+            "history": [{"type": "purchase", "sku_id": "QINGLAN-50", "date": "2026-10-30"}],
+            "luxury_context": {"vip_tier": "VIP", "gifting_occasions": ["商务伙伴答谢"]},
+            "current_need": "为商务伙伴选购礼品；收礼人偏好木质，与购买者柑橘偏好不同，不套用购买者偏好",
+            "recipient": {"relationship": "商务伙伴", "likes": ["木质"]}},
+        conversation_history=[{"role": "client", "content": "给一位商务伙伴挑礼物，他平时用木质调。别按我的喜好来，我喜欢柑橘。"}],
+        product_ids=["YANBO-30", "MUGUANG-50", "MUGUANG-100"])
+
+
+def test_rec106_formal_v9_real_candidates_no_warnings(isolated_root: Path):
+    """formal-v9 REC-106：无连接词的共享容量列表「50 mL 和 100 mL，1080 元和 1680 元」按顺序配对，不告警。"""
+    request = rec106_v9_request()
+    facts = load_facts(request, root=isolated_root)
+    real_texts = [
+        "收到。按您说的，先不看柑橘，只看木质这一路。这次能比较的是砚泊 30 mL，干燥木质和焚香气息，780 元；还有暮光 50 mL 和 100 mL，玫瑰与柔和木质，1080 元和 1680 元。若只想贴着他的木质偏好，砚泊更直接；暮光带一点玫瑰，商务场合也稳，但要看他对花香接不接受。",
+        "明白，送礼按收礼人的习惯来。木质这条线上，砚泊 30 mL 是干燥木质与焚香，780 元；暮光有 50 mL 和 100 mL，1080 元和 1680 元，是玫瑰与柔和木质。您平时不喜欢浓郁花香，这点不影响这次挑选，不过收礼人对花香的接受度我不清楚，不好替他判断。要不您先来店里闻一下这两支，再定送哪支？",
+        "好，那就不套您的偏好。可以先把砚泊和暮光作为两个方向：砚泊 30 mL，干燥木质与焚香，780 元；暮光 50 mL 1080 元、100 mL 1680 元，玫瑰与柔和木质。您方便的话，我把这两支的气味描述发您，或者帮您登记到店试香意向，由门店和您确认时间。",
+    ]
+    candidates = [Candidate(candidate_id=f"REC-106-C{i}", text=text) for i, text in enumerate(real_texts, 1)]
+    assert check_explicit_facts(candidates, facts, request) == []
+
+
+def test_shared_capacity_list_with_reversed_amounts_still_warned(isolated_root: Path):
+    """对照组：无连接词的共享容量列表金额写反（50 mL→1680、100 mL→1080）仍逐对告警。"""
+    request = rec106_v9_request()
+    facts = load_facts(request, root=isolated_root)
+    candidate = Candidate(candidate_id="T", text="暮光有 50 mL 和 100 mL，1680 元和 1080 元。")
+    warnings = check_explicit_facts([candidate], facts, request)
+    assert any("50 mL" in warning and "请核对是品牌报价还是顾客原话" in warning for warning in warnings)
+    assert any("100 mL" in warning and "请核对是品牌报价还是顾客原话" in warning for warning in warnings)

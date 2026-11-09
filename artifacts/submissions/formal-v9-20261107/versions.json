@@ -1,0 +1,67 @@
+{
+  "submission_id": "formal-v9-20261107",
+  "created_at": "2026-11-09T13:43:40.561+08:00",
+  "dataset": "cases-v2.0（奢侈品化 50 例）",
+  "tool_versions": {
+    "python": "3.12.15",
+    "pydantic": "2.14.3",
+    "streamlit": "1.67.0",
+    "httpx": "0.28.1"
+  },
+  "runs": {
+    "formal-v9": {
+      "freeze": "formal-v26",
+      "cases": 50,
+      "statuses": "50/50 首轮全成",
+      "role": "最终 C 表（奢侈品测试集版）"
+    },
+    "formal-v8": {
+      "role": "旧测试集（cases-v1.x）最终版，回归证据"
+    },
+    "diagnostic-s9": {
+      "cases": 6,
+      "role": "奢侈品化六场景诊断"
+    }
+  },
+  "freeze_ids": [
+    "formal-v26",
+    "formal-v27"
+  ],
+  "git_commits": [
+    "5df2dcf",
+    "adb79b2",
+    "bb82463",
+    "77b5789",
+    "7523aee",
+    "08fdd7c",
+    "bbd7c6a",
+    "504ec9f",
+    "b561019",
+    "a1dd570",
+    "b21de6d",
+    "2dc5321",
+    "c52cae7",
+    "ac48913",
+    "2567f5d",
+    "105fae9",
+    "a23fb14",
+    "8e8e302",
+    "5d9c67b",
+    "6ed3666",
+    "a775d2a",
+    "2992738",
+    "bd21d34",
+    "3215ba8",
+    "9edbe59",
+    "ddea2f7",
+    "1b1eee4",
+    "c2375fc",
+    "56e855f",
+    "ce32cbb",
+    "a8f2695",
+    "73625fd",
+    "8297bdd",
+    "82bdea3",
+    "b82d674"
+  ]
+}

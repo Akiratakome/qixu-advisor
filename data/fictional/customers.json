@@ -1,7 +1,7 @@
 {
-  "version": "fictional-v1",
+  "version": "fictional-v2",
   "source": "本项目合成业务设定；全部人物、品牌、商品、政策与活动均为虚构",
-  "as_of": "2026-11-06",
+  "as_of": "2026-11-09",
   "fictional": true,
   "records": [
     {
@@ -26,7 +26,17 @@
           "feedback": "喜欢柔和玫瑰气息"
         }
       ],
-      "version": "fictional-v1",
+      "luxury_context": {
+        "vip_tier": "VIP",
+        "private_preview_preference": "玫瑰主题",
+        "scent_notes_taste": "偏好柔和玫瑰中调",
+        "gifting_occasions": [
+          "妹妹生日",
+          "朋友生日"
+        ],
+        "purchase_cadence": "低频，重大节日前选购礼品"
+      },
+      "version": "fictional-v2",
       "source": "QIXU 合成客户档案",
       "fictional": true
     },
@@ -54,7 +64,16 @@
           "date": "2026-10-30"
         }
       ],
-      "version": "fictional-v1",
+      "luxury_context": {
+        "vip_tier": "VIP",
+        "private_preview_preference": "青岚主题",
+        "scent_notes_taste": "喜欢柑橘前调与雪松尾调",
+        "gifting_occasions": [
+          "商务伙伴答谢"
+        ],
+        "purchase_cadence": "一年一至两次，自用与商务送礼"
+      },
+      "version": "fictional-v2",
       "source": "QIXU 合成客户档案",
       "fictional": true
     },
@@ -80,7 +99,16 @@
           "feedback": "想之后慢慢比较"
         }
       ],
-      "version": "fictional-v1",
+      "luxury_context": {
+        "vip_tier": "VIP",
+        "private_preview_preference": "茶香主题",
+        "scent_notes_taste": "喜欢茶叶前调，希望留香自然",
+        "gifting_occasions": [
+          "母亲生日"
+        ],
+        "purchase_cadence": "低频，充分比较后决定"
+      },
+      "version": "fictional-v2",
       "source": "QIXU 合成客户档案",
       "fictional": true
     },
@@ -108,7 +136,14 @@
           "feedback": "愿意收到试香信息"
         }
       ],
-      "version": "fictional-v1",
+      "luxury_context": {
+        "vip_tier": "VIP",
+        "private_preview_preference": "木质主题",
+        "scent_notes_taste": "喜欢干燥木质尾调，嫌焚香过重",
+        "gifting_occasions": [],
+        "purchase_cadence": "低频，偏好简短沟通"
+      },
+      "version": "fictional-v2",
       "source": "QIXU 合成客户档案",
       "fictional": true
     },
@@ -133,7 +168,16 @@
           "date": "2026-10-31"
         }
       ],
-      "version": "fictional-v1",
+      "luxury_context": {
+        "vip_tier": "VIP",
+        "private_preview_preference": "玫瑰主题",
+        "scent_notes_taste": "喜欢玫瑰中后调",
+        "gifting_occasions": [
+          "父亲生日"
+        ],
+        "purchase_cadence": "一年一至两次"
+      },
+      "version": "fictional-v2",
       "source": "QIXU 合成客户档案",
       "fictional": true
     },
@@ -150,7 +194,14 @@
       "contact_permission": "allowed",
       "relationship": "首次联系，偏好尚未知",
       "history": [],
-      "version": "fictional-v1",
+      "luxury_context": {
+        "vip_tier": "NEW",
+        "private_preview_preference": null,
+        "scent_notes_taste": null,
+        "gifting_occasions": [],
+        "purchase_cadence": "未知"
+      },
+      "version": "fictional-v2",
       "source": "QIXU 合成客户档案",
       "fictional": true
     },
@@ -175,7 +226,14 @@
           "feedback": "请不要再主动发消息"
         }
       ],
-      "version": "fictional-v1",
+      "luxury_context": {
+        "vip_tier": "VIP",
+        "private_preview_preference": null,
+        "scent_notes_taste": null,
+        "gifting_occasions": [],
+        "purchase_cadence": "未知；明确拒绝后续主动联系"
+      },
+      "version": "fictional-v2",
       "source": "QIXU 合成客户档案",
       "fictional": true
     },
@@ -201,7 +259,185 @@
           "feedback": "喜欢但目前不急着买"
         }
       ],
-      "version": "fictional-v1",
+      "luxury_context": {
+        "vip_tier": "VIP",
+        "private_preview_preference": "木质主题",
+        "scent_notes_taste": "喜欢木质中调",
+        "gifting_occasions": [
+          "先生生日"
+        ],
+        "purchase_cadence": "低频，只接收具体试香信息"
+      },
+      "version": "fictional-v2",
+      "source": "QIXU 合成客户档案",
+      "fictional": true
+    },
+    {
+      "client_id": "C009",
+      "display_name": "方先生",
+      "buyer": {
+        "address": "方先生"
+      },
+      "long_term_preferences": {
+        "likes": [
+          "木质",
+          "皮革"
+        ],
+        "dislikes": [
+          "甜香"
+        ]
+      },
+      "contact_permission": "allowed",
+      "relationship": "高净值收藏客户，曾参加私人预览",
+      "history": [
+        {
+          "type": "trial",
+          "product_id": "YANBO",
+          "date": "2026-05-10",
+          "feedback": "收藏向，喜欢焚香尾调"
+        }
+      ],
+      "luxury_context": {
+        "vip_tier": "SVIP",
+        "private_preview_preference": "木质与限量主题",
+        "scent_notes_taste": "在意前中后调结构，收藏向",
+        "gifting_occasions": [
+          "重要客户答谢"
+        ],
+        "purchase_cadence": "低频高价值，一次多件"
+      },
+      "version": "fictional-v2",
+      "source": "QIXU 合成客户档案",
+      "fictional": true
+    },
+    {
+      "client_id": "C010",
+      "display_name": "苏女士",
+      "buyer": {
+        "address": "苏女士"
+      },
+      "long_term_preferences": {
+        "likes": [],
+        "dislikes": []
+      },
+      "contact_permission": "allowed",
+      "relationship": "新客，为重要客户选购礼品",
+      "history": [],
+      "luxury_context": {
+        "vip_tier": "NEW",
+        "private_preview_preference": null,
+        "scent_notes_taste": null,
+        "gifting_occasions": [
+          "重要客户答谢"
+        ],
+        "purchase_cadence": "未知，礼品预算较高"
+      },
+      "version": "fictional-v2",
+      "source": "QIXU 合成客户档案",
+      "fictional": true
+    },
+    {
+      "client_id": "C011",
+      "display_name": "贺女士",
+      "buyer": {
+        "address": "贺女士"
+      },
+      "long_term_preferences": {
+        "likes": [
+          "柑橘",
+          "玫瑰"
+        ],
+        "dislikes": []
+      },
+      "contact_permission": "allowed",
+      "relationship": "SVIP 老客，会写香评",
+      "history": [
+        {
+          "type": "trial",
+          "product_id": "QINGLAN",
+          "date": "2025-11-08",
+          "feedback": "喜欢柑橘前调"
+        },
+        {
+          "type": "purchase",
+          "sku_id": "MUGUANG-100",
+          "date": "2025-12-28"
+        }
+      ],
+      "luxury_context": {
+        "vip_tier": "SVIP",
+        "private_preview_preference": "限量主题",
+        "scent_notes_taste": "在意前调清透与尾调干净，关注留香",
+        "gifting_occasions": [],
+        "purchase_cadence": "每年一至两次大额自用"
+      },
+      "version": "fictional-v2",
+      "source": "QIXU 合成客户档案",
+      "fictional": true
+    },
+    {
+      "client_id": "C012",
+      "display_name": "蒋先生",
+      "buyer": {
+        "address": "蒋先生"
+      },
+      "long_term_preferences": {
+        "likes": [
+          "柑橘",
+          "清爽木质"
+        ],
+        "dislikes": []
+      },
+      "contact_permission": "allowed",
+      "relationship": "私人预览常客",
+      "history": [
+        {
+          "type": "trial",
+          "product_id": "QINGLAN",
+          "date": "2026-08-20",
+          "feedback": "喜欢青岚的清爽"
+        }
+      ],
+      "luxury_context": {
+        "vip_tier": "VIP",
+        "private_preview_preference": "柑橘主题",
+        "scent_notes_taste": "喜欢柑橘前调",
+        "gifting_occasions": [],
+        "purchase_cadence": "一年一次左右"
+      },
+      "version": "fictional-v2",
+      "source": "QIXU 合成客户档案",
+      "fictional": true
+    },
+    {
+      "client_id": "C013",
+      "display_name": "石女士",
+      "buyer": {
+        "address": "石女士"
+      },
+      "long_term_preferences": {
+        "likes": [
+          "玫瑰"
+        ],
+        "dislikes": []
+      },
+      "contact_permission": "denied",
+      "relationship": "高端客户，明确拒绝主动联系",
+      "history": [
+        {
+          "type": "contact_preference",
+          "date": "2026-10-25",
+          "feedback": "请勿再主动联系"
+        }
+      ],
+      "luxury_context": {
+        "vip_tier": "VIP",
+        "private_preview_preference": null,
+        "scent_notes_taste": null,
+        "gifting_occasions": [],
+        "purchase_cadence": "未知；已拒绝主动联系"
+      },
+      "version": "fictional-v2",
       "source": "QIXU 合成客户档案",
       "fictional": true
     }

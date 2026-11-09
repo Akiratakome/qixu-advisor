@@ -176,6 +176,8 @@ def _is_derived_total(value: float, fact_prices: set[float], prefix: str) -> boo
 
 
 _TOTAL_CLAUSE_BREAKS = "。；;！!？?\n"
+# unit-price 语境标记：金额前（至最近句读，最多 40 字符）出现即按单位价差值推导处理。
+_UNIT_CONTEXT_RE = re.compile(r"每毫升|单位价|每毫升省|每毫升差")
 
 
 def _total_context_prefix(text: str, end: int) -> str:
@@ -187,18 +189,26 @@ def _total_context_prefix(text: str, end: int) -> str:
     return window[cut + 1:]
 
 
-def _is_derived_amount(value: float, products: list[dict[str, Any]], whitelist: set[float]) -> bool:
-    """推导金额：单位价（资料价格/容量，容差 0.05 元/毫升）或两个价格之差的绝对值（含白名单金额与事实价之差）。
+def _is_derived_amount(value: float, products: list[dict[str, Any]], whitelist: set[float], prefix: str = "") -> bool:
+    """推导金额：单位价（资料价格/容量，容差 0.05 元/毫升）、unit-price 语境下的单位价差值、或两个价格之差。
     单价符号即使不出现在资料中也按推导处理；推导金额不告警。"""
     fact_prices: set[float] = set()
+    unit_prices: list[float] = []
     for item in products:
         price = item.get("price_cny")
         volume = item.get("volume_ml")
         if not (isinstance(price, (int, float)) and not isinstance(price, bool) and isinstance(volume, (int, float)) and not isinstance(volume, bool) and volume):
             continue
         fact_prices.add(float(price))
-        if abs(value - float(price) / float(volume)) < 0.05:
+        unit_prices.append(float(price) / float(volume))
+    for unit in unit_prices:
+        if abs(value - unit) < 0.05:
             return True
+    if _UNIT_CONTEXT_RE.search(prefix):
+        for first in unit_prices:
+            for second in unit_prices:
+                if abs(value - abs(first - second)) < 1e-6:
+                    return True
     for first in fact_prices:
         for second in fact_prices | whitelist:
             if abs(value - abs(first - second)) < 1e-6:
@@ -283,7 +293,7 @@ def check_explicit_facts(candidates: list[Candidate], facts: dict[str, Any], req
                         warnings.append(f"{candidate.candidate_id}：{name} {volume:g} mL 附近出现 {low:g} 到 {high:g} 元，资料价格为 {expected}；请核对是品牌报价还是顾客原话。")
                     return
                 price = value
-                if not _close(price, whitelist) and not _is_derived_total(price, fact_prices, prefix) and not _is_derived_amount(price, products, whitelist) and not any(_close(price, {float(item.get("price_cny", -1))}) for item in matching):
+                if not _close(price, whitelist) and not _is_derived_total(price, fact_prices, prefix) and not _is_derived_amount(price, products, whitelist, prefix) and not any(_close(price, {float(item.get("price_cny", -1))}) for item in matching):
                     expected = " / ".join(f"{item['price_cny']} 元" for item in matching)
                     warnings.append(f"{candidate.candidate_id}：{name} {volume:g} mL 附近出现 {price:g} 元，资料价格为 {expected}；请核对是品牌报价还是顾客原话。")
 
@@ -305,6 +315,24 @@ def check_explicit_facts(candidates: list[Candidate], facts: dict[str, Any], req
                         check_pair(volume, kind, value, amount_start)
                         consumed_volumes.add(volume_start)
                         consumed_amounts.add(amount_start)
+            # 无连接词的共享容量列表：「50 mL 和 100 mL，1080 元和 1680 元」按顺序一一配对；
+            # 容量列表与金额列表各自用 和/与/、 接续，中间以逗号/句读分隔。
+            if connector is None and len(volume_tokens) >= 2 and len(amount_tokens) >= len(volume_tokens):
+                volumes_joined = all(_LIST_JOINER_RE.fullmatch(fragment[volume_tokens[index][1]:volume_tokens[index + 1][0]]) for index in range(len(volume_tokens) - 1))
+                if volumes_joined:
+                    gap = fragment[volume_tokens[-1][1]:amount_tokens[0][0]]
+                    if gap and len(gap) <= 24 and any(char in gap for char in "，,。；;"):
+                        chain = amount_tokens[:1]
+                        for previous, following in zip(amount_tokens, amount_tokens[1:]):
+                            if _LIST_JOINER_RE.fullmatch(fragment[previous[1]:following[0]]):
+                                chain.append(following)
+                            else:
+                                break
+                        if len(chain) >= len(volume_tokens):
+                            for (volume_start, volume_end, volume), (amount_start, amount_end, kind, value) in zip(volume_tokens, chain[:len(volume_tokens)]):
+                                check_pair(volume, kind, value, amount_start)
+                                consumed_volumes.add(volume_start)
+                                consumed_amounts.add(amount_start)
             # 其余容量只与「容量→金额」邻近窗口内的第一个金额配对：窗口到下一个容量、句读或 30 字符为止，
             # 片段里稍远处属于另一个容量的价格不得跨配。
             for volume_index, (volume_start, volume_end, volume) in enumerate(volume_tokens):
@@ -340,7 +368,7 @@ def check_explicit_facts(candidates: list[Candidate], facts: dict[str, Any], req
                 continue
             if _is_derived_total(value, fact_prices, _total_context_prefix(candidate.text, match.start())):
                 continue
-            if _is_derived_amount(value, products, whitelist):
+            if _is_derived_amount(value, products, whitelist, _total_context_prefix(candidate.text, match.start())):
                 continue
             warnings.append(f"{candidate.candidate_id}：候选出现 {value:g} 元；该金额未在本次资料中出现，请核对来源。")
     return list(dict.fromkeys(warnings))
