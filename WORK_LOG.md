@@ -306,3 +306,11 @@
 - 数据库入口：React 侧栏「📇 数据库」→ ?view=database 独立视图（客户档案表格＋数据源状态卡＋导入示例客户＋空库引导），Playwright 自测通过。
 - 悬浮卡片落地：Electron 安装先被 npm TLS 挡→换 npmmirror 镜像＋手动 install.js 成功；启动遇 ELECTRON_RUN_AS_NODE=1 环境变量（会话注入）→ 清除后启动；CDP 截图验证窗口与悬浮模式。生成流程发现两 bug（默认场景=生日缺缘由→needs_input 被吞成「生成未完成」；点外部最小化误伤卡片按钮）——qixu-ui 修复（默认场景改产品推荐、occasion 回退、错误明细展示、折叠仅限背景区），本地真实生成 3 卡＋复制高亮验证；Render 自动部署后线上 CDP 复验三卡＋复制按钮通过。截图 floating-window-fixed.png/floating-window.png 入交付包。
 - formal-v15 包组装完成（csv/xlsx/评价表 1620 行/溯源/versions/B/E）；233 项测试全绿；提交 2262dfa/6d90da9 推送。
+
+## 2026-11-09 23:50–00:15 · 占位文案、比较反馈、截图 OCR 与三平台打包
+
+- 用户五项：①占位文案改「添加聊天记录进行分析」（仿微信朋友圈风格）；②删「选用」，改 GPT 式「👍更好/👎不好」比较反馈（供训练迭代）；③桌面加截图快捷键＋OCR；④数据库保留扩展性（不绑死 Supabase）；⑤GitHub 更新＋桌面完整包下载（win/mac/linux x64）。
+- qixu-ui：占位文案统一（工作台/悬浮窗）；DraftCard 删选用/弃用，新增 preferred/dispreferred 反馈按钮（状态机＋POST 留证）；悬浮窗【截图识别】按钮＋window.qixu 桥接合同（识别文本只回填不自动生成）。
+- qixu-api/core：DraftActionKind 扩展 preferred/dispreferred（必须带 base_revision、与被评修订留证、最新态优先）；docs 补「自定义数据源（非 Supabase）」与 supabase_url 通用语义；235 项测试。
+- lead：desktop/main.js 加 Ctrl+Shift+A 截屏（desktopCapturer）→ PowerShell Windows.Media.Ocr（ocr-windows.ps1，UTF-8 BOM＋WinRT 语言类型修复，实测识别中文成功）→ 清理中文空格 → 回填；preload.js 桥接；electron-builder 打包配置（win nsis/linux AppImage/mac dmg，x64）＋ GitHub Actions release-desktop.yml（tag desktop-v* 触发三平台构建并发布 Release）；本地打包受本机环境限制（app-builder Go 二进制无法执行、GUI 启动被会话环境拦截——此前 15:45 曾验证通过），打包与验证交给 CI 与用户本机。
+- 提交 46c2980 推送；tag desktop-v0.2.0 已推送，CI build-desktop（42651131417）构建中。
