@@ -131,7 +131,7 @@ export default function DatabaseView() {
             </span>
           </span>
         ) : (
-          <span className="status-chip muted-chip">未配置外部库</span>
+          <span className="status-chip muted-chip">未配置外部库（使用本地客户档案）</span>
         )}
         <button className="btn mini primary" type="button" disabled={seeding} onClick={() => void handleSeed()}>
           {seeding ? '导入中…' : '导入示例客户'}

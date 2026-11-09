@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { Customer, Generation } from '../api'
 import { ApiError, DEFAULT_SETTINGS, api, errorMessage } from '../api'
 import { SCENARIOS } from '../chat'
+import { OCR_FAILED_COPY, OCR_HINT_COPY, getPasteImage, recognizeImage } from '../ocr'
 import DraftCard from './DraftCard'
 
 // 悬浮卡片模式（?floating=1）：极简窗口——无侧栏、无顶栏标题；
@@ -38,6 +39,8 @@ export default function FloatingMode() {
   const [generation, setGeneration] = useState<Generation | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const [ocrBusy, setOcrBusy] = useState(false)
+  const [ocrError, setOcrError] = useState<string | null>(null)
   const [minimized, setMinimized] = useState(false)
 
   useEffect(() => {
@@ -142,6 +145,29 @@ export default function FloatingMode() {
     }
   }
 
+  async function handlePaste(event: React.ClipboardEvent<HTMLTextAreaElement>) {
+    const file = getPasteImage(event)
+    if (!file) {
+      return
+    }
+    // 剪贴板里有图片：网页内识别（与桌面桥接截图识别并存），纯文本粘贴行为不变。
+    event.preventDefault()
+    setOcrBusy(true)
+    setOcrError(null)
+    try {
+      const text = (await recognizeImage(file)).trim()
+      if (text) {
+        setInput((current) => `${current}${current ? '\n' : ''}${text}`)
+      } else {
+        setOcrError(OCR_FAILED_COPY)
+      }
+    } catch {
+      setOcrError(OCR_FAILED_COPY)
+    } finally {
+      setOcrBusy(false)
+    }
+  }
+
   function handleClose() {
     // Electron 主窗口 close → app.quit；浏览器中关闭当前页签（由浏览器策略决定）。
     window.close()
@@ -221,11 +247,14 @@ export default function FloatingMode() {
           value={input}
           onChange={(event) => setInput(event.target.value)}
           onKeyDown={handleKeyDown}
+          onPaste={(event) => void handlePaste(event)}
           placeholder="和顾客的对话"
           rows={4}
           autoFocus
         />
-        <p className="composer-subhint floating-subhint">记录顾问与顾客的对话，自动理解这轮需求</p>
+        {ocrBusy && <p className="composer-subhint floating-subhint">识别中…</p>}
+        <p className="composer-subhint floating-subhint">{OCR_HINT_COPY}</p>
+        {ocrError && <p className="form-error">{ocrError}</p>}
         <div className="floating-actions">
           <button className="btn primary wide" type="button" disabled={generating || !input.trim()} onClick={() => void handleGenerate()}>
             {generating ? '生成中…' : '生成'}

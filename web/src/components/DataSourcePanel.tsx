@@ -85,14 +85,14 @@ export default function DataSourcePanel() {
   return (
     <details className="datasource-panel">
       <summary>外部数据源</summary>
-      <p className="muted">公司客户库接口，仅读取客户档案；密钥仅存本机运行库。</p>
+      <p className="muted">可接入公司客户库（如 Supabase 或自建服务）；个人用户也可以不配置——不配置时使用本地客户档案。</p>
       {notReady && <p className="muted">后端未就绪：保存与测试暂不可用。</p>}
       <label className="field">
-        <span className="field-label">Supabase 地址</span>
-        <input type="text" value={url} onChange={(event) => setUrl(event.target.value)} placeholder="https://xxxx.supabase.co" />
+        <span className="field-label">外部数据源地址</span>
+        <input type="text" value={url} onChange={(event) => setUrl(event.target.value)} placeholder="https://你的服务地址" />
       </label>
       <label className="field">
-        <span className="field-label">Service Key（留空保持现有）</span>
+        <span className="field-label">访问密钥（留空保持现有）</span>
         <input
           type="password"
           value={key}
