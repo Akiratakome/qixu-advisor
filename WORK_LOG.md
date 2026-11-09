@@ -283,3 +283,10 @@
 - qixu-api：POST /settings/model/test 模型连接自测（GET /models，友好失败原因，不回显密钥；trust_env=False 直连）；PUT 支持 top_p。
 - lead：新增 sources.py（Supabase 示例 + 自建 API 扩展示例，只读、首次使用缓存本地快照以满足外键）+ tests/test_sources.py + docs/customer-db-integration.md；api.py 接线——客户不在虚构目录时把档案合入 client_information 且不传 client_id，POST/PATCH 会话允许外部可解析客户；修复测试插入截断；225 项测试全绿。
 - 线上验证（Render 自动部署后）：short 26–47 字 vs standard 54–72 字、direct/warm 措辞区分明显；DEPLOY.md 增补交接安全（密钥轮换/删除、自配模型、自测端点）与悬浮框可行性（桌面伴生小应用，交付后实现，PDF 不要求）。冻结 formal-v25；提交 82bdea3 并推送。
+
+## 2026-11-09 13:15–14:10 · 测试集奢侈品化改造与 formal-v9
+
+- 用户提供设计文档（Downloads\response-test-set-design.md：公开真人评价数据集研究结论、五类硬失败、六维量表、两阶段评价协议），要求按研究完整改造测试集并奢侈品化。
+- qixu-content：fictional-v2（13 位客户含奢侈品语境与拒绝联系 1 位、2 个新活动、VIP 售后政策、品牌语感）；50 例全部重写为奢侈品语境（每场景五类覆盖：正常/对象归属/多轮变化/语言语气/政策边界）；expectations 补 hard_fail_if/fact_checks；新建 rubric-v2.json、research_seed_v1.jsonl（12 条：5 en＋1 拒绝）、unacceptable_examples.jsonl（8 反例）；manifest 升 cases-v2.0。
+- qixu-core：4 项测试断言适配新数据（seed 13 位、未知引用/公开源隔离、购后合同、设置默认）；告警器第五轮——每毫升差价（3.8=|19.6−15.8|）与无连接词共享容量列表按序配对；229 项全绿。
+- lead：validate-data 50 例通过；诊断 diagnostic-s9 6/6（私人预览/前中后调/焚香尾调语感确认）；formal-v9 50/50 首轮全成，重放告警仅剩 REC-004「砚泊 50 mL 不存在」真实错误（正确保留）；v9 交付包组装（outputs.csv 八列 50 行含 BOM＋新增 outputs.xlsx 排版版、row-provenance、versions、B/E 按新协议重写、评价表 1620 行、用例复核 936 行）；冻结 formal-v26/v27；提交 03da101 推送。
