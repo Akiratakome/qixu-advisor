@@ -35,7 +35,7 @@ def _now() -> str:
     return datetime.now(timezone(timedelta(hours=8))).isoformat(timespec="milliseconds")
 
 
-RUNTIME_SETTING_KEYS = {"provider", "base_url", "model", "api_key", "temperature"}
+RUNTIME_SETTING_KEYS = {"provider", "base_url", "model", "api_key", "temperature", "top_p"}
 
 
 def get_setting(conn: sqlite3.Connection, key: str) -> str | None:

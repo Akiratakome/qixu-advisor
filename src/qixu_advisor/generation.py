@@ -37,9 +37,18 @@ DEFAULT_GOALS = {
 }
 
 LANGUAGE_LABELS = {"zh-CN": "中文（zh-CN）", "en": "英文（en）"}
-TONE_LABELS = {"natural": "自然", "warm": "温和", "direct": "直接"}
-LENGTH_LABELS = {"short": "简短", "standard": "标准"}
+TONE_LABELS = {
+    "natural": "自然（日常口语随聊）",
+    "warm": "温和（多一句关怀或共情，如「这一年辛苦了」式人情话）",
+    "direct": "直接（删铺垫、结论先行、短句）",
+}
+LENGTH_LABELS = {
+    "short": "简短（每条约 1–2 句、15–35 字；删去一切铺垫与收尾）",
+    "standard": "标准（每条约 3–5 句、60–120 字；可含一句得体的开场承接或温和收束，如「收到您消息了」式承接、「愿您今天顺心」式收束；禁止凑字、重复与空话）",
+}
 GOAL_LABELS = {"answer": "回答问题", "recommend": "帮助选择", "next_step": "提出下一步"}
+# 语气对应的采样温度：默认温度（0.7）未被显式设置时按语气覆盖。
+TONE_TEMPERATURE = {"natural": 0.7, "warm": 0.9, "direct": 0.3}
 
 _CJK_RE = re.compile(r"[\u4e00-\u9fff]")
 _ASCII_LETTER_RE = re.compile(r"[A-Za-z]")
@@ -394,14 +403,21 @@ def generate(request: GenerationRequest | dict[str, Any], run_id: str, case_id: 
     facts: dict[str, Any] = {}
     messages: list[dict[str, str]] = []
     setup_error = None
+    provided_config = config
     try:
         facts = load_facts(request, root=root)
         messages = build_messages(request, facts, root=root)
-        config = config if config is not None else get_config(root)
+        config = provided_config if provided_config is not None else get_config(root)
     except (OSError, ValueError, TypeError, KeyError) as exc:
         setup_error = f"本地资料、提示或配置读取失败（{type(exc).__name__}），请检查文件与参数"
         config = ModelConfig()
-    provenance = {"execution_mode": execution_mode, "created_at": timestamp(), "versions": source_versions(root), "model_config": public_config(config), "model_call_count": 0, "quality_status": "not_human_evaluated", "effective_settings": effective_settings(request)}
+    # model_config 保持运行创建时的配置快照（与 manifest 一致，begin_case 守卫据此拦截配置漂移）；
+    # 语气温度是请求级采样参数，实际值单独记录在 provenance.temperature/top_p。
+    recorded_public = public_config(config)
+    if setup_error is None and provided_config is None and config.temperature == 0.7:
+        # 未显式设置温度时按语气覆盖；显式温度（含运行时设置）优先。
+        config.temperature = TONE_TEMPERATURE[request.tone]
+    provenance = {"execution_mode": execution_mode, "created_at": timestamp(), "versions": source_versions(root), "model_config": recorded_public, "temperature": config.temperature, "top_p": config.top_p, "model_call_count": 0, "quality_status": "not_human_evaluated", "effective_settings": effective_settings(request)}
     path = begin_case(run_id, case_id, {"schema_version": "1.0", "run_id": run_id, "case_id": case_id, "created_at": timestamp(), "request": request.model_dump(mode="json"), "facts": facts, "messages": messages, "provenance": provenance}, root=root, execution_mode=execution_mode)
 
     def finish(status: str, **fields: Any) -> GenerationResult:

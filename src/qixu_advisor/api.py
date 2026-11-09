@@ -36,6 +36,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+import httpx
 import starlette.exceptions as _starlette_exceptions
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, Response
 from fastapi.exceptions import RequestValidationError
@@ -43,7 +44,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import SecretStr, ValidationError
 
-from . import conversations, generation as generation_module, preferences, records, storage
+from . import conversations, generation as generation_module, preferences, records, sources, storage
 from .api_models import (
     AnalyzeIn,
     AnalyzeOut,
@@ -65,6 +66,7 @@ from .api_models import (
     MessageOut,
     ModelSettingsOut,
     ModelSettingsUpdate,
+    ModelTestOut,
     PreferenceIn,
     PreferenceOut,
     PreferencePatch,
@@ -88,6 +90,22 @@ def _customer_out(row: dict[str, Any]) -> CustomerOut:
         created_at=row.get("created_at"),
         updated_at=row.get("updated_at"),
     )
+
+
+def _customer_exists(conn: sqlite3.Connection, customer_id: str) -> bool:
+    """本地库命中，或外部客户库可解析（解析成功即缓存为本地只读快照，满足外键约束）。"""
+    try:
+        storage.get_customer(conn, customer_id)
+        return True
+    except NotFoundError:
+        external = sources.fetch_external_customer(customer_id)
+        if external is None:
+            return False
+        try:
+            storage.create_customer(conn, customer_id, external)
+        except ConflictError:
+            pass
+        return True
 
 
 def _conversation_out(row: dict[str, Any]) -> ConversationOut:
@@ -180,6 +198,14 @@ def _effective_model_config(conn: sqlite3.Connection, root: Path) -> tuple[Model
         api_key=SecretStr(api_key),
         temperature=temperature,
     )
+    # top_p 由 core 白名单与 ModelConfig 并行扩展；模型类字段存在且运行时值合法时透传。
+    if "top_p" in runtime and hasattr(base, "top_p"):
+        try:
+            candidate_top_p = float(runtime["top_p"])
+        except (TypeError, ValueError):
+            candidate_top_p = None
+        if candidate_top_p is not None and 0 <= candidate_top_p <= 1:
+            effective.top_p = candidate_top_p
     return effective, "runtime"
 
 
@@ -238,6 +264,7 @@ def _model_status(conn: sqlite3.Connection, root: Path) -> ModelSettingsOut:
         missing=missing,
         api_key_set=api_key_set,
         source=source,
+        top_p=getattr(config, "top_p", None),
     )
 
 
@@ -486,7 +513,8 @@ def create_app(db_path: str | Path, *, root: Path = PROJECT_ROOT, static_dir: Pa
     @app.post("/api/v1/conversations", status_code=201, response_model=ConversationOut)
     def create_conversation(body: ConversationIn, conn: sqlite3.Connection = Depends(get_conn)):
         if body.customer_id:
-            storage.get_customer(conn, body.customer_id)
+            if not _customer_exists(conn, body.customer_id):
+                raise NotFoundError(f"客户档案不存在：{body.customer_id}")
         fields = body.model_dump(exclude={"settings"})
         fields["settings"] = body.settings.model_dump(exclude_none=True) if body.settings else None
         return _conversation_out(conversations.open_conversation(conn, None, **fields))
@@ -509,7 +537,8 @@ def create_app(db_path: str | Path, *, root: Path = PROJECT_ROOT, static_dir: Pa
             # 其余非 None 项（含 length/tone 等默认值）随整份字典落盘。
             fields["settings"] = body.settings.model_dump(exclude_none=True)
         if fields.get("customer_id"):
-            storage.get_customer(conn, fields["customer_id"])
+            if not _customer_exists(conn, fields["customer_id"]):
+                raise NotFoundError(f"客户档案不存在：{fields['customer_id']}")
         has_json_fields = "settings" in fields or "product_ids" in fields
         if fields and not has_json_fields:
             # 无 JSON 字段：字段名与列名一致，直接走 storage 更新。
@@ -587,6 +616,37 @@ def create_app(db_path: str | Path, *, root: Path = PROJECT_ROOT, static_dir: Pa
             storage.set_setting(conn, key, "" if value is None else str(value))
         return _model_status(conn, request.app.state.root)
 
+    @app.post("/api/v1/settings/model/test", response_model=ModelTestOut)
+    def test_model_connection(request: Request, conn: sqlite3.Connection = Depends(get_conn)):
+        """模型连接自测：用当前生效配置（runtime 优先、.env 回退）发起 GET {base_url}/models，
+        超时 15 秒、不重试。ok=false 时只给友好原因，不回显密钥与完整错误体。"""
+        config, _source = _effective_model_config(conn, request.app.state.root)
+        api_key = config.api_key.get_secret_value().strip()
+        if not api_key:
+            return ModelTestOut(ok=False, message="尚未配置密钥")
+        url = config.base_url.rstrip("/") + "/models"
+        try:
+            # trust_env=False：自测直连配置的 base_url，不走系统代理（代理应答会掩盖真实连通性）。
+            with httpx.Client(timeout=15.0, follow_redirects=False, trust_env=False) as client:
+                response = client.get(url, headers={"Authorization": f"Bearer {api_key}"})
+        except httpx.TimeoutException:
+            return ModelTestOut(ok=False, message="无法连接模型服务：连接超时")
+        except httpx.RequestError:
+            return ModelTestOut(ok=False, message="无法连接模型服务：连接失败")
+        if response.status_code in (401, 403):
+            return ModelTestOut(ok=False, message="无法连接模型服务：凭据无效")
+        if response.status_code == 402:
+            return ModelTestOut(ok=False, message="无法连接模型服务：余额不足")
+        if response.status_code != 200:
+            return ModelTestOut(ok=False, message=f"无法连接模型服务：模型服务返回 HTTP {response.status_code}")
+        try:
+            payload = response.json()
+            items = payload.get("data") if isinstance(payload, dict) else None
+            models = [item["id"] for item in items if isinstance(item, dict) and item.get("id")] if isinstance(items, list) else []
+        except (ValueError, TypeError, AttributeError):
+            return ModelTestOut(ok=False, message="无法连接模型服务：返回内容无法解析")
+        return ModelTestOut(ok=True, models=models[:5], count=len(models))
+
     # ---------- 对话分析 ----------
 
     @app.post("/api/v1/analyze", response_model=AnalyzeOut)
@@ -629,6 +689,22 @@ def create_app(db_path: str | Path, *, root: Path = PROJECT_ROOT, static_dir: Pa
             raise HTTPException(status_code=422, detail="缺少幂等键：请提供 Idempotency-Key 头或请求体 idempotency_key")
         conversation = storage.get_conversation(conn, conversation_id)
         snapshot = conversations.snapshot_for_generation(conn, conversation_id)
+        # 客户档案：目录（data/fictional）内的客户走引擎目录加载；目录之外的客户
+        # （本地新建/外部库缓存快照）把档案合入 client_information，且不再作为 client_id 传入。
+        client_id = snapshot.get("client_id")
+        if client_id:
+            catalog_ids = {item.get("client_id") or item.get("customer_id") or item.get("id")
+                           for item in catalog_records(load_catalog("customers"))}
+            if client_id not in catalog_ids:
+                try:
+                    row = storage.get_customer(conn, client_id)
+                except NotFoundError:
+                    row = None
+                if row and row.get("profile"):
+                    merged = dict(snapshot.get("client_information") or {})
+                    merged.update(row["profile"])
+                    snapshot["client_information"] = merged
+                    snapshot["client_id"] = None
         if body.settings is not None:
             for field in ("output_language", "tone", "length", "goal"):
                 snapshot[field] = getattr(body.settings, field)

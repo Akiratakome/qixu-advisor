@@ -6,6 +6,8 @@ settings/model 不含密钥、统一错误结构与请求 ID。
 """
 
 import json
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
 import pytest
@@ -13,11 +15,68 @@ from fastapi.testclient import TestClient
 
 from qixu_advisor import api, generation as generation_module, records as records_module, storage
 from qixu_advisor.api import create_app
+from qixu_advisor.model import ModelConfig
 from qixu_advisor.models import AnalysisResult, Candidate, GenerationResult
 
 # 模块导入时捕获真实 create_run：autouse 替身会在测试期间替换同名模块属性，
 # 需要走真实建运行路径的用例用它恢复（否则自引用取到的仍是替身）。
 _REAL_CREATE_RUN = records_module.create_run
+
+
+def _make_models_handler(status_code: int, body: bytes, seen: list):
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            seen.append({"path": self.path, "auth": self.headers.get("Authorization")})
+            self.send_response(status_code)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args):  # 静默本地假服务日志
+            pass
+
+    return Handler
+
+
+def _make_disconnect_handler(seen: list):
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            seen.append({"path": self.path})
+            self.close_connection = True  # 接受连接后不发响应直接断开
+
+        def log_message(self, *args):
+            pass
+
+    return Handler
+
+
+@pytest.fixture
+def model_server_factory():
+    """本地线程假模型服务：返回 base_url；recorded 记录收到的路径与 Authorization 头。
+
+    disconnect=True 时接受连接后直接断开（确定性触发连接失败）。"""
+    servers = []
+
+    def factory(status_code=200, body: bytes | None = None, disconnect=False, recorded: list | None = None):
+        seen = recorded if recorded is not None else []
+        if disconnect:
+            handler = _make_disconnect_handler(seen)
+        else:
+            payload = body if body is not None else json.dumps(
+                {"object": "list", "data": [{"id": f"model-{index}"} for index in range(8)]}
+            ).encode("utf-8")
+            handler = _make_models_handler(status_code, payload, seen)
+        server = HTTPServer(("127.0.0.1", 0), handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        servers.append((server, thread))
+        return f"http://127.0.0.1:{server.server_port}", seen
+
+    yield factory
+    for server, thread in servers:
+        server.shutdown()
+        thread.join(timeout=5)
 
 
 @pytest.fixture
@@ -651,6 +710,75 @@ def test_clear_api_key_falls_back_to_env(client, monkeypatch):
     assert fetched.json()["model"] == "env-test-model"
 
 
+# ---------- 模型连接自测 ----------
+
+
+def test_model_test_ok_returns_first_five_models(client, model_server_factory):
+    base_url, seen = model_server_factory(200)
+    put = client.put("/api/v1/settings/model", json={"base_url": base_url, "api_key": "sk-test-key"})
+    assert put.status_code == 200, put.text
+
+    response = client.post("/api/v1/settings/model/test")
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["models"] == [f"model-{index}" for index in range(5)]
+    assert payload["count"] == 8
+    assert seen and seen[0]["path"] == "/models"
+    assert seen[0]["auth"] == "Bearer sk-test-key"
+    assert "sk-test-key" not in response.text
+
+
+def test_model_test_401_invalid_credentials(client, model_server_factory):
+    base_url, _seen = model_server_factory(401)
+    client.put("/api/v1/settings/model", json={"base_url": base_url, "api_key": "sk-bad-key"})
+
+    response = client.post("/api/v1/settings/model/test")
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["ok"] is False
+    assert payload["message"] == "无法连接模型服务：凭据无效"
+    assert "sk-bad-key" not in response.text
+
+
+def test_model_test_connection_failure(client, model_server_factory):
+    base_url, _seen = model_server_factory(disconnect=True)
+    client.put("/api/v1/settings/model", json={"base_url": base_url, "api_key": "sk-x"})
+
+    response = client.post("/api/v1/settings/model/test")
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["ok"] is False
+    assert payload["message"] == "无法连接模型服务：连接失败"
+
+
+def test_model_test_missing_key(client, monkeypatch):
+    monkeypatch.setattr(api, "env_get_config", lambda root: ModelConfig())
+    response = client.post("/api/v1/settings/model/test")
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["ok"] is False
+    assert payload["message"] == "尚未配置密钥"
+
+
+# ---------- top_p ----------
+
+
+def test_put_model_settings_top_p_validation_and_status(client):
+    invalid = client.put("/api/v1/settings/model", json={"top_p": 1.5})
+    assert invalid.status_code == 422
+    assert invalid.json()["error"]["code"] == "validation_error"
+    assert "top_p" in invalid.json()["error"]["fields"]
+
+    put = client.put("/api/v1/settings/model", json={"top_p": 0.8, "api_key": "sk-top-p"})
+    assert put.status_code == 200, put.text
+    assert put.json()["top_p"] == 0.8
+
+    fetched = client.get("/api/v1/settings/model")
+    assert fetched.status_code == 200
+    assert fetched.json()["top_p"] == 0.8
+
+
 def test_generation_runtime_config_aligned_in_manifest(tmp_path, monkeypatch):
     """运行时配置下真实 create_run 建清单后，manifest.model_config 必须对齐本次实际配置，
     否则 begin_case 的「模型参数在运行创建后不变」守卫会 500。"""
@@ -783,6 +911,49 @@ def test_seed_customers_idempotent(client):
     assert set(by_id) == set(payload["created"])
     assert "C001" in by_id
     assert by_id["C001"]["profile"]["display_name"] == "林女士"
+
+
+def test_error_envelope_shape_and_request_id(client):
+    missing = client.get("/api/v1/customers/NOPE")
+    assert missing.status_code == 404
+    body = missing.json()
+    assert body["error"]["code"] == "not_found"
+    assert body["error"]["message"]
+
+
+def test_external_customer_source_merged_into_generation(client, monkeypatch):
+    """本地库未命中时从外部客户库拉档案，合入 client_information 且不再作为 client_id 传给引擎。"""
+    from qixu_advisor import sources
+
+    captured = {}
+
+    def fake_fetch(profile_id, timeout=10.0):
+        captured["id"] = profile_id
+        return {"client_id": profile_id, "display_name": "外部客户", "contact_permission": "allowed",
+                "long_term_preferences": {"likes": ["柑橘"], "dislikes": []},
+                "history": [{"type": "purchase", "sku_id": "QINGLAN-50", "date": "2026-10-30"}]}
+
+    monkeypatch.setattr(sources, "fetch_external_customer", fake_fetch)
+    conv = client.post("/api/v1/conversations", json={"scenario": "沉睡唤醒", "customer_id": "EXT-001"}).json()
+
+    generated_requests = []
+
+    def fake_generate(request, run_id, case_id, **kwargs):
+        generated_requests.append(request)
+        return GenerationResult(run_id=run_id, case_id=case_id, status="success",
+                                candidates=[Candidate(candidate_id=f"{case_id}-C{i}", text=f"第{i}条候选。") for i in (1, 2, 3)])
+
+    monkeypatch.setattr(api, "generate", fake_generate)
+    response = client.post(f"/api/v1/conversations/{conv['conversation_id']}/generations",
+                           json={"expected_version": 1, "settings": {}},
+                           headers={"Idempotency-Key": "ext-src-1"})
+    assert response.status_code == 200, response.text
+    assert captured["id"] == "EXT-001"
+    assert len(generated_requests) == 1
+    request_obj = generated_requests[0]
+    assert request_obj.client_id is None
+    assert request_obj.client_information.get("display_name") == "外部客户"
+    assert request_obj.client_information["long_term_preferences"]["likes"] == ["柑橘"]
 
 
 def test_error_envelope_shape_and_request_id(client):

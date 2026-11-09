@@ -20,6 +20,7 @@ class ModelConfig(BaseModel):
     base_url: str = "https://api.deepseek.com"
     api_key: SecretStr = Field(default=SecretStr(""), exclude=True)
     temperature: float = Field(default=0.7, ge=0, le=2)
+    top_p: float = Field(default=0.9, ge=0, le=1)
     max_tokens: int = Field(default=1800, ge=256, le=8192)
     timeout_seconds: float = Field(default=90, ge=1, le=300)
     thinking: dict[str, str] = Field(default_factory=lambda: {"type": "disabled"})
@@ -50,6 +51,7 @@ def get_config(root: Path = PROJECT_ROOT, runtime: dict | None = None) -> ModelC
         model=value("QIXU_MODEL", "deepseek-flash", "model"),
         base_url=value("QIXU_BASE_URL", "https://api.deepseek.com", "base_url").rstrip("/"),
         temperature=float(value("QIXU_TEMPERATURE", "0.7", "temperature")),
+        top_p=float(value("QIXU_TOP_P", "0.9", "top_p")),
         max_tokens=int(value("QIXU_MAX_TOKENS", "1800", "max_tokens")),
         timeout_seconds=float(value("QIXU_TIMEOUT_SECONDS", "90", "timeout_seconds")),
     )
@@ -73,7 +75,7 @@ def call_model(messages: list[dict[str, str]], config: ModelConfig) -> dict[str,
     key = config.api_key.get_secret_value().strip()
     if not key:
         raise ModelCallError("未配置 DEEPSEEK_API_KEY；未发起真实模型请求", details={"attempted": False})
-    payload = {"model": config.model, "messages": messages, "temperature": config.temperature, "max_tokens": config.max_tokens, "thinking": config.thinking, "response_format": config.response_format, "stream": False}
+    payload = {"model": config.model, "messages": messages, "temperature": config.temperature, "top_p": config.top_p, "max_tokens": config.max_tokens, "thinking": config.thinking, "response_format": config.response_format, "stream": False}
     start = time.perf_counter()
     try:
         # httpx 无隐式请求重试；不用 SDK 的默认重试掩盖第一次失败。

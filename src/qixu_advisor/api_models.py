@@ -374,6 +374,7 @@ class ModelSettingsOut(BaseModel):
     missing: list[str] = Field(default_factory=list)
     api_key_set: bool = False
     source: Literal["runtime", "env"] = "env"
+    top_p: float | None = None
 
 
 class ModelSettingsUpdate(BaseModel):
@@ -386,6 +387,7 @@ class ModelSettingsUpdate(BaseModel):
     model: str | None = Field(default=None, min_length=1)
     api_key: str | None = None
     temperature: float | None = Field(default=None, ge=0, le=2)
+    top_p: float | None = Field(default=None, ge=0, le=1)
 
     @field_validator("base_url")
     @classmethod
@@ -397,6 +399,17 @@ class ModelSettingsUpdate(BaseModel):
         if parsed.scheme not in {"http", "https"} or not parsed.netloc:
             raise ValueError("base_url 必须是 http(s) URL")
         return cleaned
+
+
+class ModelTestOut(BaseModel):
+    """模型连接自测结果：ok=false 时 message 为友好原因，不含密钥与完整错误体。"""
+
+    model_config = ConfigDict(extra="ignore")
+
+    ok: bool
+    models: list[str] = Field(default_factory=list)
+    count: int = 0
+    message: str | None = None
 
 
 # ---------- 错误 ----------

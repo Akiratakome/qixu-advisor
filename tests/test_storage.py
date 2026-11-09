@@ -67,6 +67,8 @@ def test_runtime_settings_get_set_and_whitelist(conn):
     assert storage.get_setting(conn, "api_key") == "runtime-secret"
     storage.set_setting(conn, "temperature", "0.3")
     assert storage.get_setting(conn, "temperature") == "0.3"
+    storage.set_setting(conn, "top_p", "0.9")
+    assert storage.get_setting(conn, "top_p") == "0.9"
     with pytest.raises(ValueError, match="白名单"):
         storage.set_setting(conn, "not_a_key", "x")
     with pytest.raises(ValueError, match="白名单"):

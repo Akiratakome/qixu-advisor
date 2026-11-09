@@ -194,3 +194,77 @@ def test_analyze_conversation_uses_explicit_config(isolated_root: Path):
     assert result.scenario == "价格异议"
     assert len(received) == 1
     assert received[0].model == "runtime-analysis-model"
+
+
+def test_settings_block_contains_length_and_tone_instructions():
+    from qixu_advisor.generation import TONE_TEMPERATURE, build_messages
+
+    short = build_messages(GenerationRequest(scenario="生日与节庆", occasion="生日", length="short"), {})[0]["content"]
+    assert "15–35" in short and "1–2 句" in short
+    assert "删去一切铺垫与收尾" in short
+    standard = build_messages(GenerationRequest(scenario="生日与节庆", occasion="生日", length="standard"), {})[0]["content"]
+    assert "60–120" in standard and "3–5 句" in standard
+    assert "禁止凑字、重复与空话" in standard
+    direct = build_messages(GenerationRequest(scenario="生日与节庆", occasion="生日", tone="direct"), {})[0]["content"]
+    assert "结论先行" in direct and "短句" in direct
+    warm = build_messages(GenerationRequest(scenario="生日与节庆", occasion="生日", tone="warm"), {})[0]["content"]
+    assert "这一年辛苦了" in warm
+    assert TONE_TEMPERATURE == {"natural": 0.7, "warm": 0.9, "direct": 0.3}
+
+
+def test_tone_temperature_applied_when_default(isolated_root: Path):
+    """默认温度（0.7）未被显式设置时按语气覆盖：natural 0.7 / warm 0.9 / direct 0.3。"""
+    for tone, expected in [("natural", 0.7), ("warm", 0.9), ("direct", 0.3)]:
+        received = []
+        run = create_run(["CASE-1"], root=isolated_root, execution_mode="stub")
+
+        def stub(messages, config):
+            received.append(config)
+            return stub_response()
+
+        result = generate(GenerationRequest(scenario="生日与节庆", occasion="生日", tone=tone), run, "CASE-1", root=isolated_root,
+            model_call=stub, execution_mode="stub")
+        assert result.status == "success"
+        assert received[0].temperature == expected
+        assert result.provenance["temperature"] == expected
+        assert result.provenance["top_p"] == 0.9
+
+
+def test_tone_temperature_not_overridden_when_explicit(isolated_root: Path, monkeypatch):
+    """显式温度（.env 非默认值）时不做语气覆盖。"""
+    monkeypatch.delenv("QIXU_TEMPERATURE", raising=False)
+    (isolated_root / ".env").write_text("QIXU_TEMPERATURE=0.4\n", encoding="utf-8")
+    received = []
+    run = create_run(["CASE-1"], root=isolated_root, execution_mode="stub")
+
+    def stub(messages, config):
+        received.append(config)
+        return stub_response()
+
+    result = generate(GenerationRequest(scenario="生日与节庆", occasion="生日", tone="warm"), run, "CASE-1", root=isolated_root,
+        model_call=stub, execution_mode="stub")
+    assert result.status == "success"
+    assert received[0].temperature == 0.4
+    assert result.provenance["temperature"] == 0.4
+
+
+def test_top_p_in_payload_and_provenance(isolated_root: Path, monkeypatch):
+    from qixu_advisor.model import get_config
+
+    monkeypatch.delenv("QIXU_TOP_P", raising=False)
+    assert get_config(isolated_root).top_p == 0.9
+    assert get_config(isolated_root, runtime={"top_p": "0.5"}).top_p == 0.5
+    # payload 带上 top_p。
+    client = MagicMock()
+    client.__enter__.return_value = client
+    client.post.return_value = httpx.Response(200, json={"choices": [{"message": {"content": "ok"}, "finish_reason": "stop"}]})
+    with patch("qixu_advisor.model.httpx.Client", return_value=client):
+        call_model([{"role": "user", "content": "离线检查"}], ModelConfig(api_key=SecretStr("test-only-secret"), top_p=0.8))
+    assert client.post.call_args.kwargs["json"]["top_p"] == 0.8
+    # provenance 记录实际 top_p。
+    config = ModelConfig(top_p=0.8, api_key=SecretStr("k"))
+    run = create_run(["CASE-1"], root=isolated_root, execution_mode="stub", config=config)
+    result = generate(GenerationRequest(scenario="生日与节庆", occasion="生日"), run, "CASE-1", root=isolated_root,
+        model_call=lambda *args: stub_response(), execution_mode="stub", config=config)
+    assert result.provenance["model_config"]["top_p"] == 0.8
+    assert result.provenance["top_p"] == 0.8
