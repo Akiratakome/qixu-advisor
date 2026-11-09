@@ -1,0 +1,40 @@
+{
+  "submission_id": "formal-v16-20261107",
+  "created_at": "2026-11-09T17:27:06.379+08:00",
+  "dataset": "cases-v2.1（案例方向修复＋用户批注落地版）",
+  "tool_versions": {
+    "python": "3.12.15",
+    "pydantic": "2.14.3"
+  },
+  "runs": {
+    "formal-v16": {
+      "freeze": "formal-v34",
+      "cases": 50,
+      "statuses": "50/50 首轮全成",
+      "role": "最终 C 表（案例修复＋语言规则落地）"
+    },
+    "formal-v15": {
+      "role": "上一版（用户批注来源）"
+    },
+    "formal-v8": {
+      "role": "旧测试集回归证据"
+    }
+  },
+  "freeze_ids": [
+    "formal-v26",
+    "formal-v27",
+    "formal-v28",
+    "formal-v29",
+    "formal-v31",
+    "formal-v32",
+    "formal-v33",
+    "formal-v34"
+  ],
+  "git_commits": [
+    "2262dfa",
+    "6d90da9",
+    "368a0cd",
+    "3903865",
+    "b8a4b42"
+  ]
+}

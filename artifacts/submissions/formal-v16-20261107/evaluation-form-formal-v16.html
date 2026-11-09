@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>栖序 QIXU · 评分表 formal-v16</title>
+<style>
+:root { --gold:#b9935a; --ink:#2c2a26; --paper:#faf7f2; --line:#e6ddcd; }
+* { box-sizing:border-box; }
+body { margin:0; font:15px/1.7 "Microsoft YaHei","PingFang SC",sans-serif; background:var(--paper); color:var(--ink); }
+header { position:sticky; top:0; background:#fff; border-bottom:1px solid var(--line); padding:10px 20px; z-index:5; display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+h1 { font-size:17px; margin:0; letter-spacing:1px; }
+.muted { color:#8a8374; font-size:12px; }
+#progress { font-weight:600; color:var(--gold); }
+button { cursor:pointer; border:1px solid var(--gold); background:#fff; color:var(--ink); padding:6px 14px; border-radius:6px; font-size:13px; }
+button.primary { background:var(--gold); color:#fff; }
+button:hover { opacity:.9; }
+main { max-width:860px; margin:0 auto; padding:14px 20px 80px; }
+.case { background:#fff; border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:14px; }
+.case.done { border-left:4px solid var(--gold); }
+.case h2 { font-size:14px; margin:0 0 6px; }
+.cand { border-top:1px dashed var(--line); padding:10px 0; }
+.cand .text { white-space:pre-wrap; background:#fbf9f4; padding:8px 10px; border-radius:6px; font-size:13.5px; }
+.radios { display:flex; gap:12px; flex-wrap:wrap; margin:6px 0 4px; font-size:13px; }
+.radios label { display:flex; gap:4px; align-items:center; }
+.sev { margin-left:auto; display:flex; gap:4px; align-items:center; font-size:13px; color:#a33; }
+.reason { width:100%; border:1px solid var(--line); border-radius:6px; padding:6px 8px; font-size:13px; font-family:inherit; }
+.group { border-top:2px solid var(--gold); padding-top:8px; font-size:13px; display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+.group input { width:60%; }
+.hint { color:#a33; font-size:12px; display:none; }
+fieldset { border:1px solid var(--line); border-radius:8px; margin:10px 0; padding:10px; background:#fdfaf4; font-size:13px; }
+legend { color:var(--gold); font-weight:600; padding:0 6px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>栖序 QIXU · 候选评分表</h1>
+  <span class="muted">formal-v16 · 50 例 × 3 条 = 150 条 · 进度 <span id="progress">0/50</span></span>
+  <label class="muted">评分人 <input id="rater" style="width:120px" placeholder="你的名字"></label>
+  <button id="exportBtn" class="primary">导出结果</button>
+  <button id="copyBtn">复制结果</button>
+  <button id="importBtn">导入进度</button>
+  <input type="file" id="importFile" accept=".jsonl,.json" hidden>
+  <button id="resetBtn">清空</button>
+  <div id="exportModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:20;padding:24px;">
+    <div style="background:#fff;border-radius:10px;max-width:760px;margin:0 auto;padding:16px;height:85vh;display:flex;flex-direction:column;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <b>导出结果（ratings.jsonl 内容）</b>
+        <button id="closeModal">关闭</button>
+      </div>
+      <p class="muted" id="exportSummary"></p>
+      <textarea id="exportText" readonly style="flex:1;font:12px/1.5 monospace;border:1px solid #ddd;border-radius:6px;padding:8px;"></textarea>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button id="copyFromModal" class="primary">复制全部</button>
+        <button id="downloadFromModal">下载文件</button>
+      </div>
+    </div>
+  </div>
+</header>
+<main id="main">
+<fieldset>
+  <legend>两步评价</legend>
+  <b>第一步·硬失败筛查</b>：有「没回答/答非所问/编造事实或越权/拒绝联系仍召回/模型自述或结构不可发送」任一问题 → 勾「严重错误」，档位必须选「弃用」。<br>
+  <b>第二步·档位</b>：直接用（可直接发送）｜小改可用（删冗余/换称呼/调语序）｜实质改写（要改人物/商品/金额/方向）｜弃用（主干保不住）。<br>
+  每条都要写一句理由；每组底部判断「至少两条独立可用」。进度自动保存在本机浏览器，随时可关页面接着评。
+</fieldset>
+</main>
+<script>
+const ITEMS = [{"case_id": "BD-001", "scenario": "生日与节庆", "candidates": [{"candidate_id": "BD-001-C1", "text": "蒋先生，生日快乐。愿您新的一岁平安顺遂，想做的事都顺顺当当，所有的美好都如约而至。愿这一年如您喜欢的香气，明亮又长久。"}, {"candidate_id": "BD-001-C2", "text": "蒋先生，今天是您的生日，祝您生日快乐。愿这一年身体康健、日子舒展，想要的都慢慢实现。若今天有空，也别忘了给自己留一点清闲。"}, {"candidate_id": "BD-001-C3", "text": "蒋先生，四季轮转，又到属于您的日子。愿这一年平安顺遂，事事如愿，像秋日的柑橘一样清爽明亮。"}]}, {"case_id": "BD-002", "scenario": "生日与节庆", "candidates": [{"candidate_id": "BD-002-C1", "text": "叶女士，生日快乐。愿您新的一岁平安顺遂，想做的事都顺顺当当，所有的美好都如约而至。愿这一年如您喜欢的香气，明亮又长久。"}, {"candidate_id": "BD-002-C2", "text": "叶女士，今天是您的生日，祝您生日快乐。愿这一年身体康健、日子舒展，想要的都慢慢实现。若今天有空，也别忘了给自己留一点清闲。"}, {"candidate_id": "BD-002-C3", "text": "叶女士，生日快乐。愿您的每一天都从容自在，所愿皆成真，平安顺遂常伴左右。"}]}, {"case_id": "BD-003", "scenario": "生日与节庆", "candidates": [{"candidate_id": "BD-003-C1", "text": "周先生，生日快乐。愿您新的一岁平安顺遂，想做的事都顺顺当当。愿这一年如您喜欢的香气，明亮又长久。"}, {"candidate_id": "BD-003-C2", "text": "周先生，今天是您的生日，祝您生日快乐。愿这一年日子舒展，想要的都慢慢实现，身边的人都平平安安。"}, {"candidate_id": "BD-003-C3", "text": "周先生，生日快乐。四季轮转，又到属于您的日子，愿这一年事事如愿，像秋日的柑橘一样清爽明亮。"}]}, {"case_id": "REC-001", "scenario": "产品推荐", "candidates": [{"candidate_id": "REC-001-C1", "text": "林女士，按您说的妹妹喜欢柑橘、排斥甜香，青岚这款香水更贴近她的方向，是柑橘与雪松的气息，甜度低。50 mL 是 980 元，在您一千六的预算内。暮光偏玫瑰，甜度中等，更适合您自己。要不要先让妹妹到店闻一下青岚？我帮您登记试香意向，由门店和您确认时间。"}, {"candidate_id": "REC-001-C2", "text": "给妹妹挑礼物，方向可以先收窄：青岚是柑橘与雪松的气息，甜度低，最贴合她的偏好；砚泊是干燥木质与焚香气息，甜度也低，30 mL 是 780 元，是另一个可以比较的选项。暮光玫瑰气息偏甜，不太适合她。妹妹平时用香水多吗？知道这一点，我能把范围再缩小一些。"}, {"candidate_id": "REC-001-C3", "text": "林女士，妹妹的偏好和您的不同，选礼时以她的柑橘方向为主更稳妥。青岚 50 mL 是 980 元，在您说的预算内，可以先作为首选去闻。若想多一个对比，砚泊 30 mL 是 780 元，木质焚香、甜度低。您方便的话，我把这两支留作试香，请门店同事和您约时间。"}]}, {"case_id": "REC-002", "scenario": "产品推荐", "candidates": [{"candidate_id": "REC-002-C1", "text": "方先生，青岚 50 mL 是 980 元，100 mL 是 1580 元。您平时收木质和皮革，青岚是柑橘与雪松的气息，甜度低，和您的口味方向接近。两个容量一起收，更多是备着慢慢用；是否值，要看您打算怎么分配。要不要先到店再闻一次青岚，闻过再定？"}, {"candidate_id": "REC-002-C2", "text": "方先生，您问两个容量一起收值不值，我觉得可以先想清楚各自放在哪儿用。青岚是柑橘与雪松的气息，甜度低，和您偏好的木质方向一致。50 mL 适合随身，100 mL 放在家里慢慢用；两只都收，等于多一个补货的余量。您更看重收藏完整，还是日常够用？"}, {"candidate_id": "REC-002-C3", "text": "方先生，青岚 50 mL 是 980 元，100 mL 是 1580 元，两只一起收，差价主要在容量上。您五月来闻过砚泊，喜欢焚香尾调；青岚的柑橘与雪松是另一个方向，甜度低。我建议先到店把青岚再闻一遍，确认前中后调都合您意，再决定两个容量怎么配。"}]}, {"case_id": "REC-003", "scenario": "产品推荐", "candidates": [{"candidate_id": "REC-003-C1", "text": "苏女士，按男士、喜欢木质、不要太甜这几点，砚泊更贴近：它是干燥木质与焚香的气息，30 mL 是 780 元。青岚 50 mL 是柑橘与雪松的气息，980 元，也在您的预算内。暮光偏玫瑰与柔和木质，甜度中等，可能不是您想要的。您看先按这两支来挑？"}, {"candidate_id": "REC-003-C2", "text": "收到，木质、不甜，这两点我记下了。砚泊是干燥木质与焚香气息，30 mL 780 元；青岚是柑橘与雪松气息，50 mL 980 元，这两支甜度都低。暮光带玫瑰，甜度中等，先排除。要不要约个时间到店闻一下，再定哪支送人？"}, {"candidate_id": "REC-003-C3", "text": "苏女士，砚泊 30 mL 是 780 元，干燥木质与焚香的气息；青岚 50 mL 是 980 元，柑橘与雪松的气息，这两支都在您五千的预算内。暮光的玫瑰气息偏柔，甜度中等，我暂时不放在首选。收礼人的具体喜好我不好替您判断，店里四款都可以试闻，您方便的话我帮您登记到店试香意向，由门店和您确认时间。"}]}, {"case_id": "REC-004", "scenario": "产品推荐", "candidates": [{"candidate_id": "REC-004-C1", "text": "唐先生，先跟您说实话：目前几款里最接近您预算的是砚泊 30 mL，780 元，干燥木质和焚香的气息。其余三款都是 50 mL，青岚 980 元、暮光 1080 元、雨白 1180 元，都在 650 元以上。第一次选香，我建议先到店闻一圈，闻过再决定买哪支、要不要等等。"}, {"candidate_id": "REC-004-C2", "text": "唐先生，650 元以内暂时没有对应的规格，我不绕弯子。四款里砚泊 30 mL 是 780 元，青岚、暮光、雨白都是 50 mL，价格在 980 到 1180 元之间。您平时是喜欢清爽一点的，还是偏木质、偏花香？说个大概方向，我帮您缩小到一两支，再来店里闻。"}, {"candidate_id": "REC-004-C3", "text": "唐先生，您这个预算我先记着，目前目录里没有 650 元以内的规格。如果愿意稍往上一点，砚泊 30 mL 是 780 元，木质和焚香偏干；青岚 50 mL 是 980 元，柑橘和雪松，清爽一些。要不要我先帮您登记到店试香意向，由门店和您约时间？闻过再定也不迟。"}]}, {"case_id": "AFTER-001", "scenario": "购后关怀", "candidates": [{"candidate_id": "AFTER-001-C1", "text": "收到您的消息了，暮光 100 mL 的玫瑰前调能合您心意，我听着也高兴。您平时在意尾调干净，后续用下来有什么感受，随时跟我说。要是有问题，把购买日期和订单凭证发我，我请门店同事帮您看看。"}, {"candidate_id": "AFTER-001-C2", "text": "谢谢您特意来说一声，您对前调一向敏感，暮光的玫瑰能得到您这句“很正”，我挺受用。您写香评时若想聊聊尾调的变化，我都在。有任何使用上的疑问，也可以直接找我，我请门店同事与您确认。"}, {"candidate_id": "AFTER-001-C3", "text": "收到，暮光 100 mL 您已经收到了，玫瑰前调合心意就好。您习惯留意前调清透和尾调干净，等用上一阵，欢迎把感受告诉我。若需要门店帮忙，把订单凭证留好，我帮您对接。"}]}, {"case_id": "AFTER-002", "scenario": "购后关怀", "candidates": [{"candidate_id": "AFTER-002-C1", "text": "林女士，暮光 50 mL 您上周带回去，到今天刚好一周。想问问您用下来感觉怎么样，玫瑰和木质那层气息合不合您的心意。要是有什么想聊的，随时跟我说，我帮您和门店对接。"}, {"candidate_id": "AFTER-002-C2", "text": "林女士，打扰一下。您 11 月 2 日买的暮光 50 mL，用了一周了，想听您说说实际感受，喜欢或哪里不太顺都可以讲。我这边帮您记下来，需要的话再请门店同事跟您细聊。"}, {"candidate_id": "AFTER-002-C3", "text": "林女士，暮光 50 mL 您带回去一周了，想问问用得还顺手吗。您之前在店里说喜欢柔和的玫瑰气息，这支闻起来是不是那个方向，都可以跟我说。有需要我帮您问门店的地方，也直接讲。"}]}, {"case_id": "AFTER-003", "scenario": "购后关怀", "candidates": [{"candidate_id": "AFTER-003-C1", "text": "收到您消息了。礼盒缎带磨损、还想加刻名字，这两件事我请门店同事跟您确认。麻烦您拍张缎带的照片，连同订单凭证一起发我，礼盒能否更换、刻字能否做，都由门店看过再答复您。您这份是答谢礼，时间上要是紧，也跟我说一声。"}, {"candidate_id": "AFTER-003-C2", "text": "苏女士，缎带磨损的事我记下了，还没送出去的话先别急着拆。换礼盒和刻字这两项，门店需要看实物照片和购买凭证来判断，我这边帮您把情况转过去。照片方便时发我就行，刻字的内容和样式也一并告诉我，门店会跟您确认能不能做。"}, {"candidate_id": "AFTER-003-C3", "text": "缎带磨损确实影响送出去的样子，您的心情我理解。换礼盒和刻字都需要门店先看照片和订单凭证，我帮您登记这个意向，由门店与您确认具体怎么处理。您把照片发我，我这边转给门店，有结果第一时间回您。"}]}, {"case_id": "WAKE-001", "scenario": "沉睡唤醒", "candidates": [{"candidate_id": "WAKE-001-C1", "text": "方先生，好久没联系了。五月您来试砚泊时提过喜欢焚香尾调，那之后我偶尔会想起这个方向。想问问您现在还对木质和限量这类感兴趣吗？如果还在看，我可以帮您留意店里的动静，有合适的再和您说。"}, {"candidate_id": "WAKE-001-C2", "text": "方先生，打扰一下。上次私人预览之后有段时间没见了，您对木质和限量主题的兴趣还在吗？店里若有相关的试香安排，我帮您登记个意向，具体时间由门店和您确认。您看这样行吗？"}, {"candidate_id": "WAKE-001-C3", "text": "方先生，隔了半年问候一声。砚泊那支干燥木质与焚香的气息，您当时说偏收藏向，我记着这个方向。想确认下您现在还愿意收到木质、限量主题的消息吗？愿意的话我这边留意着，有合适的再联系您。"}]}, {"case_id": "WAKE-002", "scenario": "沉睡唤醒", "candidates": [{"candidate_id": "WAKE-002-C1", "text": "沈女士，七月您来店里试过青岚，说喜欢，也不急着买。最近店里有两支偏木质的可以闻——砚泊是干燥木质与焚香气息，暮光带一点柔和木质。您若哪天顺路，我帮您登记试香意向，时间由门店和您确认。按您的节奏来，不着急。"}, {"candidate_id": "WAKE-002-C2", "text": "沈女士，隔了一阵子，想起您上次试青岚时说喜欢木质的方向。最近可以看看砚泊，干燥木质与焚香气息；暮光也有柔和木质，只是多了玫瑰。您想先了解哪一支，我请门店同事把能确认的信息发给您。"}, {"candidate_id": "WAKE-002-C3", "text": "沈女士，上次试青岚之后您说不急，我就没多打扰。最近木质方向有两支可以比较：砚泊 30 mL，干燥木质与焚香；暮光 50 mL，玫瑰与柔和木质。您方便的话回我一句想闻哪支，我帮您和门店约个时间。"}]}, {"case_id": "WAKE-003", "scenario": "沉睡唤醒", "candidates": [{"candidate_id": "WAKE-003-C1", "text": "唐先生，您好，我是栖序的顾问。之前您说想先了解一下品牌，等有空再看，这次就不多聊别的，只是想跟您认识一下。您要是愿意，我可以简单说说栖序在做的事；现在忙也没关系，等您方便再回我就好。"}, {"candidate_id": "WAKE-003-C2", "text": "唐先生，您好，我是栖序的顾问。您之前提过想先了解品牌，我这边不着急，也不给您安排什么。哪天您有空了，想听我讲讲栖序，或者想约到店闻闻，跟我说一声就行。"}, {"candidate_id": "WAKE-003-C3", "text": "唐先生，您好，我是栖序的顾问。之前您说先了解一下品牌，我先把话放在这儿，不催您。您要是想看看，我可以发几张店里香水的照片给您；不想看也没关系，等您想起来再说。"}]}, {"case_id": "EVENT-001", "scenario": "活动邀请", "candidates": [{"candidate_id": "EVENT-001-C1", "text": "方先生，11月28日周六晚上7点到9点，店里有一场暮光私人预览，地点在青禾路18号体验店的私人预览室。届时可以提前试闻暮光 100 mL，一对一聊聊玫瑰与柔和木质的前中后调层次。您喜欢木质与焚香这类结构感，这场应该对得上您的口味。活动凭邀请参加，需要登记意向、由门店确认，不要求购买。您若有意向，我帮您登记，具体安排由门店与您确认。"}, {"candidate_id": "EVENT-001-C2", "text": "方先生，好久没联系了。11月28日晚上7点到9点，栖序在青禾路18号体验店的私人预览室办一场暮光私人预览，内容是提前试闻暮光 100 mL，一对一聊玫瑰与柔和木质的前中后调。您之前参加私人预览时偏木质与限量主题，这次想请您来看看。凭邀请参加，登记意向后再由门店确认，不保证名额，也不用购买。您方便的话回我一声，我帮您登记。"}, {"candidate_id": "EVENT-001-C3", "text": "方先生，想请您参加11月28日周六晚7点到9点的暮光私人预览，地点在青禾路18号体验店私人预览室。现场可以提前试闻暮光 100 mL，一对一交流玫瑰与柔和木质的前中后调层次，适合慢慢闻、慢慢聊。这场凭邀请参加，登记意向后由门店确认，不要求购买。您看要不要我帮您登记意向？"}]}, {"case_id": "EVENT-002", "scenario": "活动邀请", "candidates": [{"candidate_id": "EVENT-002-C1", "text": "收到，您说的是 12 月 5 日 15:00 到 17:00 在栖序体验店（青禾路 18 号）的年度限定品鉴。内容是在店里试闻四款香水，并记录前调、中调、尾调的个人香评，免费参加，限量，需登记意向、由门店确认回执。参加的是您的重要客户，我先帮您登记意向可以吗？也请客户那边确认当天是否方便，门店会再和您联系。"}, {"candidate_id": "EVENT-002-C2", "text": "这场年度限定品鉴定在 12 月 5 日 15:00，地点是青禾路 18 号的栖序体验店，两个小时里会试闻四款香水，并记下自己的香评。活动免费，名额有限，登记后还要门店回执才算确定。您是为重要客户安排，我这边可以把意向先报上去，等客户确认时间方便再往下走，您看这样行吗？"}, {"candidate_id": "EVENT-002-C3", "text": "12 月 5 日 15:00 到 17:00，栖序体验店有一场年度限定品鉴，试闻四款香水并记录个人香评，免费，限量，需登记意向并经门店确认。您的重要客户如果那天方便，我可以先把意向登记上，门店会与您确认是否入围。要不您先问问客户的时间？确认后回我一句就好。"}]}, {"case_id": "EVENT-003", "scenario": "活动邀请", "candidates": [{"candidate_id": "EVENT-003-C1", "text": "收到，我帮您登记21号木质气息小聚的意向。时间是下午四点至五点，地点在栖序体验店·青禾路18号，现场会试闻砚泊和暮光，聊聊各自的木质气息感受。活动免费，不要求购买，由门店和您确认参加。您之前说喜欢木质，这两支正好可以一起闻闻。"}, {"candidate_id": "EVENT-003-C2", "text": "行程定下来了就好。21号下午四点，栖序体验店有一场木质气息小聚，青禾路18号，一个小时。现场试闻砚泊和暮光，砚泊是干燥木质与焚香气息，暮光带玫瑰与柔和木质。免费参加，不要求购买，我帮您登记意向，门店会和您确认。"}, {"candidate_id": "EVENT-003-C3", "text": "那我把21号的木质气息小聚记上，您看下午四点这个时间方便吗？地点是栖序体验店·青禾路18号，现场试闻砚泊与暮光，聊聊木质气息的感受。活动免费，登记意向后由门店和您确认。您对木质一直有兴趣，这场应该合适。"}]}, {"case_id": "PRICE-001", "scenario": "价格异议", "candidates": [{"candidate_id": "PRICE-001-C1", "text": "蒋先生，雨白 50 mL 是 1180 元，这个价买到的是茶叶与鸢尾的气息，50 mL 一支。目前没有可用的折扣或赠品，价格上我这边没法再让。您之前闻过青岚，喜欢那份清爽；雨白更偏茶叶和鸢尾，跟青岚不是一路。要不要来店里闻一下再定？"}, {"candidate_id": "PRICE-001-C2", "text": "收到。雨白 50 mL 1180 元，标价就是这一支的价格，没有别的附加。值不值这件事，得闻过才知道：它是茶叶与鸢尾的气息，跟您喜欢的柑橘清爽不太一样。您方便的话，我帮您登记到店试香意向，时间由门店和您确认。"}, {"candidate_id": "PRICE-001-C3", "text": "蒋先生，您问的这款是雨白 50 mL，1180 元，规格和价格我核对过了。这个价对应的是茶叶与鸢尾的气息这一支香，目前没有折扣可以给到。您平时偏爱柑橘和清爽木质，雨白未必是同一路，先闻再判断更稳妥。您看哪天方便，我帮您问门店的试香时间。"}]}, {"case_id": "PRICE-002", "scenario": "价格异议", "candidates": [{"candidate_id": "PRICE-002-C1", "text": "方先生，目前栖序没有价格匹配政策，这点我先跟您说清楚。青岚在店里是50 mL 980元、100 mL 1580元，您看到的别家价格我这边无法核实真伪和规格，不好直接比。如果您方便，可以把那边的容量和标价发我，我帮您对照一下同款同规格。"}, {"candidate_id": "PRICE-002-C2", "text": "方先生，价格匹配我们这边目前没有，不能给您做这个承诺。青岚50 mL 980元、100 mL 1580元，单位价会随容量不同，别家如果规格不一样，直接比数字容易有偏差。您要是愿意，把链接或截图发我，我请门店同事帮您核对同款同规格的价格。"}, {"candidate_id": "PRICE-002-C3", "text": "方先生，收到您的比较。栖序目前没有价格匹配政策，我也不会替您压价或绕开标价。青岚这次可比较的是50 mL 980元和100 mL 1580元，建议先确认别家是不是同容量、同款。您把截图发我，我请门店同事与您一起核对。"}]}, {"case_id": "PRICE-003", "scenario": "价格异议", "candidates": [{"candidate_id": "PRICE-003-C1", "text": "叶女士，您说的这个差价我看到了。暮光 50 mL 目前标价是 1080 元，昨天同事口头报的 980 元我这边没有记录，需要跟门店核对一下当时是怎么说的。在核实清楚之前，我不能直接按 980 元给您。我这就去问，有结果第一时间回您。"}, {"candidate_id": "PRICE-003-C2", "text": "收到，这个情况我来跟。暮光 50 mL 现在商品卡上是 1080 元，您听到的 980 元属于昨天的口头说法，两边对不上，得先查清楚。您方便的话把昨天沟通的时间或截图发我，我拿着去和门店对，会比空口问快一些。"}, {"candidate_id": "PRICE-003-C3", "text": "叶女士，暮光 50 mL 的标价确实是 1080 元，和您昨天听到的 980 元不一致，这个我得先核实，不能随口应下。核实需要一点时间，我今天内给您准信。您先别急着下单，等我回复。"}]}, {"case_id": "PRICE-004", "scenario": "价格异议", "candidates": [{"candidate_id": "PRICE-004-C1", "text": "青岚 50 mL 是 980 元，这个价确实要想一想。怕放着不用，可以先到店闻一次再定。"}, {"candidate_id": "PRICE-004-C2", "text": "这个顾虑实在。青岚 50 mL 是 980 元，目前没有折扣；先闻过，合不合适自己最清楚。"}, {"candidate_id": "PRICE-004-C3", "text": "青岚 50 mL 是 980 元，价格我这边没有优惠可给。要不先登记到店试香，由门店和您约时间？"}]}, {"case_id": "BD-101", "scenario": "生日与节庆", "candidates": [{"candidate_id": "BD-101-C1", "text": "是我记岔了，抱歉。明天是您太太生日，那祝她生日快乐，愿新的一岁平安顺遂，事事都合心意。您下个月生日我记下了，到时再单独问候。"}, {"candidate_id": "BD-101-C2", "text": "抱歉，我把日子记错了。明天是您太太的生日，祝她生日快乐，愿这一年日子舒展，想要的都慢慢实现。也替我向她问好。"}, {"candidate_id": "BD-101-C3", "text": "是我弄错了，抱歉。明天先祝您太太生日快乐，愿她这一年从容自在，平安顺遂。您下个月的生日，到时候我再向您问候。"}]}, {"case_id": "BD-102", "scenario": "生日与节庆", "candidates": [{"candidate_id": "BD-102-C1", "text": "贺女士，生日快乐。愿您新的一岁平安顺遂，想做的事都顺顺当当，所有的美好都如约而至。愿这一年如您喜欢的香气，明亮又长久。"}, {"candidate_id": "BD-102-C2", "text": "贺女士，今天是您的生日，祝您生日快乐。愿这一年身体康健、日子舒展，想要的都慢慢实现。若今天有空，也别忘了给自己留一点清闲。"}, {"candidate_id": "BD-102-C3", "text": "贺女士，四季轮转，又到属于您的日子。愿这一年平安顺遂，事事如愿，像秋日的柑橘一样清爽明亮。祝您生日快乐。"}]}, {"case_id": "BD-103", "scenario": "生日与节庆", "candidates": [{"candidate_id": "BD-103-C1", "text": "苏女士，生日快乐。愿新的一岁平安顺遂，想做的事都顺顺当当，日子过得从容舒展。愿这一年如您喜欢的香气，明亮又长久。"}, {"candidate_id": "BD-103-C2", "text": "苏女士，今天是您的生日，祝您生日快乐。愿这一年身体康健、日子舒展，想要的都慢慢实现。若今天有空，也别忘了给自己留一点清闲。"}, {"candidate_id": "BD-103-C3", "text": "苏女士，生日快乐。愿您的每一天都从容自在，所愿皆成真，平安顺遂常伴左右。"}]}, {"case_id": "BD-104", "scenario": "生日与节庆", "candidates": [{"candidate_id": "BD-104-C1", "text": "许女士，中秋快乐。愿今晚月色清亮，您和家人都平安自在。"}, {"candidate_id": "BD-104-C2", "text": "许女士，中秋节到了，祝您快乐。愿这轮圆月照着的日子，事事都顺顺当当。"}, {"candidate_id": "BD-104-C3", "text": "许女士，中秋快乐。愿这一年剩下的日子从容安稳，所盼的都慢慢有着落。"}]}, {"case_id": "BD-105", "scenario": "生日与节庆", "candidates": [{"candidate_id": "BD-105-C1", "text": "沈女士，是我记错了，抱歉。那就祝您今天生日快乐，愿这一年平安顺遂，想做的事都顺顺当当。愿日子像您喜欢的木质气息一样，沉静又长久。"}, {"candidate_id": "BD-105-C2", "text": "原来今天是您的生日，之前是我记岔了。祝您生日快乐，愿新的一岁少些奔波、多些清闲，身边的人都平平安安。今天也给自己留一点从容的时间。"}, {"candidate_id": "BD-105-C3", "text": "抱歉记错了日子，好在赶上了。沈女士，生日快乐，愿这一年事事如愿，每一天都过得舒展自在。愿这一年像您偏爱的木质香一样，安静而有余味。"}]}, {"case_id": "REC-101", "scenario": "产品推荐", "candidates": [{"candidate_id": "REC-101-C1", "text": "叶女士，您把父亲和您自己的喜好分开看，这一步其实很关键。按您说的干木头味，砚泊这款香水是干燥木质与焚香气息，30 mL 是 780 元，在您说的九百以内。青岚 50 mL 是 980 元，柑橘与雪松气息，木质更轻一些，但超出您说的预算。您看先比较砚泊这一支行吗？"}, {"candidate_id": "REC-101-C2", "text": "收到，您父亲喜欢干一点的木头味，这个方向和玫瑰差别不小。砚泊是干燥木质与焚香气息，30 mL 780 元，预算内；暮光 50 mL 1080 元是玫瑰与柔和木质，更像您自己的偏好。父亲那边的气味我没法替他判断，方便的话可以带他来店里闻一次砚泊，或者您先来闻，再决定要不要让他试。"}, {"candidate_id": "REC-101-C3", "text": "叶女士，九百以内的木质方向，这次可比较的是砚泊 30 mL，780 元，干燥木质与焚香气息。四款香水都能到店试闻，我可以帮您登记试香意向，由门店和您确认时间。您方便的话告诉我大概哪天，我按您的时间去问。"}]}, {"case_id": "REC-102", "scenario": "产品推荐", "candidates": [{"candidate_id": "REC-102-C1", "text": "青岚 50 mL 是 980 元，100 mL 是 1580 元。日常用，50 mL 更轻便，您之前买的就是这一支。"}, {"candidate_id": "REC-102-C2", "text": "青岚两个容量气味一样，都是柑橘与雪松。日常用 50 mL 够，想少补货就选 100 mL。"}, {"candidate_id": "REC-102-C3", "text": "青岚 50 mL 980 元，100 mL 1580 元。您日常用，可以先按 50 mL 的节奏来，不够再换大瓶。"}]}, {"case_id": "REC-103", "scenario": "产品推荐", "candidates": [{"candidate_id": "REC-103-C1", "text": "收到，那砚泊先放一放，它是干燥木质与焚香气息，方向偏重。清新一些的可以从青岚看起，柑橘与雪松，您之前闻过也喜欢；暮光 50 mL 是玫瑰与柔和木质，比砚泊轻。青岚 50 mL 980 元、暮光 50 mL 1080 元，都在您说的两千五以内。要不要请先生来店里各闻一下再定？"}, {"candidate_id": "REC-103-C2", "text": "明白，先生不喜欢厚重，那木质就往轻的方向挑。青岚是柑橘与雪松气息，干净清爽；暮光 50 mL 是玫瑰与柔和木质，甜度中等，比砚泊柔和。砚泊 30 mL 是干燥木质与焚香，这次可以先不比较它。预算两千五的话，青岚 50 mL 980 元、暮光 50 mL 1080 元都在范围内。您更想往柑橘这边靠，还是带一点玫瑰？"}, {"candidate_id": "REC-103-C3", "text": "那我把方向调成清新木质。青岚 50 mL 是 980 元，柑橘与雪松；暮光 50 mL 是 1080 元，玫瑰与柔和木质。两支都在您两千五的预算内，也都可到店试闻。生日礼要稳妥的话，可以先请先生闻过再定；我帮您登记试香意向，具体时间由门店和您确认，您看这周还是下周方便？"}]}, {"case_id": "REC-104", "scenario": "产品推荐", "candidates": [{"candidate_id": "REC-104-C1", "text": "贺女士，按前调柑橘、后调木质来对，青岚最贴近：柑橘与雪松的气息，50 mL 是 980 元，100 mL 是 1580 元。暮光 50 mL 是玫瑰与柔和木质，您有一瓶 100 mL，喜欢玫瑰的话也可以再闻闻。砚泊 30 mL 是干燥木质与焚香，780 元，木质更重，柑橘不在里面。青岚的留香资料我这边没有，得靠您到店试香来判断，我帮您登记一下试香意向，时间由门店和您确认，您看哪天方便？"}, {"candidate_id": "REC-104-C2", "text": "贺女士，四款里青岚最接近您说的柑橘加木质，它是柑橘与雪松的气息，50 mL 980 元，100 mL 1580 元。砚泊 30 mL 780 元，是干燥木质与焚香，木质更明显，前调的柑橘感会弱一些。暮光 50 mL 1080 元，是玫瑰与柔和木质，您手上那瓶 100 mL 就是它。青岚的留香我这边没有资料，只能靠试香体会，您方便的话我把到店试香的时间帮您和门店对一下。"}, {"candidate_id": "REC-104-C3", "text": "贺女士，先说青岚：它是柑橘与雪松的气息，最贴合您要的前调柑橘、后调木质，50 mL 980 元，100 mL 1580 元。青岚的留香资料我这边没有，建议您到店闻过再判断，这样最准。砚泊 30 mL 780 元，干燥木质与焚香，木质更沉，柑橘感偏少；暮光 50 mL 1080 元，玫瑰与柔和木质，和您已有的 100 mL 是同一支。您看先约个到店试香，还是我把几支的香调卡发您先过一遍？"}]}, {"case_id": "REC-105", "scenario": "产品推荐", "candidates": [{"candidate_id": "REC-105-C1", "text": "陈先生，青岚这次可比较的是 50 mL 和 100 mL，没有 30 mL 的规格，50 mL 是 980 元。出差要带小容量的话，砚泊有 30 mL，780 元，是干燥木质与焚香气息。您之前提过嫌焚香过重，这支可以先到店闻一下再判断。您看要不要我帮您登记试香意向，由门店和您确认时间？"}, {"candidate_id": "REC-105-C2", "text": "收到。青岚目前没有 30 mL，可比较的是 50 mL，980 元，柑橘与雪松气息，甜度低。您喜欢干燥木质，砚泊 30 mL 更接近这个方向，780 元，只是焚香会明显一些。两支都能到店试闻，方便时来闻一闻再定。"}, {"candidate_id": "REC-105-C3", "text": "陈先生，青岚没有 30 mL，只有 50 mL 和 100 mL 这两个规格可比较，50 mL 是 980 元。如果您主要是出差随身带，砚泊 30 mL 的容量更合适，780 元，干燥木质与焚香气息。要不要我先帮您登记砚泊和青岚的试香意向，门店再和您约时间？"}]}, {"case_id": "REC-106", "scenario": "产品推荐", "candidates": [{"candidate_id": "REC-106-C1", "text": "明白，送礼按他的木质偏好来。砚泊是干燥木质与焚香气息，30 mL 780 元；暮光带玫瑰和柔和木质，50 mL 1080 元、100 mL 1680 元。如果对方不喜欢花香，砚泊更贴合一些；拿不准的话，可以约到店试闻再定。您看要不要先登记试香意向？"}, {"candidate_id": "REC-106-C2", "text": "收到，那就不考虑您的柑橘偏好了。砚泊这款香水是干燥木质与焚香气息，30 mL 780 元，比较贴近您说的木质方向。暮光也有木质，但带玫瑰，甜度中等，送人前最好确认对方是否接受花香。您想先看砚泊，还是两款都到店闻一下？"}, {"candidate_id": "REC-106-C3", "text": "按商务伙伴的木质偏好，先看砚泊：干燥木质与焚香，30 mL 780 元。暮光 50 mL 1080 元、100 mL 1680 元，是玫瑰与柔和木质，花香更明显。四款都可以到店试闻，我帮您登记意向，由门店和您确认时间。您这周哪天方便？"}]}, {"case_id": "AFTER-101", "scenario": "购后关怀", "candidates": [{"candidate_id": "AFTER-101-C1", "text": "收到，喷头松这件事我先记下来。麻烦您把购买日期、订单凭证和喷头的照片发我，我请门店同事核查一下。收礼人那边使用时如果觉得不便，先别勉强继续用。您把照片发来后，我这边跟进。"}, {"candidate_id": "AFTER-101-C2", "text": "周先生，您说的这个情况，我请门店同事看一下。需要您这边提供订单凭证和喷头照片，门店会按实际情况核查处理方式。收礼人的使用感受以对方反馈为准，这点我也一并说明。照片方便时发我，我来对接。"}, {"candidate_id": "AFTER-101-C3", "text": "喷头松动的事，门店可以帮您核查，需要您提供购买凭证和商品照片。核查结果和处理方式由门店确认，我这边不替您先定。您看今天方便拍张喷头照片发我吗？收到后我请门店同事跟进。"}]}, {"case_id": "AFTER-102", "scenario": "购后关怀", "candidates": [{"candidate_id": "AFTER-102-C1", "text": "收到您的反馈了。前调散得快、留香比预期短，这种感受我不会替您否认。喷法是否相关，我这边没有依据，不好贸然下结论，我请门店同事和您细聊一下。您方便的话，我把他们对接给您。"}, {"candidate_id": "AFTER-102-C2", "text": "谢谢您把实际感受告诉我，写香评的人对气味变化最敏感。暮光 100 mL 是玫瑰与柔和木质的气息，个人留香表现我这边没有数据，不能给您一个时长。喷法和用量的问题，门店同事比我更清楚，我帮您约他们聊。"}, {"candidate_id": "AFTER-102-C3", "text": "您说的这两点我收到了，前调快、留香短，是您实际闻到的。具体原因我说不准，我请门店同事跟您确认，您看是电话还是微信方便？他们和您聊完，您再决定要不要调整用法。"}]}, {"case_id": "AFTER-103", "scenario": "购后关怀", "candidates": [{"candidate_id": "AFTER-103-C1", "text": "收到，雨白您闻着喜欢就好。浴室柜里能不能放，我这边没有确切的存放说明，不好随口给您建议。我请门店同事和您确认一下，有答复我告诉您。"}, {"candidate_id": "AFTER-103-C2", "text": "看到您说雨白很喜欢，谢谢您告诉我。浴室柜这个位置合不合适，我手上没有可依据的存放说明，就不凭经验猜了。您方便的话，我请门店同事直接回您，说得会比我准。"}, {"candidate_id": "AFTER-103-C3", "text": "收到您消息了。雨白的存放条件我这边没有资料，浴室柜能不能放需要门店确认，我不替您下结论。您看这样行吗：我帮您把问题转给门店，由他们和您联系说明。"}]}, {"case_id": "AFTER-104", "scenario": "购后关怀", "candidates": [{"candidate_id": "AFTER-104-C1", "text": "好，您先试两天。气味感受会随天气变化，您的感觉我记下了。"}, {"candidate_id": "AFTER-104-C2", "text": "行，不申请售后，您按自己的节奏观察。有需要随时找我。"}, {"candidate_id": "AFTER-104-C3", "text": "明白。两天后您方便的话，把感受告诉我，我请门店同事一起看看。"}]}, {"case_id": "AFTER-105", "scenario": "购后关怀", "candidates": [{"candidate_id": "AFTER-105-C1", "text": "收到，前天到的那两瓶暮光 50 mL，一瓶同事反馈喷头按不动，另一瓶还没拆。两瓶一起退这件事，我这边不能直接定，需要门店按商品状态和凭证核查。您把订单凭证和喷头那瓶的照片发我，我转给门店同事跟您确认怎么处理，您看行吗？"}, {"candidate_id": "AFTER-105-C2", "text": "喷头按不动确实影响使用，同事的反馈我记下了，原因还需要门店看过才能判断。两瓶一起退的话，麻烦您先发订单凭证，再拍一下喷头那瓶的正面和喷头位置，未拆的那瓶保持原样就好。我请门店同事按这些材料跟您确认处理方式，结果和时间以他们回复为准。"}, {"candidate_id": "AFTER-105-C3", "text": "两瓶暮光 50 mL 是前天收到的，一瓶已拆、一瓶未拆，这个情况我清楚了。退货能否两瓶一起办，需要门店核查，我这边先帮您把材料备齐：订单凭证、喷头那瓶的照片。您方便的话今天发我，我转过去请门店同事联系您，具体怎么处理由他们和您确认。"}]}, {"case_id": "WAKE-101", "scenario": "沉睡唤醒", "candidates": [{"candidate_id": "WAKE-101-C1", "text": "贺女士，好久没和您聊香了。上次您试青岚时提到喜欢柑橘前调，那支是柑橘与雪松的气息。最近若想再来闻闻，青岚和暮光店里都能试，我帮您登记个到店意向，时间由门店和您确认。您看这周还是下周方便？"}, {"candidate_id": "WAKE-101-C2", "text": "贺女士，打扰一下。您去年年底带走的暮光 100 mL 是玫瑰与柔和木质的气息，和您偏好的玫瑰正好对得上。隔了这些日子，想问问近来用得还顺手吗？若想再闻闻别的，青岚的柑橘前调您之前是喜欢的，按您的节奏来安排就好。"}, {"candidate_id": "WAKE-101-C3", "text": "贺女士，想起您写过香评，对前调的清透和尾调的干净都很在意。青岚 50 mL 是 980 元，暮光 100 mL 是 1680 元，两款都可以到店试闻。您要是愿意，我先帮您登记试香意向，具体时间门店会和您确认，不着急定。"}]}, {"case_id": "WAKE-102", "scenario": "沉睡唤醒", "candidates": [{"candidate_id": "WAKE-102-C1", "text": "许女士，上次您来店里闻过雨白，说想慢慢比较，我一直记得那份不着急。雨白是茶叶与鸢尾的气息，跟您喜欢茶香的口味挺合。最近如果还想再看看，可以来店里再闻一次，我陪您慢慢试，不着急定。"}, {"candidate_id": "WAKE-102-C2", "text": "许女士，打扰一下。八月您来店里了解过雨白，当时说想之后再慢慢比较。这支是茶叶与鸢尾的气息，茶香的部分您应该会有兴趣。最近要是方便，欢迎再来店里闻闻，按您的节奏来就好。"}, {"candidate_id": "WAKE-102-C3", "text": "许女士，天气转凉了，想起您上次来店里闻过雨白，说想慢慢比较。这支的茶叶气息比较清楚，跟您喜欢的茶香是一路的。哪天有空再来店里坐坐，我把雨白留给您再闻一次，您看方便吗？"}]}, {"case_id": "WAKE-103", "scenario": "沉睡唤醒", "candidates": [{"candidate_id": "WAKE-103-C1", "text": "您好，我是栖序的顾问，您之前路过门店时加的微信。栖序做的是个人香水，四款都可以到店试闻。您想先了解一下，还是暂时不用？回复一句就好，都行。"}, {"candidate_id": "WAKE-103-C2", "text": "您好，我是栖序门店的顾问，上次您路过时我们加的微信。想跟您打个招呼，之后您对香水有兴趣，随时可以问我。要是现在没需要，也不用回。"}, {"candidate_id": "WAKE-103-C3", "text": "您好，我是栖序的顾问，您路过门店时加过微信。如果哪天想闻闻香，跟我说一声，我帮您登记到店试香的意向，时间由门店和您确认。现在不急，您方便时回我就好。"}]}, {"case_id": "WAKE-104", "scenario": "沉睡唤醒", "candidates": [{"candidate_id": "WAKE-104-C1", "text": "陈先生，砚泊 30 mL 是干燥木质与焚香气息，您之前闻过。想再闻的话，我帮您登记到店试香意向，时间由门店和您确认。"}, {"candidate_id": "WAKE-104-C2", "text": "您点赞的那条试香介绍里，木质方向就是砚泊。要不要约个时间到店再闻一次？我帮您登记，门店会跟您确认。"}, {"candidate_id": "WAKE-104-C3", "text": "砚泊 30 mL 是 780 元，干燥木质气息。您若还想比较木质方向，我可以帮您登记试香意向，由门店和您约时间。"}]}, {"case_id": "WAKE-105", "scenario": "沉睡唤醒", "candidates": [{"candidate_id": "WAKE-105-C1", "text": "周先生，上次您选青岚 50 mL 是作为商务伙伴的答谢礼，柑橘与雪松的气息，清爽也稳妥。最近如果还有要谢的人，可以跟我说说场合，我帮您看看合不合适。不着急，您方便时回我就好。"}, {"candidate_id": "WAKE-105-C2", "text": "周先生，想起您上次带走的是青岚 50 mL。您一向喜欢柑橘和清爽木质，青岚正好是这一类。要是最近想再闻闻，店里可以安排试香，时间由门店和您确认。"}, {"candidate_id": "WAKE-105-C3", "text": "周先生，隔了一阵来问候一下。上次您选青岚是送商务伙伴，如果之后还有答谢的场合，我可以先帮您把方向理一理，您再看要不要到店闻一闻。您看这样行吗？"}]}, {"case_id": "EVENT-101", "scenario": "活动邀请", "candidates": [{"candidate_id": "EVENT-101-C1", "text": "21号16点到17点，青禾路18号，木质气息小聚，试闻砚泊和暮光，免费。您之前试过砚泊，想参加的话我帮您登记意向，门店再和您确认。"}, {"candidate_id": "EVENT-101-C2", "text": "21号下午4点，青禾路18号店里，木质气息小聚，试闻砚泊和暮光，免费，不用买。您喜欢干燥木质，这场应该合适，要登记的话跟我说。"}, {"candidate_id": "EVENT-101-C3", "text": "21号16点到17点，青禾路18号，木质气息小聚，试闻砚泊和暮光，免费。您之前试过砚泊，方便的话我帮您登记，门店会和您确认。"}]}, {"case_id": "EVENT-102", "scenario": "活动邀请", "candidates": [{"candidate_id": "EVENT-102-C1", "text": "唐先生，12 月 5 号这场年度品鉴我这边看不到剩余名额，先跟您说清楚。活动是当天下午 3 点到 5 点，在栖序体验店，青禾路 18 号，免费参加，内容是试闻四款香水并记录自己的香评。您要是感兴趣，我帮您登记意向，由门店和您确认是否入围，您看方便吗？"}, {"candidate_id": "EVENT-102-C2", "text": "唐先生，收到您问的 12 月 5 号品鉴。名额情况我无法直接查到，这场是下午 3 点到 5 点在青禾路 18 号的店里，试闻四款香水、记下自己的香评，免费。您方便的话，我先把您的意向登记给门店，具体能否参加以门店回执为准。"}, {"candidate_id": "EVENT-102-C3", "text": "唐先生，年度品鉴定在 12 月 5 日下午 3 点到 5 点，地点是栖序体验店，青禾路 18 号。当天会试闻四款香水，并记录前调、中调、尾调的个人香评，活动免费，名额有限，需登记意向再由门店确认。您平时若有想闻的方向，也可以一并告诉我，我转给门店参考。"}]}, {"case_id": "EVENT-103", "scenario": "活动邀请", "candidates": [{"candidate_id": "EVENT-103-C1", "text": "蒋先生，11月14日周六下午两点到三点，店里有场青岚午后试香，地点在青禾路18号。现场会把青岚和雨白的气味描述放在一起比较，也能直接闻。青岚是柑橘与雪松的气息，和您喜欢的柑橘、清爽木质对得上。活动免费，需要登记意向、由门店确认；您方便的话我帮您登记，同行朋友也一起报上。"}, {"candidate_id": "EVENT-103-C2", "text": "蒋先生，想起您八月闻过青岚，说喜欢它的清爽。11月14日下午两点到三点，店里办青岚午后试香，在青禾路18号，会把青岚和雨白放在一起闻。免费参加，登记意向之后由门店和您确认。您要是有兴趣，回我一声就行。"}, {"candidate_id": "EVENT-103-C3", "text": "蒋先生，11月14日下午两点到三点有一场青岚午后试香，地点在青禾路18号，内容是把青岚与雨白的气味放在一起比较、现场试闻。您平时偏好柑橘主题，这场应该合适。活动免费，需登记意向并由门店确认，您看要不要我帮您登记？"}]}, {"case_id": "PRICE-101", "scenario": "价格异议", "candidates": [{"candidate_id": "PRICE-101-C1", "text": "贺女士，两款青岚的差价是这样：50 mL 980 元，每毫升 19.6 元；100 mL 1580 元，每毫升 15.8 元。100 mL 每毫升便宜 3.8 元，大瓶单价更低。值不值要看您用得多不多；您喜欢柑橘前调，青岚是柑橘与雪松的气息，慢慢用也不容易闲置。您想先按小瓶来，还是直接拿 100 mL？"}, {"candidate_id": "PRICE-101-C2", "text": "贺女士，算下来 50 mL 是每毫升 19.6 元，100 mL 是每毫升 15.8 元，100 mL 每毫升省 3.8 元，总价多 600 元。单价上 100 mL 更划算，前提是您确实会用到这个量。您平时喷香水的频率怎么样？我可以按您的习惯帮您看看哪瓶更合适。"}, {"candidate_id": "PRICE-101-C3", "text": "贺女士，两个规格我都按人民币标价给您核对过：青岚 50 mL 980 元，100 mL 1580 元，折算每毫升分别是 19.6 元和 15.8 元。100 mL 的单价低一些，但总价高 600 元，值不值主要看您的使用量。您要是想先闻过再定，我可以帮您登记到店试香意向，由门店和您确认时间。"}]}, {"case_id": "PRICE-102", "scenario": "价格异议", "candidates": [{"candidate_id": "PRICE-102-C1", "text": "您算得没错，100 mL 每毫升是便宜些，但总价 1580 元确实过了您 1400 的上限。青岚 50 mL 是 980 元，总价在您的预算里，这两笔账得分开看。容量怎么取舍，还是按您实际用的节奏来，我这边没有别的价格可以给到您。"}, {"candidate_id": "PRICE-102-C2", "text": "青岚 100 mL 是 1580 元，按您现在 1400 的硬上限，确实差了一截。50 mL 是 980 元，比上限低 420 元，单价高一点，总价能守住。您平时用得快不快？我按这个帮您看看哪个容量更合适。"}, {"candidate_id": "PRICE-102-C3", "text": "明白，这次就按 1400 的线来。青岚 50 mL 980 元在预算内，100 mL 1580 元超了，单价低不等于这次划算。您看是先拿 50 mL，还是到店再闻一次青岚，闻过再定？"}]}, {"case_id": "PRICE-103", "scenario": "价格异议", "candidates": [{"candidate_id": "PRICE-103-C1", "text": "苏女士，目前两瓶暮光没有折扣，价格按商品卡来：暮光 50 mL 是 1080 元，100 mL 是 1680 元，两瓶按所选规格相加。礼盒是门店当季配置，是否单独收费我请门店同事与您确认。您这两瓶是打算送同一位客户，还是分送两位？规格定了我帮您把总价算清楚。"}, {"candidate_id": "PRICE-103-C2", "text": "苏女士，两瓶一起买暂时没有优惠，这点我如实跟您说。暮光 50 mL 是 1080 元，100 mL 是 1680 元，两瓶的金额按规格叠加，礼盒费用由门店确认后再告诉您。您先看两瓶都选 50 mL，还是一瓶 50 mL、一瓶 100 mL，我按您的组合把数算给您。"}, {"candidate_id": "PRICE-103-C3", "text": "苏女士，优惠这边目前确实没有，礼盒是否收费我请门店同事跟您确认，确认后回您。暮光 50 mL 1080 元、100 mL 1680 元，两瓶的总价看您选哪个规格。要是还没定，我可以先帮您登记到店闻一下暮光，玫瑰与柔和木质的气息，送客户前自己闻过更放心。"}]}, {"case_id": "PRICE-104", "scenario": "价格异议", "candidates": [{"candidate_id": "PRICE-104-C1", "text": "叶女士，暮光 50 mL 目前是 1080 元，这个规格暂时没有折扣可以给到。您朋友喜欢玫瑰的话，暮光是玫瑰与柔和木质的气息，可以先到店闻一闻再决定。她若方便，我帮您登记试香意向，具体时间由门店和她确认。"}, {"candidate_id": "PRICE-104-C2", "text": "叶女士，价格我直接说：暮光 50 mL 是 1080 元，现在没有可用的折扣或优惠码，我这边也不能替门店答应。您朋友要是拿别的渠道来比，得先看是不是同款同规格，价格才算得准。她喜欢玫瑰，不妨先来闻一下暮光再定。"}, {"candidate_id": "PRICE-104-C3", "text": "叶女士，您朋友问的暮光 50 mL 是 1080 元，暂时没有折扣，这点我不含糊。她要是想先闻，我可以帮您登记到店试香意向，门店会和她约时间。闻过喜欢再买，也不迟。"}]}, {"case_id": "PRICE-105", "scenario": "价格异议", "candidates": [{"candidate_id": "PRICE-105-C1", "text": "许女士，雨白 50 mL 是 1180 元，这个价格定的是整支香水，不是按里面放了多少茶叶来算的。配方和原料含量我这边没有资料，不好替您解释，我请门店同事跟您说明。您喜欢茶香，八月也来闻过雨白，等问清楚了再决定也不迟。"}, {"candidate_id": "PRICE-105-C2", "text": "您问的这个我确实答不上来，雨白的配方和原料含量我手上没有，不能凭感觉给您一个说法。价格上我能确认的是：雨白 50 mL，1180 元，标价就是这一支。至于值不值，还是闻过、比较过更算数，您上次说要慢慢比较，这个节奏挺好的。"}, {"candidate_id": "PRICE-105-C3", "text": "雨白 50 mL 标价 1180 元，这一点我可以确认。是不是因为天然茶叶，涉及配方和原料含量，我请门店同事给您一个准确答复。您要是愿意，我把您的问题转过去，有回复我告诉您；也可以约个时间再到店里闻一次，跟别的茶香放一起比较。"}]}, {"case_id": "PRICE-106", "scenario": "价格异议", "candidates": [{"candidate_id": "PRICE-106-C1", "text": "林女士，现在暮光没有折扣，50 mL 是 1080 元，100 mL 是 1680 元。按每毫升算，100 mL 更划算一些，但总价也多出 600 元。您平时用香不算频繁，50 mL 先试试也合适；要是每天都会喷，100 mL 更经用。您更看重总价，还是每毫升的划算？"}, {"candidate_id": "PRICE-106-C2", "text": "收到。暮光这两款我给您说清楚：50 mL 1080 元，100 mL 1680 元，目前没有折扣。您上次在店里喜欢的是那层柔和玫瑰，两个容量装的是同一款香。差 600 元，量多一倍，怎么选主要看您用得勤不勤。您想先按哪个容量来？"}, {"candidate_id": "PRICE-106-C3", "text": "不等折扣也正常，现在确实没有优惠可以给您。暮光 50 mL 1080 元、100 mL 1680 元，都是同一款玫瑰与柔和木质气息。您要是拿不准，可以再来店里闻一次，顺便看看两个瓶子的手感再定。您哪天方便，我帮您跟门店说一声。"}]}];
+const KEY = 'qixu-eval-formal-v16';
+let state = load();
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; }
+}
+function save() { localStorage.setItem(KEY, JSON.stringify(state)); updateProgress(); }
+
+function updateProgress() {
+  let done = 0;
+  for (const it of ITEMS) {
+    const s = state[it.case_id];
+    if (s && s.candidates && it.candidates.every(c => s.candidates[c.candidate_id] && s.candidates[c.candidate_id].decision && s.candidates[c.candidate_id].reason)) done++;
+  }
+  document.getElementById('progress').textContent = done + '/' + ITEMS.length;
+}
+
+function render() {
+  const main = document.getElementById('main');
+  const rater = document.getElementById('rater');
+  if (state._rater) rater.value = state._rater;
+  rater.addEventListener('input', () => { state._rater = rater.value.trim(); save(); });
+  for (const it of ITEMS) {
+    const s = state[it.case_id] || (state[it.case_id] = { candidates: {} });
+    const div = document.createElement('div');
+    div.className = 'case';
+    div.id = 'case-' + it.case_id;
+    div.innerHTML = '<h2>' + it.case_id + ' · ' + it.scenario + '</h2>';
+    it.candidates.forEach((c, idx) => {
+      const cr = s.candidates[c.candidate_id] || (s.candidates[c.candidate_id] = {});
+      const cand = document.createElement('div');
+      cand.className = 'cand';
+      cand.innerHTML = '<div class="text">' + escapeHtml(c.text) + '</div>'
+        + '<div class="radios">'
+        + ['直接用','小改可用','实质改写','弃用'].map(g =>
+            '<label><input type="radio" name="' + it.case_id + '-c' + idx + '" value="' + g + '">' + g + '</label>').join('')
+        + '<span class="sev"><label><input type="checkbox" class="sevbox"> 严重错误</label></span>'
+        + '</div>'
+        + '<textarea class="reason" rows="1" placeholder="一句话理由"></textarea>';
+      div.appendChild(cand);
+      const radios = cand.querySelectorAll('input[type=radio]');
+      const sev = cand.querySelector('.sevbox');
+      const reason = cand.querySelector('.reason');
+      if (cr.decision) cand.querySelector('input[value="' + cr.decision + '"]').checked = true;
+      if (cr.serious_error) sev.checked = true;
+      if (cr.reason) reason.value = cr.reason;
+      function sync() {
+        cr.decision = Array.from(radios).find(r => r.checked)?.value || '';
+        cr.serious_error = sev.checked;
+        cr.reason = reason.value.trim();
+        if (cr.serious_error && (cr.decision === '直接用' || cr.decision === '小改可用')) {
+          const discard = cand.querySelector('input[value="弃用"]');
+          if (discard) discard.checked = true;
+          cr.decision = '弃用';
+        }
+        save();
+      }
+      radios.forEach(r => r.addEventListener('change', sync));
+      sev.addEventListener('change', sync);
+      reason.addEventListener('input', () => { cr.reason = reason.value.trim(); save(); });
+      reason.addEventListener('blur', sync);
+    });
+    const group = document.createElement('div');
+    group.className = 'group';
+    group.innerHTML = '<label><input type="checkbox" class="two"> 至少两条独立可用</label>'
+      + '<input type="text" class="dreason" placeholder="三稿差异/选稿理由（一句话）">';
+    const two = group.querySelector('.two');
+    const dreason = group.querySelector('.dreason');
+    if (s.two_distinct_usable) two.checked = true;
+    if (s.diversity_reason) dreason.value = s.diversity_reason;
+    function syncGroup() {
+      s.two_distinct_usable = two.checked;
+      s.diversity_reason = dreason.value.trim();
+      div.classList.toggle('done', two.checked);
+      save();
+    }
+    two.addEventListener('change', syncGroup);
+    dreason.addEventListener('input', () => { s.diversity_reason = dreason.value.trim(); save(); });
+    dreason.addEventListener('blur', syncGroup);
+    div.appendChild(group);
+    main.appendChild(div);
+  }
+  updateProgress();
+}
+
+function escapeHtml(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function buildExport() {
+  const rows = [];
+  const problems = [];
+  for (const it of ITEMS) {
+    const s = state[it.case_id] || {};
+    const cands = it.candidates.map(c => {
+      const cr = (s.candidates && s.candidates[c.candidate_id]) || {};
+      return {
+        candidate_id: c.candidate_id,
+        decision: cr.decision || '',
+        serious_error: !!cr.serious_error,
+        reason: (cr.reason || '').trim(),
+        edited_text: '',
+        edit_seconds: null,
+      };
+    });
+    const incomplete = cands.some(c => !c.decision || !c.reason);
+    const row = {
+      run_id: 'formal-v16',
+      case_id: it.case_id,
+      rater: (document.getElementById('rater').value || '').trim(),
+      rater_role: '开发者自评',
+      human_confirmed: true,
+      candidates: cands,
+      two_distinct_usable: !!s.two_distinct_usable,
+      diversity_reason: (s.diversity_reason || '').trim(),
+    };
+    if (incomplete || !row.rater || !row.diversity_reason) problems.push(it.case_id);
+    rows.push(row);
+  }
+  return { rows, problems };
+}
+
+function renderExport() {
+  const { rows, problems } = buildExport();
+  const text = rows.map(r => JSON.stringify(r)).join('\n');
+  document.getElementById('exportText').value = text;
+  document.getElementById('exportSummary').textContent =
+    '共 ' + rows.length + ' 例' + (problems.length ? '；其中未完成 ' + problems.length + ' 例（仍会导出，未评候选档位为空）' : '；全部完成');
+  document.getElementById('exportModal').style.display = 'block';
+}
+
+function copyText(text) {
+  function fallback() {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(fallback);
+  } else {
+    fallback();
+  }
+}
+
+document.getElementById('exportBtn').addEventListener('click', renderExport);
+document.getElementById('copyBtn').addEventListener('click', () => {
+  const { rows } = buildExport();
+  copyText(rows.map(r => JSON.stringify(r)).join('\n'));
+  alert('已复制到剪贴板，直接粘贴给我即可。');
+});
+document.getElementById('closeModal').addEventListener('click', () => document.getElementById('exportModal').style.display = 'none');
+document.getElementById('copyFromModal').addEventListener('click', () => {
+  copyText(document.getElementById('exportText').value);
+  alert('已复制，粘贴给我即可。');
+});
+document.getElementById('downloadFromModal').addEventListener('click', () => {
+  const blob = new Blob([document.getElementById('exportText').value], { type: 'application/jsonl' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'ratings.jsonl';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+});
+
+document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
+document.getElementById('importFile').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const rows = reader.result.split('\n').filter(l => l.trim()).map(l => JSON.parse(l));
+      for (const r of rows) {
+        const s = state[r.case_id] || (state[r.case_id] = {});
+        s.two_distinct_usable = !!r.two_distinct_usable;
+        s.diversity_reason = r.diversity_reason || '';
+        s.candidates = {};
+        for (const c of r.candidates) s.candidates[c.candidate_id] = { decision: c.decision, serious_error: !!c.serious_error, reason: c.reason || '' };
+        if (r.rater) state._rater = r.rater;
+      }
+      save();
+      location.reload();
+    } catch (err) { alert('导入失败：文件格式不对。' + err.message); }
+  };
+  reader.readAsText(file);
+});
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  if (confirm('清空全部评分进度？')) { localStorage.removeItem(KEY); location.reload(); }
+});
+
+render();
+</script>
+</body>
+</html>
