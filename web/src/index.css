@@ -379,6 +379,13 @@ input[type='number']:focus {
   padding: 5px 14px;
 }
 
+.composer-subhint {
+  margin: 3px 0 0;
+  font-size: 0.72rem;
+  color: var(--qixu-muted);
+  letter-spacing: 0.04em;
+}
+
 /* ---------- 按钮 ---------- */
 
 .btn {
@@ -585,6 +592,17 @@ input[type='number']:focus {
 .draft-actions .btn {
   padding: 2px 8px;
   font-size: 0.76rem;
+}
+
+.feedback-spacer {
+  flex: 1;
+}
+
+.draft-actions .btn.feedback.on {
+  background: rgba(176, 141, 87, 0.28);
+  border-color: var(--qixu-gold-deep);
+  color: var(--qixu-ink);
+  font-weight: 600;
 }
 
 .drafts-section .panel-head .muted {
@@ -873,6 +891,29 @@ input[type='number'] {
   gap: 10px;
   max-height: 55vh;
   overflow-y: auto;
+}
+
+.floating-feedback-note {
+  margin: 0;
+  font-size: 0.72rem;
+  color: #a9987a;
+  letter-spacing: 0.04em;
+}
+
+.floating-subhint {
+  color: #a9987a;
+}
+
+.floating-shell .btn.feedback {
+  border-color: rgba(176, 141, 87, 0.6);
+  color: #d9c39a;
+}
+
+.floating-shell .btn.feedback.on {
+  background: rgba(217, 195, 154, 0.9);
+  border-color: #d9c39a;
+  color: #2e2a20;
+  font-weight: 600;
 }
 
 .floating-shell .draft-card {

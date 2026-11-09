@@ -1,0 +1,57 @@
+name: build-desktop
+
+on:
+  push:
+    tags:
+      - "desktop-v*"
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            cmd: npm run dist:win
+          - os: macos-latest
+            cmd: npm run dist:mac
+          - os: ubuntu-latest
+            cmd: npm run dist:linux
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies (mirror for CN network resilience)
+        run: |
+          npm config set registry https://registry.npmmirror.com
+          npm install --no-audit --no-fund
+        env:
+          ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+          ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron-builder-binaries/
+      - name: Build
+        run: ${{ matrix.cmd }}
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: qixu-desktop-${{ matrix.os }}-x64
+          path: |
+            desktop/dist/*.exe
+            desktop/dist/*.dmg
+            desktop/dist/*.AppImage
+            desktop/dist/*.zip
+          if-no-files-found: warn
+      - name: Publish release (tag push only)
+        if: startsWith(github.ref, 'refs/tags/desktop-v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            desktop/dist/*.exe
+            desktop/dist/*.dmg
+            desktop/dist/*.AppImage
+            desktop/dist/*.zip

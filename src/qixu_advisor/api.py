@@ -654,6 +654,8 @@ def create_app(db_path: str | Path, *, root: Path = PROJECT_ROOT, static_dir: Pa
     @app.get("/api/v1/settings/datasource", response_model=DatasourceSettingsOut)
     def get_datasource_settings(conn: sqlite3.Connection = Depends(get_conn)):
         # 数据源状态：只返回地址与是否已配置密钥，绝不返回密钥值。
+        # supabase_url 为通用「外部数据源地址」：兼容任意提供 /customers?client_id= 的
+        # HTTP 服务（Supabase 只是默认示例，见 docs/customer-db-integration.md）。
         url = storage.get_setting(conn, "supabase_url")
         key = storage.get_setting(conn, "supabase_service_key")
         if not url and not key:
@@ -667,6 +669,7 @@ def create_app(db_path: str | Path, *, root: Path = PROJECT_ROOT, static_dir: Pa
     @app.put("/api/v1/settings/datasource", response_model=DatasourceSettingsOut)
     def put_datasource_settings(body: DatasourceSettingsIn, conn: sqlite3.Connection = Depends(get_conn)):
         # supabase_url 空串清除；service_key 空串清除（URL 与密钥独立保存）。
+        # supabase_url 字段继续作为通用外部数据源地址使用（非 Supabase 的 HTTP 服务同样适用）。
         if body.supabase_url is not None:
             storage.set_setting(conn, "supabase_url", body.supabase_url.strip())
         if body.supabase_service_key is not None:
@@ -863,11 +866,17 @@ def create_app(db_path: str | Path, *, root: Path = PROJECT_ROOT, static_dir: Pa
         ).fetchone()
         if revision_row is None:
             raise NotFoundError(f"草稿修订不存在：候选 {anchor['candidate_id']} 修订 {base_revision}")
-        action = conversations.record_draft_action(conn, int(revision_row["id"]), body.action, copied_text=body.copied_text or "")
+        # preferred/dispreferred 的比较留证与 copied 一致：记录被评判修订的实际文本；
+        # 追加式留证，同一草稿最新一条 preferred/dispreferred 即当前比较态（二者互斥）。
+        evidence_text = body.copied_text or ""
+        if body.action in {"preferred", "dispreferred"}:
+            evidence_text = revision_row["text"]
+        action = conversations.record_draft_action(conn, int(revision_row["id"]), body.action, copied_text=evidence_text)
         return DraftActionOut(
             action_id=action["id"],
             draft_revision_id=action["draft_revision_id"],
             action=action["action"],
+            kind=action["action"],
             copied_text=action["copied_text"],
             editor=action.get("editor"),
             created_at=action["created_at"],

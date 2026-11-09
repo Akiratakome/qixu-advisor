@@ -9,7 +9,7 @@ export default function MessageStream({ messages }: { messages: Message[] }) {
     return (
       <div className="empty-hint">
         <p>还没有消息。</p>
-        <p>在下方粘贴对话（每行一条，可用「客户：」「顾问：」前缀），或直接输入顾问话术。</p>
+        <p>添加聊天记录进行分析；记录顾问与顾客的对话，自动理解这轮需求。</p>
       </div>
     )
   }

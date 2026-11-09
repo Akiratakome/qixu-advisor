@@ -1,9 +1,10 @@
 import { useState } from 'react'
 
 import type { Draft } from '../api'
-import { api, errorMessage } from '../api'
+import { ApiError, api, errorMessage } from '../api'
 
 type CopyState = 'idle' | 'copied' | 'failed' | 'recording-failed'
+type Feedback = 'preferred' | 'dispreferred' | null
 
 interface DraftCardProps {
   draft: Draft
@@ -11,7 +12,7 @@ interface DraftCardProps {
   onDraftUpdated: (updated: Draft) => void
   onNotice: (message: string) => void
   onDirtyChange: (draftId: number, dirty: boolean) => void
-  // 悬浮卡片模式：只保留正文编辑与复制，复制成功后整卡高亮「已复制」。
+  // 悬浮卡片模式：只保留正文编辑、复制与比较反馈，复制成功后整卡高亮「已复制」。
   minimal?: boolean
 }
 
@@ -20,7 +21,9 @@ export default function DraftCard({ draft, index, onDraftUpdated, onNotice, onDi
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [copyState, setCopyState] = useState<CopyState>('idle')
-  const [acting, setActing] = useState(false)
+  const [feedback, setFeedback] = useState<Feedback>(null)
+  const [feedbackBusy, setFeedbackBusy] = useState(false)
+  const [feedbackNotice, setFeedbackNotice] = useState<string | null>(null)
 
   const dirty = text !== draft.text
 
@@ -70,15 +73,21 @@ export default function DraftCard({ draft, index, onDraftUpdated, onNotice, onDi
     }
   }
 
-  async function handleAction(action: 'selected' | 'discarded') {
-    setActing(true)
+  async function handleFeedback(kind: 'preferred' | 'dispreferred') {
+    setFeedbackBusy(true)
+    setFeedbackNotice(null)
     try {
-      await api.drafts.action(draft.draft_id, { action, base_revision: draft.revision })
-      onNotice(action === 'selected' ? '已选用。' : '已弃用。')
+      // 每次点击都留证（包括取消再点）；后端未落地时 404 走友好提示。
+      await api.drafts.action(draft.draft_id, { action: kind, base_revision: draft.revision })
+      setFeedback((current) => (current === kind ? null : kind))
     } catch (error) {
-      onNotice(`处理失败：${errorMessage(error)}`)
+      if (error instanceof ApiError && error.status === 404) {
+        setFeedbackNotice('反馈接口未就绪')
+      } else {
+        setFeedbackNotice(errorMessage(error))
+      }
     } finally {
-      setActing(false)
+      setFeedbackBusy(false)
     }
   }
 
@@ -100,23 +109,33 @@ export default function DraftCard({ draft, index, onDraftUpdated, onNotice, onDi
       {copyState === 'failed' && <p className="form-error">自动复制失败，请手动选中正文复制。</p>}
       {copyState === 'recording-failed' && <p className="form-error">复制成功，但保存记录失败，请重试。</p>}
       {saveError && <p className="form-error">{saveError}</p>}
+      {feedbackNotice && <p className="form-error">{feedbackNotice}</p>}
       <div className="draft-actions">
         <button className="btn copy" type="button" onClick={() => void handleCopy()}>
           复制{copyState === 'copied' ? ' ✓' : ''}
         </button>
         {!minimal && (
-          <>
-            <button className="btn primary" type="button" disabled={saving || !dirty} onClick={() => void handleSave()}>
-              {saving ? '保存中…' : '保存修改'}
-            </button>
-            <button className="btn ghost" type="button" disabled={acting} onClick={() => void handleAction('selected')}>
-              选用
-            </button>
-            <button className="btn ghost danger" type="button" disabled={acting} onClick={() => void handleAction('discarded')}>
-              弃用
-            </button>
-          </>
+          <button className="btn primary" type="button" disabled={saving || !dirty} onClick={() => void handleSave()}>
+            {saving ? '保存中…' : '保存修改'}
+          </button>
         )}
+        <span className="feedback-spacer" />
+        <button
+          className={`btn mini feedback ${feedback === 'preferred' ? 'on' : ''}`}
+          type="button"
+          disabled={feedbackBusy || (feedback !== null && feedback !== 'preferred')}
+          onClick={() => void handleFeedback('preferred')}
+        >
+          👍 更好
+        </button>
+        <button
+          className={`btn mini feedback ${feedback === 'dispreferred' ? 'on' : ''}`}
+          type="button"
+          disabled={feedbackBusy || (feedback !== null && feedback !== 'dispreferred')}
+          onClick={() => void handleFeedback('dispreferred')}
+        >
+          👎 不好
+        </button>
       </div>
     </article>
   )

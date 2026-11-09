@@ -1,13 +1,49 @@
 {
   "name": "qixu-floating-advisor",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "栖序 QIXU 悬浮顾问窗：截图/粘贴客户消息 → 三条可编辑卡片 → 复制后隐藏",
+  "description": "栖序 QIXU 悬浮顾问窗：截图/粘贴客户消息 → 三条可编辑卡片 → 复制后隐藏（x64）",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "dist:win": "electron-builder --win --x64",
+    "dist:linux": "electron-builder --linux --x64",
+    "dist:mac": "electron-builder --mac --x64"
   },
   "devDependencies": {
-    "electron": "^33.0.0"
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.qixu.advisor",
+    "productName": "栖序悬浮顾问窗",
+    "files": [
+      "main.js",
+      "preload.js",
+      "ocr-windows.ps1"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "栖序悬浮顾问窗"
+    },
+    "mac": {
+      "target": [
+        { "target": "dmg", "arch": ["x64"] }
+      ],
+      "category": "public.app-category.business"
+    },
+    "linux": {
+      "target": [
+        { "target": "AppImage", "arch": ["x64"] }
+      ],
+      "category": "Office"
+    }
   }
 }

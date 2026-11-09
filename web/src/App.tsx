@@ -715,7 +715,7 @@ function Workbench() {
               <section className="panel drafts-section">
                 <div className="panel-head">
                   <h2>三条候选</h2>
-                  <span className="muted">保存与复制均不会发送微信 · 请核对人物、价格、规格和承诺后再选用</span>
+                  <span className="muted">👍👎 反馈帮助我们改进后续回答 · 保存与复制均不会发送微信 · 请核对人物、价格、规格和承诺</span>
                 </div>
                 <div className="drafts-grid">
                   {generation.drafts.map((draft, index) => (

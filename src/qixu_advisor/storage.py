@@ -16,7 +16,7 @@ from typing import Any
 from .data import PROJECT_ROOT
 
 MIGRATIONS_DIR = Path(__file__).resolve().parent / "migrations"
-DRAFT_ACTIONS = {"selected", "copied", "discarded"}
+DRAFT_ACTIONS = {"selected", "copied", "discarded", "preferred", "dispreferred"}
 
 
 class StorageError(Exception):

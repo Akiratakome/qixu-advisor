@@ -212,6 +212,11 @@ def test_draft_revisions_per_candidate_and_actions(conn):
     assert copied["action"] == "copied" and copied["copied_text"] == "编辑稿一（复制时的实际文本）"
     discarded = storage.add_draft_action(conn, second["id"], "discarded")
     assert discarded["action"] == "discarded"
+    # 「哪个回答更好」比较反馈：preferred/dispreferred 与既有动作同样落库。
+    preferred = storage.add_draft_action(conn, third["id"], "preferred", copied_text="编辑稿一（被评判文本）", editor="顾问甲")
+    assert preferred["action"] == "preferred" and preferred["copied_text"] == "编辑稿一（被评判文本）"
+    dispreferred = storage.add_draft_action(conn, second["id"], "dispreferred", copied_text="机器原稿二（被评判文本）", editor="顾问甲")
+    assert dispreferred["action"] == "dispreferred" and dispreferred["copied_text"] == "机器原稿二（被评判文本）"
 
 
 def test_preferences_flow_and_filters(conn):

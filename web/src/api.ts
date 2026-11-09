@@ -278,7 +278,8 @@ export interface DraftPatch {
 }
 
 export interface DraftActionIn {
-  action: 'selected' | 'copied' | 'discarded'
+  // preferred/dispreferred 为比较反馈动作（后端扩展中，未落地时返回 404，前端友好提示）。
+  action: 'selected' | 'copied' | 'discarded' | 'preferred' | 'dispreferred'
   copied_text?: string | null
   base_revision?: number | null
 }

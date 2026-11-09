@@ -18,7 +18,7 @@ Tone = Literal["natural", "warm", "direct"]
 Length = Literal["short", "standard"]
 Goal = Literal["answer", "recommend", "next_step"]
 MessageRole = Literal["user", "client", "customer", "assistant", "advisor"]
-DraftActionKind = Literal["selected", "copied", "discarded"]
+DraftActionKind = Literal["selected", "copied", "discarded", "preferred", "dispreferred"]
 
 
 class WritingSettings(BaseModel):
@@ -274,7 +274,10 @@ class DraftPatch(BaseModel):
 
 
 class DraftActionIn(BaseModel):
-    """草稿动作留证；copied 必须携带实际 copied_text 与基准 revision（不等于 saved/sent）。"""
+    """草稿动作留证。copied 必须携带实际 copied_text 与基准 revision（不等于 saved/sent）；
+    preferred（更好）/dispreferred（不好）是「哪个回答更好」的比较反馈：必须携带基准 revision，
+    该修订的实际文本由服务端记录为留证；同一草稿的最新一条 preferred/dispreferred 即当前比较态
+    （追加式留证、最新态优先，二者互斥）。"""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -283,23 +286,26 @@ class DraftActionIn(BaseModel):
     base_revision: int | None = Field(default=None, ge=1)
 
     @model_validator(mode="after")
-    def check_copied_evidence(self) -> "DraftActionIn":
+    def check_evidence(self) -> "DraftActionIn":
         if self.action == "copied":
             if not self.copied_text or not self.copied_text.strip():
                 raise ValueError("copied 动作必须携带实际 copied_text")
             if self.base_revision is None:
                 raise ValueError("copied 动作必须携带基准 revision")
+        if self.action in {"preferred", "dispreferred"} and self.base_revision is None:
+            raise ValueError(f"{self.action} 动作必须携带基准 revision")
         return self
 
 
 class DraftActionOut(BaseModel):
-    """storage.draft_actions 行对外形状。"""
+    """storage.draft_actions 行对外形状；kind 为动作类型（与 action 同值，兼容既有字段名）。"""
 
     model_config = ConfigDict(extra="ignore")
 
     action_id: int
     draft_revision_id: int
     action: str
+    kind: str
     copied_text: str = ""
     editor: str | None = None
     created_at: str | None = None
@@ -413,7 +419,10 @@ class ModelTestOut(BaseModel):
 
 
 class DatasourceSettingsIn(BaseModel):
-    """外部客户库配置输入；密钥字段留空不修改，传空串清除。"""
+    """外部客户库配置输入；密钥字段留空不修改，传空串清除。
+
+    supabase_url 同时作为通用「外部数据源地址」：兼容任意提供 /customers?client_id=
+    查询的 HTTP 服务（Supabase 只是默认示例，见 docs/customer-db-integration.md）。"""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -432,7 +441,7 @@ class DatasourceSettingsIn(BaseModel):
 
 
 class DatasourceSettingsOut(BaseModel):
-    """数据源状态：不回显密钥，只报是否已配置。"""
+    """数据源状态：不回显密钥，只报是否已配置；supabase_url 为通用外部数据源地址。"""
 
     model_config = ConfigDict(extra="ignore")
 

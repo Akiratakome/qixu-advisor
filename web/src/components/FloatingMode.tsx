@@ -17,6 +17,16 @@ const BUSINESS_LABELS: Record<string, string> = {
   interrupted: '生成未完成，请重试',
 }
 
+// 桌面壳 preload 注入的桥接：截图识别与识别结果回填（无桥接时按钮隐藏）。
+declare global {
+  interface Window {
+    qixu?: {
+      captureAndOcr?: () => void
+      onOcrText?: (callback: (text: string) => void) => void
+    }
+  }
+}
+
 export default function FloatingMode() {
   const [customers, setCustomers] = useState<Customer[]>([])
   // 默认场景取「产品推荐」：只凭消息内容即可生成；生日与节庆还需祝福缘由，活动邀请还需具体活动。
@@ -58,6 +68,21 @@ export default function FloatingMode() {
     }, 5000)
     return () => window.clearTimeout(timer)
   }, [notice, error])
+
+  // 桌面壳 OCR：注册回填回调（识别文本只填入输入框，不自动生成）。
+  useEffect(() => {
+    const bridge = window.qixu
+    if (!bridge?.onOcrText) {
+      return
+    }
+    bridge.onOcrText((text) => {
+      if (typeof text === 'string' && text.trim()) {
+        setInput(text)
+      }
+    })
+  }, [])
+
+  const ocrAvailable = typeof window.qixu?.captureAndOcr === 'function'
 
   function resetToCleanState() {
     setGeneration(null)
@@ -152,6 +177,11 @@ export default function FloatingMode() {
           <button className="btn mini" type="button" onClick={() => setOptionsOpen((value) => !value)}>
             {optionsOpen ? '收起选项' : '选项'}
           </button>
+          {ocrAvailable && (
+            <button className="btn mini" type="button" onClick={() => window.qixu?.captureAndOcr?.()}>
+              截图识别
+            </button>
+          )}
           <button className="btn mini" type="button" onClick={() => setMinimized(true)}>
             隐藏
           </button>
@@ -191,10 +221,11 @@ export default function FloatingMode() {
           value={input}
           onChange={(event) => setInput(event.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="粘贴客户消息，回车生成"
+          placeholder="和顾客的对话"
           rows={4}
           autoFocus
         />
+        <p className="composer-subhint floating-subhint">记录顾问与顾客的对话，自动理解这轮需求</p>
         <div className="floating-actions">
           <button className="btn primary wide" type="button" disabled={generating || !input.trim()} onClick={() => void handleGenerate()}>
             {generating ? '生成中…' : '生成'}
@@ -204,6 +235,7 @@ export default function FloatingMode() {
         {notice && <p className="notice">{notice}</p>}
         {generation && generation.business_status === 'success' && generation.drafts.length > 0 && (
           <div className="floating-cards">
+            <p className="floating-feedback-note">👍👎 反馈帮助我们改进后续回答</p>
             {generation.drafts.map((draft, index) => (
               <DraftCard
                 key={draft.draft_id}

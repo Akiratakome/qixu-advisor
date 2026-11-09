@@ -45,3 +45,53 @@ def fetch_crm_api_customer(profile_id):
 
 - 外部数据仍是「待处理数据」：生成前的事实纪律与去 AI 味门禁不变；
 - 不把外部资料写入提示之外的地方；不做双向同步（如需双向，作为独立功能另评估）。
+
+## 6. 自定义数据源（非 Supabase）
+
+接入其他客户库时，`src/qixu_advisor/sources.py` 的 **`fetch_external_customer(profile_id)` 是唯一扩展点**：
+只要返回一个**规范化档案 dict**（字段见 `CANONICAL_KEYS`：`client_id`/`display_name`/
+`contact_permission`/`long_term_preferences`/`history`/`relationship`，其余字段忽略），
+生成核心与 API 均无需改动；未配置或未命中返回 `None` 即走本地回退。
+
+工作台配置入口 **`GET/PUT /api/v1/settings/datasource`** 的 `supabase_url` 字段继续作为通用
+**「外部数据源地址」**使用：兼容任意提供 `GET /customers?client_id=<id>` 查询的 HTTP 服务，
+Supabase 只是默认示例；`supabase_service_key` 作对应服务密钥（如自建服务无鉴权可留空）。
+
+最小自建 HTTP API 示例（FastAPI 骨架，返回规范化档案）：
+
+```python
+# 外部客户服务：GET /customers?client_id=C001 → 规范化档案（或 200 + null 表示未命中）
+@app.get("/customers")
+def get_customer(client_id: str):
+    row = db.get(client_id)          # 自己的客户库查询
+    if row is None:
+        return None                  # 未命中：本地回退
+    return {
+        "client_id": row.client_id,
+        "display_name": row.display_name,
+        "contact_permission": row.contact_permission,
+        "long_term_preferences": row.preferences,
+        "history": row.history,
+        "relationship": row.relationship,
+    }
+```
+
+curl 验证（先在工作台「设置」里把该地址与密钥填入数据源配置）：
+
+```bash
+curl "http://127.0.0.1:8000/customers?client_id=C001"
+# → {"client_id":"C001","display_name":"林女士","contact_permission":"allowed",...}
+```
+
+在 `sources.py` 中接入该服务（唯一扩展点示例，不改其他文件）：
+
+```python
+def fetch_external_customer(profile_id, *, timeout=10.0):
+    url = os.environ.get("CUSTOMER_API_URL")            # 或读 runtime_settings 的 supabase_url
+    if not url:
+        return None
+    resp = httpx.get(f"{url.rstrip('/')}/customers", params={"client_id": profile_id}, timeout=timeout)
+    resp.raise_for_status()
+    payload = resp.json()
+    return canonicalize(payload) if payload else None
+```

@@ -556,6 +556,62 @@ def test_draft_copied_action_keeps_evidence(client, monkeypatch):
     assert invalid.status_code == 422
 
 
+def test_draft_preferred_then_dispreferred_latest_state(client, monkeypatch, db_path):
+    """比较反馈（preferred/dispreferred）：最新一条为当前态（互斥），两条留证都在。"""
+    draft = _make_draft(client, monkeypatch)
+    edited = client.patch(f"/api/v1/drafts/{draft['draft_id']}", json={"text": "编辑后正文", "expected_revision": 1})
+    assert edited.status_code == 200
+
+    preferred = client.post(
+        f"/api/v1/drafts/{draft['draft_id']}/actions",
+        json={"action": "preferred", "base_revision": 2},
+    )
+    assert preferred.status_code == 201, preferred.text
+    preferred_body = preferred.json()
+    assert preferred_body["kind"] == "preferred"
+    assert preferred_body["action"] == "preferred"
+    # 与 copied 一致的留证：服务端记录被评判修订的实际文本。
+    assert preferred_body["copied_text"] == "编辑后正文"
+
+    dispreferred = client.post(
+        f"/api/v1/drafts/{draft['draft_id']}/actions",
+        json={"action": "dispreferred", "base_revision": 2},
+    )
+    assert dispreferred.status_code == 201, dispreferred.text
+    dispreferred_body = dispreferred.json()
+    assert dispreferred_body["kind"] == "dispreferred"
+    assert dispreferred_body["copied_text"] == "编辑后正文"
+
+    with storage.connect_db(db_path) as conn:
+        rows = [dict(row) for row in conn.execute(
+            "SELECT * FROM draft_actions WHERE action IN ('preferred', 'dispreferred') ORDER BY id"
+        ).fetchall()]
+    assert [row["action"] for row in rows] == ["preferred", "dispreferred"]
+    assert rows[-1]["action"] == "dispreferred"  # 最新态
+    assert rows[0]["copied_text"] == "编辑后正文" and rows[1]["copied_text"] == "编辑后正文"
+
+    missing_revision = client.post(f"/api/v1/drafts/{draft['draft_id']}/actions", json={"action": "preferred"})
+    assert missing_revision.status_code == 422
+
+
+def test_draft_preferred_does_not_break_copied_semantics(client, monkeypatch):
+    """新增比较反馈不破坏 copied 的既有留证语义。"""
+    draft = _make_draft(client, monkeypatch)
+
+    no_text = client.post(f"/api/v1/drafts/{draft['draft_id']}/actions", json={"action": "copied", "base_revision": 1})
+    assert no_text.status_code == 422
+    no_base = client.post(f"/api/v1/drafts/{draft['draft_id']}/actions", json={"action": "copied", "copied_text": "文本"})
+    assert no_base.status_code == 422
+
+    copied = client.post(
+        f"/api/v1/drafts/{draft['draft_id']}/actions",
+        json={"action": "copied", "copied_text": "复制时实际文本", "base_revision": 1},
+    )
+    assert copied.status_code == 201, copied.text
+    assert copied.json()["kind"] == "copied"
+    assert copied.json()["copied_text"] == "复制时实际文本"
+
+
 # ---------- 偏好 ----------
 
 
