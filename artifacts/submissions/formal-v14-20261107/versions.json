@@ -1,0 +1,36 @@
+{
+  "submission_id": "formal-v14-20261107",
+  "created_at": "2026-11-09T15:15:16.981+08:00",
+  "dataset": "cases-v2.0（奢侈品化 50 例）",
+  "tool_versions": {
+    "python": "3.12.15",
+    "pydantic": "2.14.3"
+  },
+  "runs": {
+    "formal-v14": {
+      "freeze": "formal-v32",
+      "cases": 50,
+      "statuses": "49 首轮全成 + AFTER-101 技术重试成功（重试关联运行 formal-v14-technical-retry）",
+      "role": "最终 C 表（品牌落款＋加长版）"
+    },
+    "formal-v11": {
+      "role": "上一版"
+    },
+    "formal-v8": {
+      "role": "旧测试集回归证据"
+    }
+  },
+  "freeze_ids": [
+    "formal-v26",
+    "formal-v27",
+    "formal-v28",
+    "formal-v29",
+    "formal-v31",
+    "formal-v32"
+  ],
+  "git_commits": [
+    "629dc80",
+    "f6ae476",
+    "cedddbe"
+  ]
+}

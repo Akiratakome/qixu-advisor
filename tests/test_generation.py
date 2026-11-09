@@ -203,7 +203,7 @@ def test_settings_block_contains_length_and_tone_instructions():
     assert "15–35" in short and "1–2 句" in short
     assert "删去一切铺垫与收尾" in short
     standard = build_messages(GenerationRequest(scenario="生日与节庆", occasion="生日", length="standard"), {})[0]["content"]
-    assert "60–120" in standard and "3–5 句" in standard
+    assert "80–160" in standard and "4–6 句" in standard
     assert "禁止凑字、重复与空话" in standard
     direct = build_messages(GenerationRequest(scenario="生日与节庆", occasion="生日", tone="direct"), {})[0]["content"]
     assert "结论先行" in direct and "短句" in direct
