@@ -298,3 +298,11 @@
 - 数据源可见化：storage 白名单加 supabase_url/supabase_service_key；sources.ping_supabase；GET/PUT /settings/datasource（不回显密钥）＋POST /settings/datasource/test；React 客户资料分区新增「外部数据源」配置＋测试连接；线上端点验证 200。
 - 悬浮卡片：React 新增 ?floating=1 极简卡片模式（FloatingMode＋DraftCard minimal：毛玻璃、复制高亮「已复制」）；desktop/ Electron 常驻置顶壳（main.js：Ctrl+Shift+Q 显隐、剪贴板 IPC），npm 安装因本机 TLS 网络受限未完成（已如实记录）；截图/OCR 列为下一步。
 - formal-v11（50/50）为最终 C 表：生日祝福已按新规则；唯一事实告警 REC-103 折叠容量列表为已知误报类（记 E）；v11 包（csv/xlsx/评价表 1620 行/溯源/B/E）组装完成；233 项测试全绿；提交 629dc80/f6ae476 推送，Render 已自动部署。
+
+## 2026-11-09 15:30–16:00 · 品牌内化、数据库入口与悬浮卡片落地
+
+- 用户三条：①「——栖序」落款不要、品牌内化进正文；②数据库链接要有；③小卡片形式要做出来。
+- 品牌内化：writing_rules 去落款，改为品牌自然融入正文一处（「这份祝福栖序先替您记着」）；生日样本 60–100 字同步改写；formal-v13（落款式，废弃）→ formal-v14（落款）→ formal-v15（内化版，最终 C：50/50，事实告警 2——「时白」真错字保留＋3.8 推导已知类）。冻结 formal-v31/v32/v33。
+- 数据库入口：React 侧栏「📇 数据库」→ ?view=database 独立视图（客户档案表格＋数据源状态卡＋导入示例客户＋空库引导），Playwright 自测通过。
+- 悬浮卡片落地：Electron 安装先被 npm TLS 挡→换 npmmirror 镜像＋手动 install.js 成功；启动遇 ELECTRON_RUN_AS_NODE=1 环境变量（会话注入）→ 清除后启动；CDP 截图验证窗口与悬浮模式。生成流程发现两 bug（默认场景=生日缺缘由→needs_input 被吞成「生成未完成」；点外部最小化误伤卡片按钮）——qixu-ui 修复（默认场景改产品推荐、occasion 回退、错误明细展示、折叠仅限背景区），本地真实生成 3 卡＋复制高亮验证；Render 自动部署后线上 CDP 复验三卡＋复制按钮通过。截图 floating-window-fixed.png/floating-window.png 入交付包。
+- formal-v15 包组装完成（csv/xlsx/评价表 1620 行/溯源/versions/B/E）；233 项测试全绿；提交 2262dfa/6d90da9 推送。
