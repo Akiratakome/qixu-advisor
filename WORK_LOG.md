@@ -259,3 +259,12 @@
 - qixu-core：analyze_conversation 的 system 追加写作规则段（analysis.txt＋规则标题＋writing_rules.md 全文），摘要与问题措辞同样受规则约束；203 项测试全绿。
 - qixu-ui：输入框防抖 1.2 秒自动分析（免点按钮）；点生成时输入框未落库内容自动 POST /messages 后再生成；「添加消息」保留为可选；placeholder 口语化。三种布局回归 scrollHeight 均 768。
 - lead 真实 API E2E：打字自动分析、直接点生成出三条、overflow=0；冻结 formal-v22；提交 c2375fc。
+
+## 2026-11-09 · 公开部署与线上验证
+
+- 仓库公开上线：https://github.com/Akiratakome/qixu-advisor（gh CLI 本机登录态推送，未接触密码；推送前核验无 .env/runtime/runs/evaluations/backups 跟踪内容）。
+- Render 部署：https://qixu-advisor.onrender.com（render.yaml Blueprint；plan=free 已通过 API 确认，suspenders 空）。
+- 密钥配置：用户提供 Render API key（仅命令内使用、未落盘）；期间发现本机 .env 提取偏移错误导致首轮写入的 DeepSeek 密钥缺首字符，纠正后重写并触发新部署（dep-dbok → live）。
+- 线上验证：GET /settings/model 返回 configured=true/api_key_set=true/source=env；POST /analyze 真实调用成功（产品推荐＋2 问）。
+- 稳定性说明（如实）：免费档 15 分钟无访问休眠、首访冷启动约 30 秒–2 分钟；月度实例小时数约 730h<750h 上限，11-20 前无额度停服风险；如需免冷启动可升 Starter（$7/月）。测试期间发现 analyze 对明确需求偶返回「暂无明确需求」，记录为待用户最终统一处理项。
+- 建议：本轮用过的 Render API key 在收尾后可轮换。
