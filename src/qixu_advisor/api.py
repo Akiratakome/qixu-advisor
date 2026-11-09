@@ -30,6 +30,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -62,6 +63,9 @@ from .api_models import (
     DraftPatch,
     GenerationIn,
     GenerationOut,
+    DatasourceSettingsIn,
+    DatasourceSettingsOut,
+    DatasourceTestOut,
     MessageIn,
     MessageOut,
     ModelSettingsOut,
@@ -646,6 +650,41 @@ def create_app(db_path: str | Path, *, root: Path = PROJECT_ROOT, static_dir: Pa
         except (ValueError, TypeError, AttributeError):
             return ModelTestOut(ok=False, message="无法连接模型服务：返回内容无法解析")
         return ModelTestOut(ok=True, models=models[:5], count=len(models))
+
+    @app.get("/api/v1/settings/datasource", response_model=DatasourceSettingsOut)
+    def get_datasource_settings(conn: sqlite3.Connection = Depends(get_conn)):
+        # 数据源状态：只返回地址与是否已配置密钥，绝不返回密钥值。
+        url = storage.get_setting(conn, "supabase_url")
+        key = storage.get_setting(conn, "supabase_service_key")
+        if not url and not key:
+            url = os.environ.get("SUPABASE_URL")
+            key = os.environ.get("SUPABASE_SERVICE_KEY")
+            source = "env"
+        else:
+            source = "runtime"
+        return DatasourceSettingsOut(supabase_url=url or "", service_key_set=bool(key), source=source)
+
+    @app.put("/api/v1/settings/datasource", response_model=DatasourceSettingsOut)
+    def put_datasource_settings(body: DatasourceSettingsIn, conn: sqlite3.Connection = Depends(get_conn)):
+        # supabase_url 空串清除；service_key 空串清除（URL 与密钥独立保存）。
+        if body.supabase_url is not None:
+            storage.set_setting(conn, "supabase_url", body.supabase_url.strip())
+        if body.supabase_service_key is not None:
+            storage.set_setting(conn, "supabase_service_key", body.supabase_service_key.strip())
+        return get_datasource_settings(conn)
+
+    @app.post("/api/v1/settings/datasource/test", response_model=DatasourceTestOut)
+    def test_datasource_connection(conn: sqlite3.Connection = Depends(get_conn)):
+        """数据源连通性自测：用已保存配置（或环境变量）访问 Supabase REST 根路径。"""
+        current = get_datasource_settings(conn)
+        url = (current.supabase_url or "").strip()
+        key = storage.get_setting(conn, "supabase_service_key") or os.environ.get("SUPABASE_SERVICE_KEY") or ""
+        if not url or not key:
+            return DatasourceTestOut(ok=False, message="尚未配置数据源地址或密钥")
+        if not (url.startswith("http://") or url.startswith("https://")):
+            return DatasourceTestOut(ok=False, message="地址格式不正确，需以 http(s) 开头")
+        ok, message = sources.ping_supabase(url, key)
+        return DatasourceTestOut(ok=ok, message=message)
 
     # ---------- 对话分析 ----------
 

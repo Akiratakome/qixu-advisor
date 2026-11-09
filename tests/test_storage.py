@@ -69,6 +69,10 @@ def test_runtime_settings_get_set_and_whitelist(conn):
     assert storage.get_setting(conn, "temperature") == "0.3"
     storage.set_setting(conn, "top_p", "0.9")
     assert storage.get_setting(conn, "top_p") == "0.9"
+    storage.set_setting(conn, "supabase_url", "https://abc.supabase.co")
+    assert storage.get_setting(conn, "supabase_url") == "https://abc.supabase.co"
+    storage.set_setting(conn, "supabase_service_key", "svc")
+    assert storage.get_setting(conn, "supabase_service_key") == "svc"
     with pytest.raises(ValueError, match="白名单"):
         storage.set_setting(conn, "not_a_key", "x")
     with pytest.raises(ValueError, match="白名单"):

@@ -88,6 +88,16 @@ export interface ModelSettingsIn {
   temperature?: number
 }
 
+export interface DatasourceSettings {
+  supabase_url?: string
+  supabase_service_key?: string
+}
+
+export interface DatasourceTestResult {
+  ok: boolean
+  message?: string
+}
+
 export interface Draft {
   draft_id: number
   generation_id: string
@@ -327,6 +337,13 @@ export const api = {
     model: () => request<ModelSettings>('/settings/model'),
     putModel: (body: ModelSettingsIn) =>
       request<ModelSettings>('/settings/model', { method: 'PUT', body }),
+  },
+  datasource: {
+    get: () => request<DatasourceSettings>('/settings/datasource'),
+    put: (body: DatasourceSettings) =>
+      request<DatasourceSettings>('/settings/datasource', { method: 'PUT', body }),
+    test: (body: DatasourceSettings) =>
+      request<DatasourceTestResult>('/settings/datasource/test', { method: 'POST', body }),
   },
 }
 

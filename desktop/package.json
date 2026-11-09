@@ -1,0 +1,13 @@
+{
+  "name": "qixu-floating-advisor",
+  "version": "0.1.0",
+  "private": true,
+  "description": "栖序 QIXU 悬浮顾问窗：截图/粘贴客户消息 → 三条可编辑卡片 → 复制后隐藏",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^33.0.0"
+  }
+}

@@ -412,6 +412,44 @@ class ModelTestOut(BaseModel):
     message: str | None = None
 
 
+class DatasourceSettingsIn(BaseModel):
+    """外部客户库配置输入；密钥字段留空不修改，传空串清除。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    supabase_url: str | None = None
+    supabase_service_key: str | None = None
+
+    @field_validator("supabase_url")
+    @classmethod
+    def _validate_url(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        cleaned = value.strip()
+        if cleaned and not (cleaned.startswith("http://") or cleaned.startswith("https://")):
+            raise ValueError("supabase_url 必须是 http(s) URL")
+        return cleaned
+
+
+class DatasourceSettingsOut(BaseModel):
+    """数据源状态：不回显密钥，只报是否已配置。"""
+
+    model_config = ConfigDict(extra="ignore")
+
+    supabase_url: str = ""
+    service_key_set: bool = False
+    source: Literal["runtime", "env"] = "runtime"
+
+
+class DatasourceTestOut(BaseModel):
+    """数据源连通性自测结果。"""
+
+    model_config = ConfigDict(extra="ignore")
+
+    ok: bool
+    message: str = ""
+
+
 # ---------- 错误 ----------
 
 

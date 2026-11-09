@@ -1124,3 +1124,56 @@ def test_static_dir_serves_index_spa_fallback_and_api_json_404(tmp_path: Path):
 
         assert test_client.get("/api/v1/settings/model").status_code == 200
         assert test_client.get("/api/v1/catalog").status_code == 200
+
+
+def test_datasource_settings_roundtrip_no_key_echo(client):
+    response = client.put("/api/v1/settings/datasource", json={"supabase_url": "https://abc.supabase.co", "supabase_service_key": "svc-secret"})
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["supabase_url"] == "https://abc.supabase.co"
+    assert body["service_key_set"] is True
+    assert body["source"] == "runtime"
+    assert "svc-secret" not in response.text
+
+    listed = client.get("/api/v1/settings/datasource").json()
+    assert listed["supabase_url"] == "https://abc.supabase.co"
+    assert listed["service_key_set"] is True
+    assert "svc-secret" not in client.get("/api/v1/settings/datasource").text
+
+    cleared = client.put("/api/v1/settings/datasource", json={"supabase_service_key": ""}).json()
+    assert cleared["service_key_set"] is False
+    assert cleared["supabase_url"] == "https://abc.supabase.co"
+
+
+def test_datasource_invalid_url_422(client):
+    response = client.put("/api/v1/settings/datasource", json={"supabase_url": "not-a-url"})
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "validation_error"
+
+
+def test_datasource_connection_test(client, monkeypatch):
+    from qixu_advisor import sources
+
+    captured = {}
+
+    def fake_ping(url, key):
+        captured["url"] = url
+        captured["key"] = key
+        return True, "连接成功"
+
+    monkeypatch.setattr(sources, "ping_supabase", fake_ping)
+    client.put("/api/v1/settings/datasource", json={"supabase_url": "https://abc.supabase.co", "supabase_service_key": "svc-secret"})
+    result = client.post("/api/v1/settings/datasource/test")
+    assert result.status_code == 200
+    body = result.json()
+    assert body["ok"] is True
+    assert body["message"] == "连接成功"
+    assert captured["url"] == "https://abc.supabase.co"
+    assert captured["key"] == "svc-secret"
+    assert "svc-secret" not in result.text
+
+
+def test_datasource_connection_test_unconfigured(client):
+    result = client.post("/api/v1/settings/datasource/test")
+    assert result.status_code == 200
+    assert result.json()["ok"] is False

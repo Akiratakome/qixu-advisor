@@ -16,6 +16,7 @@ import { COLD_NEED_PLACEHOLDERS, EVENTS, SCENARIOS, isScenario, parseChatLines }
 import AnalysisPanel from './components/AnalysisPanel'
 import Composer from './components/Composer'
 import DraftCard from './components/DraftCard'
+import FloatingMode from './components/FloatingMode'
 import MessageStream from './components/MessageStream'
 import Sidebar from './components/Sidebar'
 
@@ -26,6 +27,14 @@ type PendingAction =
   | { kind: 'generate' }
   | { kind: 'generate-cold' }
   | null
+
+// 入口路由：?floating=1 进入桌面壳的悬浮卡片模式，否则为完整工作台。
+export default function App() {
+  if (new URLSearchParams(window.location.search).get('floating') === '1') {
+    return <FloatingMode />
+  }
+  return <Workbench />
+}
 
 function loadSettings(): WritingSettings {
   try {
@@ -44,7 +53,7 @@ function byUpdatedDesc(first: Conversation, second: Conversation): number {
   return (second.updated_at ?? '').localeCompare(first.updated_at ?? '')
 }
 
-export default function App() {
+function Workbench() {
   const [conversations, setConversations] = useState<Conversation[] | null>(null)
   const [customers, setCustomers] = useState<Customer[]>([])
   const [model, setModel] = useState<ModelSettings | null>(null)

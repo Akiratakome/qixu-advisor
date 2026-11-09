@@ -1,0 +1,182 @@
+import { useCallback, useEffect, useState } from 'react'
+
+import type { Customer, Generation } from '../api'
+import { DEFAULT_SETTINGS, api, errorMessage } from '../api'
+import { SCENARIOS } from '../chat'
+import DraftCard from './DraftCard'
+
+// 悬浮卡片模式（?floating=1）：极简窗口——无侧栏、无顶栏标题；
+// 粘贴客户消息回车生成，三条候选竖排，复制后整卡高亮。窗口最小化由桌面壳负责，
+// 前端只渲染折叠态（点卡片外部或「隐藏」按钮触发）。
+
+export default function FloatingMode() {
+  const [customers, setCustomers] = useState<Customer[]>([])
+  const [scenario, setScenario] = useState<string>(SCENARIOS[0])
+  const [customerId, setCustomerId] = useState('')
+  const [optionsOpen, setOptionsOpen] = useState(false)
+  const [input, setInput] = useState('')
+  const [generating, setGenerating] = useState(false)
+  const [generation, setGeneration] = useState<Generation | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [conversationId, setConversationId] = useState<string | null>(null)
+  const [minimized, setMinimized] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      try {
+        const list = await api.customers.list()
+        if (!cancelled) {
+          setCustomers(list)
+        }
+      } catch {
+        // 客户列表不可用时仍可生成（不使用档案）。
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  async function handleGenerate() {
+    const text = input.trim()
+    if (!text) {
+      return
+    }
+    setGenerating(true)
+    setError(null)
+    try {
+      let targetId = conversationId
+      if (!targetId) {
+        const created = await api.conversations.create({ customer_id: customerId || undefined })
+        targetId = created.conversation_id
+        setConversationId(targetId)
+      }
+      await api.conversations.postMessage(targetId, { role: 'client', content: text, source: 'manual' })
+      const detail = await api.conversations.get(targetId)
+      const patched = await api.conversations.patch(targetId, {
+        expected_version: detail.version,
+        scenario,
+        customer_id: customerId || undefined,
+        settings: DEFAULT_SETTINGS,
+        current_need: text,
+      })
+      const result = await api.conversations.createGeneration(
+        targetId,
+        { expected_version: patched.version, settings: DEFAULT_SETTINGS },
+        `v${patched.version}-${Date.now()}`,
+      )
+      setGeneration(result)
+      setInput('')
+      setMinimized(false)
+    } catch (generateError) {
+      setError(errorMessage(generateError))
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault()
+      void handleGenerate()
+    }
+  }
+
+  const handleDirtyChange = useCallback(() => {
+    // 悬浮模式不跟踪未保存修改；保留回调以复用 DraftCard。
+  }, [])
+
+  function handleOutsideClick(event: React.MouseEvent<HTMLDivElement>) {
+    if (event.target instanceof Element && !event.target.closest('.draft-card')) {
+      setMinimized(true)
+    }
+  }
+
+  if (minimized) {
+    return (
+      <div className="floating-shell">
+        <button className="floating-restore" type="button" onClick={() => setMinimized(false)}>
+          栖序 QIXU · 点击展开
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="floating-shell" onClick={handleOutsideClick}>
+      <div className="floating-glass">
+        <div className="floating-head">
+          <span className="floating-brand">栖序 QIXU</span>
+          <span className="spacer" />
+          <button className="btn mini" type="button" onClick={() => setOptionsOpen((value) => !value)}>
+            {optionsOpen ? '收起选项' : '选项'}
+          </button>
+          <button className="btn mini" type="button" onClick={() => setMinimized(true)}>
+            隐藏
+          </button>
+        </div>
+        {optionsOpen && (
+          <div className="floating-options">
+            <label className="field inline">
+              <span className="field-label">场景</span>
+              <select className="compact-select" value={scenario} onChange={(event) => setScenario(event.target.value)}>
+                {SCENARIOS.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="field inline">
+              <span className="field-label">客户</span>
+              <select className="compact-select" value={customerId} onChange={(event) => setCustomerId(event.target.value)}>
+                <option value="">不使用档案</option>
+                {customers.map((customer) => (
+                  <option key={customer.customer_id} value={customer.customer_id}>
+                    {((customer.profile.display_name as string | undefined) ??
+                      (customer.profile.name as string | undefined) ??
+                      customer.customer_id)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        )}
+        <textarea
+          className="floating-input"
+          value={input}
+          onChange={(event) => setInput(event.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="粘贴客户消息，回车生成"
+          rows={4}
+          autoFocus
+        />
+        <div className="floating-actions">
+          <button className="btn primary wide" type="button" disabled={generating || !input.trim()} onClick={() => void handleGenerate()}>
+            {generating ? '生成中…' : '生成'}
+          </button>
+        </div>
+        {error && <div className="alert error">{error}</div>}
+        {generation && generation.business_status === 'success' && generation.drafts.length > 0 && (
+          <div className="floating-cards">
+            {generation.drafts.map((draft, index) => (
+              <DraftCard
+                key={draft.draft_id}
+                draft={draft}
+                index={index + 1}
+                onDraftUpdated={() => undefined}
+                onNotice={() => undefined}
+                onDirtyChange={handleDirtyChange}
+                minimal
+              />
+            ))}
+          </div>
+        )}
+        {generation && generation.business_status && generation.business_status !== 'success' && (
+          <div className="alert error">生成未完成，请重试。</div>
+        )}
+      </div>
+    </div>
+  )
+}

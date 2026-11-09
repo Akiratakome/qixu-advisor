@@ -69,3 +69,24 @@ def fetch_external_customer(profile_id: str, *, timeout: float = 10.0) -> dict[s
     if supabase_configured():
         return fetch_supabase_customer(profile_id, timeout=timeout)
     return None
+
+
+def ping_supabase(base_url: str, service_key: str, *, timeout: float = 10.0) -> tuple[bool, str]:
+    """数据源连通性自测：GET {base_url}/rest/v1/ 带 apikey 头；返回 (ok, 友好原因)。
+
+    仅用于「测试连接」，不做任何数据读取或写入；不回显密钥。
+    """
+    url = base_url.rstrip("/") + "/rest/v1/"
+    headers = {"apikey": service_key, "Authorization": f"Bearer {service_key}"}
+    try:
+        with httpx.Client(timeout=timeout, trust_env=False, follow_redirects=False) as client:
+            response = client.get(url, headers=headers)
+    except httpx.TimeoutException:
+        return False, "连接超时"
+    except httpx.TransportError:
+        return False, "连接失败，请核对地址"
+    if response.status_code == 401 or response.status_code == 403:
+        return False, "凭据无效"
+    if response.status_code in (200, 404, 405):
+        return True, "连接成功"
+    return False, f"服务返回 HTTP {response.status_code}"

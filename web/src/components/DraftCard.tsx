@@ -11,9 +11,11 @@ interface DraftCardProps {
   onDraftUpdated: (updated: Draft) => void
   onNotice: (message: string) => void
   onDirtyChange: (draftId: number, dirty: boolean) => void
+  // 悬浮卡片模式：只保留正文编辑与复制，复制成功后整卡高亮「已复制」。
+  minimal?: boolean
 }
 
-export default function DraftCard({ draft, index, onDraftUpdated, onNotice, onDirtyChange }: DraftCardProps) {
+export default function DraftCard({ draft, index, onDraftUpdated, onNotice, onDirtyChange, minimal = false }: DraftCardProps) {
   const [text, setText] = useState(draft.text)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -80,10 +82,13 @@ export default function DraftCard({ draft, index, onDraftUpdated, onNotice, onDi
     }
   }
 
+  const copiedClass = minimal && copyState === 'copied' ? 'copied-card' : ''
+
   return (
-    <article className="draft-card">
+    <article className={`draft-card ${copiedClass}`}>
       <div className="draft-card-head">
         <span className="draft-no">候选 {index}</span>
+        {minimal && copyState === 'copied' && <span className="copied-badge">已复制</span>}
         {dirty && <span className="draft-meta">有未保存修改</span>}
       </div>
       <textarea
@@ -99,15 +104,19 @@ export default function DraftCard({ draft, index, onDraftUpdated, onNotice, onDi
         <button className="btn copy" type="button" onClick={() => void handleCopy()}>
           复制{copyState === 'copied' ? ' ✓' : ''}
         </button>
-        <button className="btn primary" type="button" disabled={saving || !dirty} onClick={() => void handleSave()}>
-          {saving ? '保存中…' : '保存修改'}
-        </button>
-        <button className="btn ghost" type="button" disabled={acting} onClick={() => void handleAction('selected')}>
-          选用
-        </button>
-        <button className="btn ghost danger" type="button" disabled={acting} onClick={() => void handleAction('discarded')}>
-          弃用
-        </button>
+        {!minimal && (
+          <>
+            <button className="btn primary" type="button" disabled={saving || !dirty} onClick={() => void handleSave()}>
+              {saving ? '保存中…' : '保存修改'}
+            </button>
+            <button className="btn ghost" type="button" disabled={acting} onClick={() => void handleAction('selected')}>
+              选用
+            </button>
+            <button className="btn ghost danger" type="button" disabled={acting} onClick={() => void handleAction('discarded')}>
+              弃用
+            </button>
+          </>
+        )}
       </div>
     </article>
   )

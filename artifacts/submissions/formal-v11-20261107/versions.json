@@ -1,0 +1,33 @@
+{
+  "submission_id": "formal-v11-20261107",
+  "created_at": "2026-11-09T14:52:24.981+08:00",
+  "dataset": "cases-v2.0（奢侈品化 50 例）",
+  "tool_versions": {
+    "python": "3.12.15",
+    "pydantic": "2.14.3"
+  },
+  "runs": {
+    "formal-v11": {
+      "freeze": "formal-v29",
+      "cases": 50,
+      "statuses": "50/50 首轮全成",
+      "role": "最终 C 表（奢侈品测试集＋真人轻改生日祝福版）"
+    },
+    "formal-v9": {
+      "role": "奢侈品测试集上一版（生日祝福旧样本）"
+    },
+    "formal-v8": {
+      "role": "旧测试集回归证据"
+    }
+  },
+  "freeze_ids": [
+    "formal-v26",
+    "formal-v27",
+    "formal-v28",
+    "formal-v29"
+  ],
+  "git_commits": [
+    "03da101",
+    "09ce55f"
+  ]
+}

@@ -46,14 +46,21 @@ def test_catalog_unknowns_and_public_source_isolation():
     # 公开源与本地资料隔离：公开 ABCD 来源固定版本并仅登记；重写后的 50 例不再携带公开数据集标记。
     cases = {c.case_id: c for c in load_cases("all")}
     sources = [json.loads(line) for line in (PROJECT_ROOT / "data/references/sources.jsonl").read_text(encoding="utf-8").splitlines()]
-    assert len(sources) == 4
-    assert len({s["original_id"] for s in sources}) == 4
-    for source in sources:
+    references = [s for s in sources if s.get("kind") != "style_example"]
+    style_examples = [s for s in sources if s.get("kind") == "style_example"]
+    assert len(references) == 4
+    assert len({s["original_id"] for s in references}) == 4
+    for source in references:
         case = cases[source["case_id"]]
         assert case.split == source["local_split"] == "dev"
         assert source["revision"] == "6b8700ce67c6b37b062dd7a60abc76d7ef832a97"
         assert case.source.get("dataset") != "ABCD"
         assert "original_id" not in case.source
+    # 风格样本来源（生日祝福句式）：只登记、不进案例、注明许可与用途。
+    assert len(style_examples) == 2
+    for source in style_examples:
+        assert {"name", "url", "used_for", "license_note"} <= set(source)
+        assert "case_id" not in source
 
 
 def test_revised_stories_and_current_purchase_contract():

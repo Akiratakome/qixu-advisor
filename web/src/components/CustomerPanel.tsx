@@ -2,6 +2,7 @@ import { useState } from 'react'
 
 import type { Customer } from '../api'
 import { api, errorMessage } from '../api'
+import DataSourcePanel from './DataSourcePanel'
 import PreferencesPanel from './PreferencesPanel'
 
 function customerName(customer: Customer): string {
@@ -133,6 +134,7 @@ export default function CustomerPanel({
         {formError && <div className="alert error">{formError}</div>}
       </div>
       <PreferencesPanel customers={customers} customerId={prefCustomerId} onCustomerChange={onPrefCustomerChange} />
+      <DataSourcePanel />
     </div>
   )
 }

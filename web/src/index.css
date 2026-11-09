@@ -731,6 +731,181 @@ input[type='number'] {
   margin: 4px 0 0;
 }
 
+/* ---------- 外部数据源 ---------- */
+
+.datasource-panel {
+  border-top: 1px solid var(--qixu-line);
+  margin-top: 8px;
+  padding-top: 6px;
+}
+
+.datasource-panel summary {
+  cursor: pointer;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--qixu-ink);
+}
+
+.datasource-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+/* ---------- 悬浮卡片模式（?floating=1） ---------- */
+
+.floating-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(31, 27, 22, 0.88), rgba(31, 27, 22, 0.72));
+}
+
+.floating-glass {
+  width: 100%;
+  max-width: 520px;
+  border-radius: 16px;
+  padding: 16px;
+  background: rgba(31, 27, 22, 0.55);
+  border: 1px solid rgba(176, 141, 87, 0.45);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: #f3ede2;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+}
+
+.floating-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.floating-brand {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #d9c39a;
+}
+
+.floating-options {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.floating-shell .field-label {
+  color: #cbbd9f;
+}
+
+.floating-shell .compact-select {
+  background: rgba(243, 237, 226, 0.12);
+  border-color: rgba(176, 141, 87, 0.5);
+  color: #f3ede2;
+}
+
+.floating-input {
+  width: 100%;
+  border: 1px solid rgba(176, 141, 87, 0.5);
+  border-radius: 12px;
+  background: rgba(243, 237, 226, 0.1);
+  color: #f3ede2;
+  font: inherit;
+  font-size: 0.92rem;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+.floating-input::placeholder {
+  color: #a9987a;
+}
+
+.floating-input:focus {
+  outline: none;
+  border-color: #d9c39a;
+}
+
+.floating-actions {
+  margin-top: 8px;
+}
+
+.floating-shell .btn.ghost,
+.floating-shell .btn.mini {
+  border-color: rgba(176, 141, 87, 0.6);
+  color: #d9c39a;
+}
+
+.floating-shell .alert.error {
+  background: rgba(179, 87, 79, 0.2);
+  border-color: rgba(179, 87, 79, 0.6);
+  color: #f0c4bd;
+}
+
+.floating-cards {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 55vh;
+  overflow-y: auto;
+}
+
+.floating-shell .draft-card {
+  background: rgba(243, 237, 226, 0.08);
+  border-color: rgba(176, 141, 87, 0.35);
+}
+
+.floating-shell .draft-editor {
+  background: rgba(243, 237, 226, 0.08);
+  border-color: rgba(176, 141, 87, 0.35);
+  color: #f3ede2;
+}
+
+.floating-shell .draft-no {
+  color: #d9c39a;
+}
+
+.floating-shell .draft-actions {
+  border-top-color: rgba(176, 141, 87, 0.3);
+}
+
+.floating-shell .form-error {
+  color: #f0c4bd;
+}
+
+.copied-card {
+  border-color: #d9c39a !important;
+  box-shadow:
+    0 0 0 1px rgba(217, 195, 154, 0.7),
+    0 4px 18px rgba(217, 195, 154, 0.25);
+}
+
+.copied-badge {
+  font-size: 0.72rem;
+  color: #2e2a20;
+  background: #d9c39a;
+  border-radius: 6px;
+  padding: 1px 8px;
+  letter-spacing: 0.06em;
+}
+
+.floating-restore {
+  border: 1px solid rgba(176, 141, 87, 0.55);
+  background: rgba(31, 27, 22, 0.6);
+  color: #d9c39a;
+  font: inherit;
+  font-family: 'Noto Serif SC', serif;
+  letter-spacing: 0.1em;
+  border-radius: 999px;
+  padding: 8px 22px;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+}
+
 .sidebar-backdrop {
   display: none;
 }
