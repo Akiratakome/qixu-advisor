@@ -9,9 +9,17 @@ import DraftCard from './DraftCard'
 // 粘贴客户消息回车生成，三条候选竖排，复制后整卡高亮。窗口最小化由桌面壳负责，
 // 前端只渲染折叠态（点卡片外部或「隐藏」按钮触发）。
 
+const BUSINESS_LABELS: Record<string, string> = {
+  needs_input: '需要补充资料',
+  contact_blocked: '已停止：客户明确拒绝联系',
+  technical_failure: '生成失败',
+  interrupted: '生成未完成，请重试',
+}
+
 export default function FloatingMode() {
   const [customers, setCustomers] = useState<Customer[]>([])
-  const [scenario, setScenario] = useState<string>(SCENARIOS[0])
+  // 默认场景取「产品推荐」：只凭消息内容即可生成；生日与节庆还需祝福缘由，活动邀请还需具体活动。
+  const [scenario, setScenario] = useState<string>('产品推荐')
   const [customerId, setCustomerId] = useState('')
   const [optionsOpen, setOptionsOpen] = useState(false)
   const [input, setInput] = useState('')
@@ -48,7 +56,11 @@ export default function FloatingMode() {
     try {
       let targetId = conversationId
       if (!targetId) {
-        const created = await api.conversations.create({ customer_id: customerId || undefined })
+        // 创建会话时即带场景默认（或已选场景）与客户档案。
+        const created = await api.conversations.create({
+          scenario,
+          customer_id: customerId || undefined,
+        })
         targetId = created.conversation_id
         setConversationId(targetId)
       }
@@ -60,6 +72,7 @@ export default function FloatingMode() {
         customer_id: customerId || undefined,
         settings: DEFAULT_SETTINGS,
         current_need: text,
+        occasion: scenario === '生日与节庆' ? text : undefined,
       })
       const result = await api.conversations.createGeneration(
         targetId,
@@ -88,7 +101,8 @@ export default function FloatingMode() {
   }, [])
 
   function handleOutsideClick(event: React.MouseEvent<HTMLDivElement>) {
-    if (event.target instanceof Element && !event.target.closest('.draft-card')) {
+    // 仅点击卡片外部（深色背景区）最小化；卡片内按钮不受影响。
+    if (event.target instanceof Element && !event.target.closest('.floating-glass')) {
       setMinimized(true)
     }
   }
@@ -174,7 +188,11 @@ export default function FloatingMode() {
           </div>
         )}
         {generation && generation.business_status && generation.business_status !== 'success' && (
-          <div className="alert error">生成未完成，请重试。</div>
+          <div className="alert error">
+            <strong>{BUSINESS_LABELS[generation.business_status] ?? generation.business_status}</strong>
+            {generation.missing_fields.length > 0 && <div>待补充：{generation.missing_fields.join('、')}</div>}
+            {generation.error && <div>{generation.error}</div>}
+          </div>
         )}
       </div>
     </div>
