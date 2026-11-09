@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import type { Customer, Generation } from '../api'
-import { DEFAULT_SETTINGS, api, errorMessage } from '../api'
+import { ApiError, DEFAULT_SETTINGS, api, errorMessage } from '../api'
 import { SCENARIOS } from '../chat'
 import DraftCard from './DraftCard'
 
 // 悬浮卡片模式（?floating=1）：极简窗口——无侧栏、无顶栏标题；
-// 粘贴客户消息回车生成，三条候选竖排，复制后整卡高亮。窗口最小化由桌面壳负责，
-// 前端只渲染折叠态（点卡片外部或「隐藏」按钮触发）。
+// 粘贴客户消息回车生成，三条候选竖排，复制后整卡高亮。
+// 不恢复任何已保存会话：每次打开都是干净状态，生成时始终新建会话；
+// 窗口最小化/关闭由桌面壳负责，前端只渲染折叠态与触发 window.close()。
 
 const BUSINESS_LABELS: Record<string, string> = {
   needs_input: '需要补充资料',
@@ -26,7 +27,7 @@ export default function FloatingMode() {
   const [generating, setGenerating] = useState(false)
   const [generation, setGeneration] = useState<Generation | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [conversationId, setConversationId] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   const [minimized, setMinimized] = useState(false)
 
   useEffect(() => {
@@ -46,6 +47,24 @@ export default function FloatingMode() {
     }
   }, [])
 
+  // 一次性轻提示与错误：数秒后自动消失，不渲染常驻错误条。
+  useEffect(() => {
+    if (!notice && !error) {
+      return
+    }
+    const timer = window.setTimeout(() => {
+      setNotice(null)
+      setError(null)
+    }, 5000)
+    return () => window.clearTimeout(timer)
+  }, [notice, error])
+
+  function resetToCleanState() {
+    setGeneration(null)
+    setError(null)
+    setNotice('会话已重置')
+  }
+
   async function handleGenerate() {
     const text = input.trim()
     if (!text) {
@@ -53,17 +72,14 @@ export default function FloatingMode() {
     }
     setGenerating(true)
     setError(null)
+    setNotice(null)
     try {
-      let targetId = conversationId
-      if (!targetId) {
-        // 创建会话时即带场景默认（或已选场景）与客户档案。
-        const created = await api.conversations.create({
-          scenario,
-          customer_id: customerId || undefined,
-        })
-        targetId = created.conversation_id
-        setConversationId(targetId)
-      }
+      // 每次生成都新建会话，不复用旧会话，避免历史会话失效造成 404。
+      const created = await api.conversations.create({
+        scenario,
+        customer_id: customerId || undefined,
+      })
+      const targetId = created.conversation_id
       await api.conversations.postMessage(targetId, { role: 'client', content: text, source: 'manual' })
       const detail = await api.conversations.get(targetId)
       const patched = await api.conversations.patch(targetId, {
@@ -83,7 +99,12 @@ export default function FloatingMode() {
       setInput('')
       setMinimized(false)
     } catch (generateError) {
-      setError(errorMessage(generateError))
+      if (generateError instanceof ApiError && generateError.status === 404) {
+        // 内容已不存在：重置为干净状态，只给一次性轻提示。
+        resetToCleanState()
+      } else {
+        setError(errorMessage(generateError))
+      }
     } finally {
       setGenerating(false)
     }
@@ -94,6 +115,11 @@ export default function FloatingMode() {
       event.preventDefault()
       void handleGenerate()
     }
+  }
+
+  function handleClose() {
+    // Electron 主窗口 close → app.quit；浏览器中关闭当前页签（由浏览器策略决定）。
+    window.close()
   }
 
   const handleDirtyChange = useCallback(() => {
@@ -128,6 +154,9 @@ export default function FloatingMode() {
           </button>
           <button className="btn mini" type="button" onClick={() => setMinimized(true)}>
             隐藏
+          </button>
+          <button className="btn mini" type="button" onClick={handleClose}>
+            关闭
           </button>
         </div>
         {optionsOpen && (
@@ -172,6 +201,7 @@ export default function FloatingMode() {
           </button>
         </div>
         {error && <div className="alert error">{error}</div>}
+        {notice && <p className="notice">{notice}</p>}
         {generation && generation.business_status === 'success' && generation.drafts.length > 0 && (
           <div className="floating-cards">
             {generation.drafts.map((draft, index) => (
