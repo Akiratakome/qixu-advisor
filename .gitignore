@@ -20,3 +20,4 @@ artifacts/submissions/**/screenshots/process/*
 
 web/node_modules/
 web/dist/
+desktop/node_modules/
